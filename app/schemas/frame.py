@@ -16,3 +16,5 @@ class FrameEnvelope(BaseModel):
     frame: FrameRecord
     baseline_frame_id: str | None = None
     overlay_ref: str | None = None
+    accepted_for_alerting: bool | None = None
+    filter_reason: str | None = None

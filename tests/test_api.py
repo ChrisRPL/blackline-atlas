@@ -53,6 +53,8 @@ def test_default_frames_alerts_and_metrics_use_hero_scenario() -> None:
     assert current_frame.json()["frame"]["image_ref"].endswith(
         "/demo_port_01/hero_port_disruption/current/cur_demo_port_01_20260414/image.png"
     )
+    assert current_frame.json()["accepted_for_alerting"] is True
+    assert current_frame.json()["filter_reason"] == "accepted"
     assert current_frame.json()["overlay_ref"].endswith(
         "/demo_port_01/hero_port_disruption/overlay/cur_demo_port_01_20260414/image.png"
     )
@@ -83,6 +85,8 @@ def test_replay_switches_frames_alerts_and_metrics_to_selected_asset() -> None:
     assert current_frame.json()["frame"]["image_ref"].endswith(
         "/demo_bridge_01/bridge_access_obstruction/current/cur_demo_bridge_01_20260414/image.png"
     )
+    assert current_frame.json()["accepted_for_alerting"] is True
+    assert current_frame.json()["filter_reason"] == "accepted"
     assert current_frame.json()["overlay_ref"].endswith(
         "/demo_bridge_01/bridge_access_obstruction/overlay/cur_demo_bridge_01_20260414/image.png"
     )

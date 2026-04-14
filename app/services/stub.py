@@ -13,6 +13,7 @@ from app.schemas.replay import ReplayStartRequest, ReplayState
 from app.services.baseline_compare import FixtureBaselineComparator
 from app.services.frame_cache import FrameCacheLayout
 from app.services.frame_client import CachedFrameClient, FixtureFrameClient
+from app.services.frame_filters import FrameFilterPolicy
 from app.services.frame_types import FrameRequest
 from app.services.scenario_fixtures import ScenarioFixture, build_stub_scenarios
 
@@ -61,6 +62,7 @@ class StubAtlasService:
             cache_layout=FrameCacheLayout(),
         )
         self.baseline_comparator = FixtureBaselineComparator()
+        self.frame_filter_policy = FrameFilterPolicy()
         self.replay = MutableReplayState(
             running=False,
             asset_id=None,
@@ -122,7 +124,24 @@ class StubAtlasService:
         request = self._active_frame_request()
         current = self.frame_client.get_current_frame(request)
         baseline = self.frame_client.get_baseline_frame(request)
-        return self.baseline_comparator.compare(current=current, baseline=baseline)
+        compared = self.baseline_comparator.compare(current=current, baseline=baseline)
+        decision = self.frame_filter_policy.evaluate(current=compared, baseline=baseline)
+
+        if decision.accepted:
+            return compared.model_copy(
+                update={
+                    "accepted_for_alerting": True,
+                    "filter_reason": decision.reason,
+                }
+            )
+
+        return compared.model_copy(
+            update={
+                "accepted_for_alerting": False,
+                "filter_reason": decision.reason,
+                "overlay_ref": None,
+            }
+        )
 
     def get_baseline_frame(self) -> FrameEnvelope:
         return self.frame_client.get_baseline_frame(self._active_frame_request())
