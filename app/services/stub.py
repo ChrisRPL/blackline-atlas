@@ -10,6 +10,7 @@ from app.schemas.frame import FrameEnvelope
 from app.schemas.health import HealthDependency, HealthResponse
 from app.schemas.metrics import Metrics
 from app.schemas.replay import ReplayStartRequest, ReplayState
+from app.services.frame_client import FixtureFrameClient, FrameRequest
 from app.services.scenario_fixtures import ScenarioFixture, build_stub_scenarios
 
 
@@ -52,6 +53,7 @@ class StubAtlasService:
             hero_asset=self.hero_asset,
             bridge_asset=self._asset_by_id("demo_bridge_01"),
         )
+        self.frame_client = FixtureFrameClient(self.scenarios)
         self.replay = MutableReplayState(
             running=False,
             asset_id=None,
@@ -110,10 +112,10 @@ class StubAtlasService:
         )
 
     def get_current_frame(self) -> FrameEnvelope:
-        return self._active_scenario().current_frame
+        return self.frame_client.get_current_frame(self._active_frame_request())
 
     def get_baseline_frame(self) -> FrameEnvelope:
-        return self._active_scenario().baseline_frame
+        return self.frame_client.get_baseline_frame(self._active_frame_request())
 
     def list_alerts(self) -> list[Alert]:
         return self._active_scenario().alerts
@@ -135,6 +137,10 @@ class StubAtlasService:
     def _active_scenario(self) -> ScenarioFixture:
         scenario_id = self.replay.scenario_id or "hero_port_disruption"
         return self.scenarios.get(scenario_id, self.scenarios["hero_port_disruption"])
+
+    def _active_frame_request(self) -> FrameRequest:
+        scenario = self._active_scenario()
+        return FrameRequest(asset_id=scenario.asset_id, scenario_id=scenario.scenario_id)
 
     def _select_scenario(self, asset_id: str | None, scenario_id: str | None) -> ScenarioFixture:
         if scenario_id and scenario_id in self.scenarios:
