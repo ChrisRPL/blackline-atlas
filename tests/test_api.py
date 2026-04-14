@@ -95,3 +95,24 @@ def test_replay_switches_frames_alerts_and_metrics_to_selected_asset() -> None:
     assert metrics.status_code == 200
     assert metrics.json()["frames_scanned"] == 88
     assert metrics.json()["alerts_emitted"] == 2
+
+
+def test_replay_prefers_explicit_scenario_id_over_asset_hint() -> None:
+    start_response = client.post(
+        "/replay/start",
+        json={
+            "asset_id": "demo_port_01",
+            "scenario_id": "bridge_access_obstruction",
+        },
+    )
+    assert start_response.status_code == 200
+    assert start_response.json()["scenario_id"] == "bridge_access_obstruction"
+    assert start_response.json()["asset_id"] == "demo_bridge_01"
+
+    current_frame = client.get("/frames/current")
+    alerts = client.get("/alerts")
+
+    assert current_frame.status_code == 200
+    assert current_frame.json()["frame"]["asset_id"] == "demo_bridge_01"
+    assert alerts.status_code == 200
+    assert alerts.json()[0]["alert_id"] == "blk_00018"
