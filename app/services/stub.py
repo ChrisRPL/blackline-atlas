@@ -100,6 +100,8 @@ class StubAtlasService:
 
     def stop_replay(self) -> ReplayState:
         self.replay.running = False
+        self.replay.asset_id = None
+        self.replay.scenario_id = None
         self.replay.last_transition_at = utc_now()
         return self.get_replay_state()
 
