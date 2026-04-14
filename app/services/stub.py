@@ -10,7 +10,8 @@ from app.schemas.frame import FrameEnvelope
 from app.schemas.health import HealthDependency, HealthResponse
 from app.schemas.metrics import Metrics
 from app.schemas.replay import ReplayStartRequest, ReplayState
-from app.services.frame_client import FixtureFrameClient, FrameRequest
+from app.services.frame_cache import FrameCacheLayout
+from app.services.frame_client import CachedFrameClient, FixtureFrameClient, FrameRequest
 from app.services.scenario_fixtures import ScenarioFixture, build_stub_scenarios
 
 
@@ -53,7 +54,10 @@ class StubAtlasService:
             hero_asset=self.hero_asset,
             bridge_asset=self._asset_by_id("demo_bridge_01"),
         )
-        self.frame_client = FixtureFrameClient(self.scenarios)
+        self.frame_client = CachedFrameClient(
+            delegate=FixtureFrameClient(self.scenarios),
+            cache_layout=FrameCacheLayout(),
+        )
         self.replay = MutableReplayState(
             running=False,
             asset_id=None,
