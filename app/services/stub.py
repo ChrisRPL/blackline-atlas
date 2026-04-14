@@ -10,6 +10,7 @@ from app.schemas.frame import FrameEnvelope
 from app.schemas.health import HealthDependency, HealthResponse
 from app.schemas.metrics import Metrics
 from app.schemas.replay import ReplayStartRequest, ReplayState
+from app.services.baseline_compare import FixtureBaselineComparator
 from app.services.frame_cache import FrameCacheLayout
 from app.services.frame_client import CachedFrameClient, FixtureFrameClient
 from app.services.frame_types import FrameRequest
@@ -59,6 +60,7 @@ class StubAtlasService:
             delegate=FixtureFrameClient(self.scenarios),
             cache_layout=FrameCacheLayout(),
         )
+        self.baseline_comparator = FixtureBaselineComparator()
         self.replay = MutableReplayState(
             running=False,
             asset_id=None,
@@ -117,7 +119,10 @@ class StubAtlasService:
         )
 
     def get_current_frame(self) -> FrameEnvelope:
-        return self.frame_client.get_current_frame(self._active_frame_request())
+        request = self._active_frame_request()
+        current = self.frame_client.get_current_frame(request)
+        baseline = self.frame_client.get_baseline_frame(request)
+        return self.baseline_comparator.compare(current=current, baseline=baseline)
 
     def get_baseline_frame(self) -> FrameEnvelope:
         return self.frame_client.get_baseline_frame(self._active_frame_request())
