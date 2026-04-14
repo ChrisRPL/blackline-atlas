@@ -11,7 +11,8 @@ from app.schemas.health import HealthDependency, HealthResponse
 from app.schemas.metrics import Metrics
 from app.schemas.replay import ReplayStartRequest, ReplayState
 from app.services.frame_cache import FrameCacheLayout
-from app.services.frame_client import CachedFrameClient, FixtureFrameClient, FrameRequest
+from app.services.frame_client import CachedFrameClient, FixtureFrameClient
+from app.services.frame_types import FrameRequest
 from app.services.scenario_fixtures import ScenarioFixture, build_stub_scenarios
 
 

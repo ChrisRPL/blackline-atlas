@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Mapping, Protocol
 
 from app.schemas.frame import FrameEnvelope
-from app.services.frame_client import FrameRequest
+from app.services.frame_types import FrameRequest
 from app.services.scenario_fixtures import ScenarioFixture
 
 

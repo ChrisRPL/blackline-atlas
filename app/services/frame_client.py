@@ -1,18 +1,12 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
 from pathlib import Path
 from typing import Mapping, Protocol
 
 from app.schemas.frame import FrameEnvelope
 from app.services.frame_cache import FrameCacheKey, FrameCacheLayout
+from app.services.frame_types import FrameRequest
 from app.services.scenario_fixtures import ScenarioFixture
-
-
-@dataclass(frozen=True)
-class FrameRequest:
-    asset_id: str
-    scenario_id: str
 
 
 class FrameClient(Protocol):

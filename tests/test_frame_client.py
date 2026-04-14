@@ -3,7 +3,8 @@ from __future__ import annotations
 from app.core.config import Settings
 from app.schemas.asset import Asset
 from app.services.frame_cache import FrameCacheLayout
-from app.services.frame_client import CachedFrameClient, FixtureFrameClient, FrameRequest
+from app.services.frame_client import CachedFrameClient, FixtureFrameClient
+from app.services.frame_types import FrameRequest
 from app.services.scenario_fixtures import build_stub_scenarios
 
 
