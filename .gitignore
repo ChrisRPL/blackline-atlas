@@ -201,6 +201,17 @@ cython_debug/
 .cursorignore
 .cursorindexingignore
 
+# Local support material / implementation notes
+support/
+blackline-docs/
+vendor/huggingface-skills/
+AGENTS.md
+docs/
+wiki/
+docs/local/
+wiki/local/
+*.local.md
+
 # Marimo
 marimo/_static/
 marimo/_lsp/
