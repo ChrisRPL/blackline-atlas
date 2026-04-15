@@ -1143,6 +1143,82 @@ def test_api_can_opt_in_both_http_transports_together(tmp_path, monkeypatch) -> 
     ).exists()
 
 
+def test_api_keeps_mapbox_context_disabled_with_both_http_transports_enabled(
+    tmp_path, monkeypatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setenv("MAPBOX_TOKEN", "test-mapbox-token")
+
+    def fake_urlopen(url: str, timeout: float):
+        assert timeout == 5.0
+        if url.endswith("mode=current"):
+            return _FakeHTTPResponse(
+                body=(
+                    b'{"frame_id":"live_cur_demo_bridge_01_20260416",'
+                    b'"captured_at":"2026-04-16T06:20:00Z",'
+                    b'"image_ref":"live/demo_bridge_01/current.png",'
+                    b'"cloud_cover":0.09,'
+                    b'"baseline_frame_id":"live_base_demo_bridge_01_20251014",'
+                    b'"overlay_ref":"live/demo_bridge_01/overlay.png",'
+                    b'"accepted_for_alerting":true,'
+                    b'"filter_reason":"accepted"}'
+                )
+            )
+        if url.endswith("mode=baseline"):
+            return _FakeHTTPResponse(
+                body=(
+                    b'{"frame_id":"live_base_demo_bridge_01_20251014",'
+                    b'"captured_at":"2025-10-14T09:15:00Z",'
+                    b'"image_ref":"live/demo_bridge_01/baseline.png",'
+                    b'"cloud_cover":0.02}'
+                )
+            )
+        raise AssertionError(f"unexpected url: {url}")
+
+    monkeypatch.setattr("app.services.sentinel_client.urlopen", fake_urlopen)
+    api_client = build_api_client(
+        monkeypatch,
+        simsat_current_endpoint="https://example.test/sentinel/current/",
+        simsat_baseline_endpoint="https://example.test/sentinel/baseline/",
+        simsat_current_http_enabled=True,
+        simsat_baseline_http_enabled=True,
+        mapbox_context_enabled=False,
+    )
+
+    start_response = api_client.post(
+        "/replay/start",
+        json={
+            "asset_id": "demo_bridge_01",
+            "scenario_id": "bridge_access_obstruction",
+        },
+    )
+    current_frame = api_client.get("/frames/current")
+    baseline_frame = api_client.get("/frames/baseline")
+    alerts = api_client.get("/alerts")
+    health = api_client.get("/health")
+
+    assert start_response.status_code == 200
+    assert current_frame.status_code == 200
+    assert baseline_frame.status_code == 200
+    assert current_frame.json()["frame"]["frame_id"] == "live_cur_demo_bridge_01_20260416"
+    assert baseline_frame.json()["frame"]["frame_id"] == "live_base_demo_bridge_01_20251014"
+    assert alerts.status_code == 200
+    assert alerts.json()[0]["alert_id"] == "blk_00018"
+    assert alerts.json()[0]["mapbox_context_ref"] is None
+    assert not tmp_path.joinpath(
+        ".cache",
+        "mapbox",
+        "demo_bridge_01",
+        "blk_00018",
+        "context.png",
+    ).exists()
+    assert health.status_code == 200
+    assert health.json()["mapbox"]["detail"] == (
+        "token present; inspection context disabled by config"
+    )
+    get_settings.cache_clear()
+
+
 def test_api_falls_back_when_both_http_transports_return_non_200(tmp_path, monkeypatch) -> None:
     monkeypatch.chdir(tmp_path)
 
