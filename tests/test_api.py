@@ -582,6 +582,44 @@ def test_api_falls_back_from_malformed_current_transport_payload(tmp_path, monke
     )
 
 
+def test_api_falls_back_from_malformed_baseline_transport_payload(tmp_path, monkeypatch) -> None:
+    monkeypatch.chdir(tmp_path)
+
+    def fake_fetch(self, plan):
+        if plan.params["mode"] != "baseline":
+            return None
+        return {
+            "captured_at": "2025-10-12T09:15:00Z",
+        }
+
+    monkeypatch.setattr(FixtureSentinelPayloadTransport, "fetch", fake_fetch)
+    api_client = build_api_client(
+        monkeypatch,
+        simsat_current_endpoint=None,
+        simsat_baseline_endpoint="https://example.test/sentinel/baseline/",
+    )
+
+    start_response = api_client.post(
+        "/replay/start",
+        json={
+            "asset_id": "demo_bridge_01",
+            "scenario_id": "bridge_access_obstruction",
+        },
+    )
+    baseline_frame = api_client.get("/frames/baseline")
+
+    assert start_response.status_code == 200
+    assert baseline_frame.status_code == 200
+    assert baseline_frame.json()["frame"]["frame_id"] == "base_demo_bridge_01_20251012"
+    assert baseline_frame.json()["frame"]["source"] == (
+        "https://example.test/sentinel/baseline"
+        "?asset_id=demo_bridge_01&scenario_id=bridge_access_obstruction&mode=baseline"
+    )
+    assert baseline_frame.json()["frame"]["image_ref"].endswith(
+        "/demo_bridge_01/bridge_access_obstruction/baseline/base_demo_bridge_01_20251012/image.png"
+    )
+
+
 def test_api_uses_configured_sentinel_adapters_for_suppressed_replay_switch(
     tmp_path, monkeypatch
 ) -> None:
