@@ -64,9 +64,9 @@ class ConfiguredSentinelEndpointSource:
             },
         )
 
-    def build_baseline_plan(self, request: FrameRequest) -> SentinelRequestPlan:
+    def build_baseline_plan(self, request: FrameRequest) -> SentinelRequestPlan | None:
         if not self.baseline_endpoint:
-            raise ValueError("baseline Sentinel endpoint is not configured")
+            return None
         return SentinelRequestPlan(
             endpoint=self.baseline_endpoint,
             params={
@@ -105,3 +105,33 @@ class CurrentSentinelAdapter:
 
     def get_baseline_frame(self, request: FrameRequest) -> FrameEnvelope:
         return self._fallback.get_baseline_frame(request)
+
+
+class BaselineSentinelAdapter:
+    def __init__(
+        self,
+        *,
+        planner: ConfiguredSentinelEndpointSource,
+        fallback: SentinelSource,
+    ) -> None:
+        self._planner = planner
+        self._fallback = fallback
+
+    def get_current_frame(self, request: FrameRequest) -> FrameEnvelope:
+        return self._fallback.get_current_frame(request)
+
+    def get_baseline_frame(self, request: FrameRequest) -> FrameEnvelope:
+        envelope = self._fallback.get_baseline_frame(request)
+        plan = self._planner.build_baseline_plan(request)
+        if plan is None:
+            return envelope
+
+        return envelope.model_copy(
+            update={
+                "frame": envelope.frame.model_copy(
+                    update={
+                        "source": plan.url,
+                    }
+                )
+            }
+        )

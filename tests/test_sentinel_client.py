@@ -5,6 +5,7 @@ from app.schemas.asset import Asset
 from app.services.frame_types import FrameRequest
 from app.services.scenario_fixtures import build_stub_scenarios
 from app.services.sentinel_client import (
+    BaselineSentinelAdapter,
     ConfiguredSentinelEndpointSource,
     CurrentSentinelAdapter,
     FixtureSentinelSource,
@@ -57,6 +58,16 @@ def test_configured_sentinel_source_returns_none_without_current_endpoint() -> N
     assert source.build_current_plan(request) is None
 
 
+def test_configured_sentinel_source_returns_none_without_baseline_endpoint() -> None:
+    source = ConfiguredSentinelEndpointSource(
+        current_endpoint="https://example.test/sentinel/current",
+        baseline_endpoint=None,
+    )
+    request = FrameRequest(asset_id="demo_port_01", scenario_id="hero_port_disruption")
+
+    assert source.build_baseline_plan(request) is None
+
+
 def test_current_sentinel_adapter_uses_configured_plan_and_fixture_fallback() -> None:
     adapter = CurrentSentinelAdapter(
         planner=ConfiguredSentinelEndpointSource(
@@ -93,6 +104,44 @@ def test_current_sentinel_adapter_returns_fixture_frame_without_current_endpoint
 
     assert current.frame.frame_id == "cur_demo_bridge_01_20260414"
     assert current.frame.source == "sentinel_current_stub"
+
+
+def test_baseline_sentinel_adapter_uses_configured_plan_and_fixture_fallback() -> None:
+    adapter = BaselineSentinelAdapter(
+        planner=ConfiguredSentinelEndpointSource(
+            current_endpoint=None,
+            baseline_endpoint="https://example.test/sentinel/baseline/",
+        ),
+        fallback=FixtureSentinelSource(_scenarios()),
+    )
+    request = FrameRequest(asset_id="demo_bridge_01", scenario_id="bridge_access_obstruction")
+
+    current = adapter.get_current_frame(request)
+    baseline = adapter.get_baseline_frame(request)
+
+    assert current.frame.frame_id == "cur_demo_bridge_01_20260414"
+    assert current.frame.source == "sentinel_current_stub"
+    assert baseline.frame.frame_id == "base_demo_bridge_01_20251012"
+    assert baseline.frame.source == (
+        "https://example.test/sentinel/baseline"
+        "?asset_id=demo_bridge_01&scenario_id=bridge_access_obstruction&mode=baseline"
+    )
+
+
+def test_baseline_sentinel_adapter_returns_fixture_frame_without_baseline_endpoint() -> None:
+    adapter = BaselineSentinelAdapter(
+        planner=ConfiguredSentinelEndpointSource(
+            current_endpoint=None,
+            baseline_endpoint=None,
+        ),
+        fallback=FixtureSentinelSource(_scenarios()),
+    )
+    request = FrameRequest(asset_id="demo_port_01", scenario_id="hero_port_disruption")
+
+    baseline = adapter.get_baseline_frame(request)
+
+    assert baseline.frame.frame_id == "base_demo_port_01_20250901"
+    assert baseline.frame.source == "sentinel_baseline_stub"
 
 
 def _scenarios():
