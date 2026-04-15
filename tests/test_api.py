@@ -97,6 +97,30 @@ def test_health_endpoint_reflects_fully_configured_sentinel_state(monkeypatch) -
     get_settings.cache_clear()
 
 
+def test_health_endpoint_reflects_unconfigured_dependencies(tmp_path, monkeypatch) -> None:
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.delenv("MAPBOX_TOKEN", raising=False)
+    unconfigured_client = build_api_client(
+        monkeypatch,
+        simsat_current_endpoint=None,
+        simsat_baseline_endpoint=None,
+    )
+    unconfigured_response = unconfigured_client.get("/health")
+
+    assert unconfigured_response.status_code == 200
+    assert unconfigured_response.json()["simsat_current"]["status"] == "not_configured"
+    assert unconfigured_response.json()["simsat_current"]["detail"] == (
+        "current Sentinel endpoint not configured yet"
+    )
+    assert unconfigured_response.json()["simsat_baseline"]["status"] == "not_configured"
+    assert unconfigured_response.json()["simsat_baseline"]["detail"] == (
+        "historical baseline endpoint not configured yet"
+    )
+    assert unconfigured_response.json()["mapbox"]["status"] == "not_configured"
+    assert unconfigured_response.json()["mapbox"]["detail"] == "token missing"
+    get_settings.cache_clear()
+
+
 def test_assets_endpoint_returns_seeded_assets() -> None:
     response = client.get("/assets")
 
