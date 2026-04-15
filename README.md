@@ -29,6 +29,7 @@ Do not turn this into:
 This repo now contains:
 - a FastAPI backend skeleton
 - typed schemas for assets, frames, replay, metrics, and alerts
+- optional Mapbox inspection context on accepted alerts when a token is present
 - routes for the core product loop
 - placeholder training scripts
 - tests for API and service behavior

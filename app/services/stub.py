@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import UTC, datetime
+from pathlib import Path
 
 from app.core.config import Settings
 from app.schemas.alert import Alert
@@ -156,7 +157,10 @@ class StubAtlasService:
         if not decision.accepted:
             return []
 
-        return scenario.alerts
+        if not self.settings.mapbox_token_present:
+            return scenario.alerts
+
+        return [self._attach_mapbox_context(alert) for alert in scenario.alerts]
 
     def get_metrics(self) -> Metrics:
         scenario = self._active_scenario()
@@ -204,6 +208,12 @@ class StubAtlasService:
             return HealthDependency(status="ready", detail=f"{endpoint} ({transport_mode})")
         return HealthDependency(status="not_configured", detail=missing_detail)
 
+    def _attach_mapbox_context(self, alert: Alert) -> Alert:
+        context_path = self._mapbox_context_path(alert)
+        context_path.parent.mkdir(parents=True, exist_ok=True)
+        context_path.touch(exist_ok=True)
+        return alert.model_copy(update={"mapbox_context_ref": str(context_path)})
+
     def _asset_by_id(self, asset_id: str) -> Asset:
         for asset in self.assets:
             if asset.asset_id == asset_id:
@@ -226,6 +236,9 @@ class StubAtlasService:
             return self.scenarios["bridge_access_obstruction"]
 
         return self.scenarios["hero_port_disruption"]
+
+    def _mapbox_context_path(self, alert: Alert) -> Path:
+        return Path(".cache") / "mapbox" / alert.asset_id / alert.alert_id / "context.png"
 
     def _frame_delegate(self):
         if not self.settings.simsat_current_endpoint and not self.settings.simsat_baseline_endpoint:

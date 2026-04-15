@@ -529,6 +529,7 @@ def test_default_frames_alerts_and_metrics_use_hero_scenario() -> None:
     assert alerts.status_code == 200
     assert alerts.json()[0]["alert_id"] == "blk_00017"
     assert alerts.json()[0]["action"] == "downlink_now"
+    assert alerts.json()[0]["mapbox_context_ref"] is None
 
     assert metrics.status_code == 200
     assert metrics.json()["frames_scanned"] == 143
@@ -565,6 +566,7 @@ def test_replay_switches_frames_alerts_and_metrics_to_selected_asset() -> None:
     assert alerts.json()[0]["alert_id"] == "blk_00018"
     assert alerts.json()[0]["action"] == "defer"
     assert alerts.json()[0]["asset_id"] == "demo_bridge_01"
+    assert alerts.json()[0]["mapbox_context_ref"] is None
 
     assert metrics.status_code == 200
     assert metrics.json()["frames_scanned"] == 88
@@ -593,11 +595,38 @@ def test_replay_prefers_explicit_scenario_id_over_asset_hint() -> None:
     assert current_frame.json()["frame"]["asset_id"] == "demo_bridge_01"
     assert alerts.status_code == 200
     assert alerts.json()[0]["alert_id"] == "blk_00018"
+    assert alerts.json()[0]["mapbox_context_ref"] is None
     assert metrics.status_code == 200
     assert metrics.json()["frames_scanned"] == 88
     assert metrics.json()["alerts_emitted"] == 2
     assert metrics.json()["raw_frames_suppressed"] == 86
     assert metrics.json()["downlink_rate"] == 0.023
+
+
+def test_alerts_endpoint_attaches_mapbox_context_when_token_present(tmp_path, monkeypatch) -> None:
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setenv("MAPBOX_TOKEN", "test-mapbox-token")
+    api_client = build_api_client(
+        monkeypatch,
+        simsat_current_endpoint=None,
+        simsat_baseline_endpoint=None,
+    )
+
+    alerts = api_client.get("/alerts")
+
+    assert alerts.status_code == 200
+    assert alerts.json()[0]["alert_id"] == "blk_00017"
+    assert alerts.json()[0]["mapbox_context_ref"] == (
+        ".cache/mapbox/demo_port_01/blk_00017/context.png"
+    )
+    assert tmp_path.joinpath(
+        ".cache",
+        "mapbox",
+        "demo_port_01",
+        "blk_00017",
+        "context.png",
+    ).exists()
+    get_settings.cache_clear()
 
 
 def test_api_uses_configured_sentinel_adapters_through_replay_switch(tmp_path, monkeypatch) -> None:

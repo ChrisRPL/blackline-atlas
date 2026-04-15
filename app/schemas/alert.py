@@ -43,3 +43,4 @@ class Alert(BaseModel):
     why: str
     action: Action
     source: AlertSource
+    mapbox_context_ref: str | None = None
