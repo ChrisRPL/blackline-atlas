@@ -66,6 +66,11 @@ class StubAtlasService:
         return next(asset for asset in self.assets if asset.hero)
 
     def get_health(self) -> HealthResponse:
+        request = self._active_frame_request()
+        planner = ConfiguredSentinelEndpointSource(
+            current_endpoint=self.settings.simsat_current_endpoint,
+            baseline_endpoint=self.settings.simsat_baseline_endpoint,
+        )
         return HealthResponse(
             status="ok",
             app_env=self.settings.app_env,
@@ -74,11 +79,13 @@ class StubAtlasService:
                 self.settings.simsat_current_endpoint,
                 "current Sentinel endpoint not configured yet",
                 http_enabled=self.settings.simsat_current_http_enabled,
+                plan=planner.build_current_plan(request),
             ),
             simsat_baseline=self._dependency_state(
                 self.settings.simsat_baseline_endpoint,
                 "historical baseline endpoint not configured yet",
                 http_enabled=self.settings.simsat_baseline_http_enabled,
+                plan=planner.build_baseline_plan(request),
             ),
             mapbox=HealthDependency(
                 status="ready" if self.settings.mapbox_token_present else "not_configured",
@@ -180,8 +187,19 @@ class StubAtlasService:
         missing_detail: str,
         *,
         http_enabled: bool,
+        plan,
     ) -> HealthDependency:
         if endpoint:
+            if http_enabled and plan is not None:
+                if HttpSentinelPayloadTransport().fetch(plan) is not None:
+                    return HealthDependency(
+                        status="ready",
+                        detail=f"{endpoint} (http transport enabled)",
+                    )
+                return HealthDependency(
+                    status="degraded",
+                    detail=f"{endpoint} (http transport failed; fixture fallback active)",
+                )
             transport_mode = "http transport enabled" if http_enabled else "fixture transport"
             return HealthDependency(status="ready", detail=f"{endpoint} ({transport_mode})")
         return HealthDependency(status="not_configured", detail=missing_detail)

@@ -42,6 +42,25 @@ def build_api_client(
     return TestClient(create_app())
 
 
+def stub_sentinel_health_probe(
+    monkeypatch,
+    *,
+    current_status: int | None = None,
+    baseline_status: int | None = None,
+) -> None:
+    def fake_urlopen(url: str, timeout: float):
+        assert timeout == 5.0
+        if url.endswith("mode=current"):
+            assert current_status is not None
+            return _FakeHTTPResponse(body=b'{"ok":true}', status=current_status)
+        if url.endswith("mode=baseline"):
+            assert baseline_status is not None
+            return _FakeHTTPResponse(body=b'{"ok":true}', status=baseline_status)
+        raise AssertionError(f"unexpected url: {url}")
+
+    monkeypatch.setattr("app.services.sentinel_client.urlopen", fake_urlopen)
+
+
 def test_health_endpoint() -> None:
     response = client.get("/health")
 
@@ -112,6 +131,7 @@ def test_health_endpoint_reflects_fully_configured_sentinel_state(monkeypatch) -
 
 
 def test_health_endpoint_reflects_current_http_transport_opt_in(monkeypatch) -> None:
+    stub_sentinel_health_probe(monkeypatch, current_status=200)
     current_http_client = build_api_client(
         monkeypatch,
         simsat_current_endpoint="https://example.test/sentinel/current/",
@@ -133,6 +153,7 @@ def test_health_endpoint_reflects_current_http_transport_opt_in(monkeypatch) -> 
 
 
 def test_health_endpoint_reflects_baseline_http_transport_opt_in(monkeypatch) -> None:
+    stub_sentinel_health_probe(monkeypatch, baseline_status=200)
     baseline_http_client = build_api_client(
         monkeypatch,
         simsat_current_endpoint=None,
@@ -154,6 +175,7 @@ def test_health_endpoint_reflects_baseline_http_transport_opt_in(monkeypatch) ->
 
 
 def test_health_endpoint_reflects_fully_http_opted_in_sentinel_state(monkeypatch) -> None:
+    stub_sentinel_health_probe(monkeypatch, current_status=200, baseline_status=200)
     fully_http_client = build_api_client(
         monkeypatch,
         simsat_current_endpoint="https://example.test/sentinel/current/",
@@ -171,6 +193,67 @@ def test_health_endpoint_reflects_fully_http_opted_in_sentinel_state(monkeypatch
     assert fully_http_response.json()["simsat_baseline"]["status"] == "ready"
     assert fully_http_response.json()["simsat_baseline"]["detail"] == (
         "https://example.test/sentinel/baseline/ (http transport enabled)"
+    )
+    get_settings.cache_clear()
+
+
+def test_health_endpoint_reflects_degraded_current_http_transport(monkeypatch) -> None:
+    stub_sentinel_health_probe(monkeypatch, current_status=503)
+    degraded_client = build_api_client(
+        monkeypatch,
+        simsat_current_endpoint="https://example.test/sentinel/current/",
+        simsat_baseline_endpoint=None,
+        simsat_current_http_enabled=True,
+    )
+    degraded_response = degraded_client.get("/health")
+
+    assert degraded_response.status_code == 200
+    assert degraded_response.json()["simsat_current"]["status"] == "degraded"
+    assert degraded_response.json()["simsat_current"]["detail"] == (
+        "https://example.test/sentinel/current/ (http transport failed; fixture fallback active)"
+    )
+    assert degraded_response.json()["simsat_baseline"]["status"] == "not_configured"
+    get_settings.cache_clear()
+
+
+def test_health_endpoint_reflects_degraded_baseline_http_transport(monkeypatch) -> None:
+    stub_sentinel_health_probe(monkeypatch, baseline_status=503)
+    degraded_client = build_api_client(
+        monkeypatch,
+        simsat_current_endpoint=None,
+        simsat_baseline_endpoint="https://example.test/sentinel/baseline/",
+        simsat_baseline_http_enabled=True,
+    )
+    degraded_response = degraded_client.get("/health")
+
+    assert degraded_response.status_code == 200
+    assert degraded_response.json()["simsat_baseline"]["status"] == "degraded"
+    assert degraded_response.json()["simsat_baseline"]["detail"] == (
+        "https://example.test/sentinel/baseline/ (http transport failed; fixture fallback active)"
+    )
+    assert degraded_response.json()["simsat_current"]["status"] == "not_configured"
+    get_settings.cache_clear()
+
+
+def test_health_endpoint_reflects_fully_degraded_http_sentinel_state(monkeypatch) -> None:
+    stub_sentinel_health_probe(monkeypatch, current_status=503, baseline_status=503)
+    degraded_client = build_api_client(
+        monkeypatch,
+        simsat_current_endpoint="https://example.test/sentinel/current/",
+        simsat_baseline_endpoint="https://example.test/sentinel/baseline/",
+        simsat_current_http_enabled=True,
+        simsat_baseline_http_enabled=True,
+    )
+    degraded_response = degraded_client.get("/health")
+
+    assert degraded_response.status_code == 200
+    assert degraded_response.json()["simsat_current"]["status"] == "degraded"
+    assert degraded_response.json()["simsat_current"]["detail"] == (
+        "https://example.test/sentinel/current/ (http transport failed; fixture fallback active)"
+    )
+    assert degraded_response.json()["simsat_baseline"]["status"] == "degraded"
+    assert degraded_response.json()["simsat_baseline"]["detail"] == (
+        "https://example.test/sentinel/baseline/ (http transport failed; fixture fallback active)"
     )
     get_settings.cache_clear()
 
