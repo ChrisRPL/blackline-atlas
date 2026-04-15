@@ -15,6 +15,10 @@ class SentinelSource(Protocol):
     def get_baseline_frame(self, request: FrameRequest) -> FrameEnvelope: ...
 
 
+class SentinelPayloadTransport(Protocol):
+    def fetch(self, plan: SentinelRequestPlan) -> Mapping[str, object] | None: ...
+
+
 @dataclass(frozen=True)
 class SentinelRequestPlan:
     endpoint: str
@@ -126,15 +130,23 @@ class CurrentSentinelAdapter:
         *,
         planner: ConfiguredSentinelEndpointSource,
         fallback: SentinelSource,
+        transport: SentinelPayloadTransport | None = None,
     ) -> None:
         self._planner = planner
         self._fallback = fallback
+        self._transport = transport
 
     def get_current_frame(self, request: FrameRequest) -> FrameEnvelope:
-        envelope = self._fallback.get_current_frame(request)
         plan = self._planner.build_current_plan(request)
         if plan is None:
-            return envelope
+            return self._fallback.get_current_frame(request)
+
+        if self._transport is not None:
+            payload = self._transport.fetch(plan)
+            if payload is not None:
+                return self._planner.build_current_envelope(request, payload)
+
+        envelope = self._fallback.get_current_frame(request)
 
         return envelope.model_copy(
             update={

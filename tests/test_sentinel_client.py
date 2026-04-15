@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from dataclasses import dataclass, field
+
 from app.core.config import Settings
 from app.schemas.asset import Asset
 from app.services.frame_types import FrameRequest
@@ -9,6 +11,7 @@ from app.services.sentinel_client import (
     ConfiguredSentinelEndpointSource,
     CurrentSentinelAdapter,
     FixtureSentinelSource,
+    SentinelRequestPlan,
 )
 
 
@@ -175,6 +178,69 @@ def test_current_sentinel_adapter_returns_fixture_frame_without_current_endpoint
     assert current.frame.source == "sentinel_current_stub"
 
 
+def test_current_sentinel_adapter_uses_transport_payload_when_available() -> None:
+    transport = _FakeTransport(
+        payload={
+            "frame_id": "live_cur_demo_port_01_20260415",
+            "captured_at": "2026-04-15T07:10:00Z",
+            "image_ref": "live/demo_port_01/current.png",
+            "cloud_cover": 0.11,
+            "baseline_frame_id": "base_demo_port_01_20250901",
+            "overlay_ref": "live/demo_port_01/overlay.png",
+            "accepted_for_alerting": True,
+            "filter_reason": "accepted",
+        }
+    )
+    adapter = CurrentSentinelAdapter(
+        planner=ConfiguredSentinelEndpointSource(
+            current_endpoint="https://example.test/sentinel/current/",
+            baseline_endpoint=None,
+        ),
+        fallback=FixtureSentinelSource(_scenarios()),
+        transport=transport,
+    )
+    request = FrameRequest(asset_id="demo_port_01", scenario_id="hero_port_disruption")
+
+    current = adapter.get_current_frame(request)
+    baseline = adapter.get_baseline_frame(request)
+
+    assert len(transport.plans) == 1
+    assert transport.plans[0].url == (
+        "https://example.test/sentinel/current"
+        "?asset_id=demo_port_01&scenario_id=hero_port_disruption&mode=current"
+    )
+    assert current.frame.frame_id == "live_cur_demo_port_01_20260415"
+    assert current.frame.asset_id == "demo_port_01"
+    assert current.frame.source == transport.plans[0].url
+    assert current.baseline_frame_id == "base_demo_port_01_20250901"
+    assert current.overlay_ref == "live/demo_port_01/overlay.png"
+    assert current.accepted_for_alerting is True
+    assert current.filter_reason == "accepted"
+    assert baseline.frame.frame_id == "base_demo_port_01_20250901"
+
+
+def test_current_sentinel_adapter_falls_back_when_transport_returns_none() -> None:
+    transport = _FakeTransport(payload=None)
+    adapter = CurrentSentinelAdapter(
+        planner=ConfiguredSentinelEndpointSource(
+            current_endpoint="https://example.test/sentinel/current/",
+            baseline_endpoint=None,
+        ),
+        fallback=FixtureSentinelSource(_scenarios()),
+        transport=transport,
+    )
+    request = FrameRequest(asset_id="demo_bridge_01", scenario_id="bridge_access_obstruction")
+
+    current = adapter.get_current_frame(request)
+
+    assert len(transport.plans) == 1
+    assert current.frame.frame_id == "cur_demo_bridge_01_20260414"
+    assert current.frame.source == (
+        "https://example.test/sentinel/current"
+        "?asset_id=demo_bridge_01&scenario_id=bridge_access_obstruction&mode=current"
+    )
+
+
 def test_baseline_sentinel_adapter_uses_configured_plan_and_fixture_fallback() -> None:
     adapter = BaselineSentinelAdapter(
         planner=ConfiguredSentinelEndpointSource(
@@ -245,3 +311,13 @@ def _scenarios():
         hero_asset=hero_asset,
         bridge_asset=bridge_asset,
     )
+
+
+@dataclass
+class _FakeTransport:
+    payload: dict[str, object] | None
+    plans: list[SentinelRequestPlan] = field(default_factory=list)
+
+    def fetch(self, plan: SentinelRequestPlan) -> dict[str, object] | None:
+        self.plans.append(plan)
+        return self.payload
