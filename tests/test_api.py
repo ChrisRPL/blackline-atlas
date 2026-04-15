@@ -2,7 +2,8 @@ from __future__ import annotations
 
 from fastapi.testclient import TestClient
 
-from app.main import app
+from app.core.config import get_settings
+from app.main import app, create_app
 
 client = TestClient(app)
 
@@ -134,3 +135,55 @@ def test_replay_prefers_explicit_scenario_id_over_asset_hint() -> None:
     assert metrics.json()["alerts_emitted"] == 2
     assert metrics.json()["raw_frames_suppressed"] == 86
     assert metrics.json()["downlink_rate"] == 0.023
+
+
+def test_api_uses_configured_sentinel_adapters_through_replay_switch(tmp_path, monkeypatch) -> None:
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setenv("SIMSAT_CURRENT_ENDPOINT", "https://example.test/sentinel/current/")
+    monkeypatch.setenv("SIMSAT_BASELINE_ENDPOINT", "https://example.test/sentinel/baseline/")
+    get_settings.cache_clear()
+    api_client = TestClient(create_app())
+
+    start_response = api_client.post(
+        "/replay/start",
+        json={
+            "asset_id": "demo_bridge_01",
+            "scenario_id": "bridge_access_obstruction",
+        },
+    )
+    current_frame = api_client.get("/frames/current")
+    baseline_frame = api_client.get("/frames/baseline")
+
+    assert start_response.status_code == 200
+    assert start_response.json()["scenario_id"] == "bridge_access_obstruction"
+    assert start_response.json()["asset_id"] == "demo_bridge_01"
+    assert current_frame.status_code == 200
+    assert current_frame.json()["frame"]["source"] == (
+        "https://example.test/sentinel/current"
+        "?asset_id=demo_bridge_01&scenario_id=bridge_access_obstruction&mode=current"
+    )
+    assert baseline_frame.status_code == 200
+    assert baseline_frame.json()["frame"]["source"] == (
+        "https://example.test/sentinel/baseline"
+        "?asset_id=demo_bridge_01&scenario_id=bridge_access_obstruction&mode=baseline"
+    )
+    assert current_frame.json()["frame"]["image_ref"] is not None
+    assert baseline_frame.json()["frame"]["image_ref"] is not None
+    assert tmp_path.joinpath(
+        ".cache",
+        "frames",
+        "demo_bridge_01",
+        "bridge_access_obstruction",
+        "current",
+        "cur_demo_bridge_01_20260414",
+        "metadata.json",
+    ).exists()
+    assert tmp_path.joinpath(
+        ".cache",
+        "frames",
+        "demo_bridge_01",
+        "bridge_access_obstruction",
+        "baseline",
+        "base_demo_bridge_01_20251012",
+        "metadata.json",
+    ).exists()
