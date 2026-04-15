@@ -88,10 +88,7 @@ class StubAtlasService:
                 http_enabled=self.settings.simsat_baseline_http_enabled,
                 plan=planner.build_baseline_plan(request),
             ),
-            mapbox=HealthDependency(
-                status="ready" if self.settings.mapbox_token_present else "not_configured",
-                detail="token present" if self.settings.mapbox_token_present else "token missing",
-            ),
+            mapbox=self._mapbox_dependency_state(),
         )
 
     def list_assets(self) -> list[Asset]:
@@ -157,7 +154,7 @@ class StubAtlasService:
         if not decision.accepted:
             return []
 
-        if not self.settings.mapbox_token_present:
+        if not self.settings.mapbox_token_present or not self.settings.mapbox_context_enabled:
             return scenario.alerts
 
         return [self._attach_mapbox_context(alert) for alert in scenario.alerts]
@@ -207,6 +204,22 @@ class StubAtlasService:
             transport_mode = "http transport enabled" if http_enabled else "fixture transport"
             return HealthDependency(status="ready", detail=f"{endpoint} ({transport_mode})")
         return HealthDependency(status="not_configured", detail=missing_detail)
+
+    def _mapbox_dependency_state(self) -> HealthDependency:
+        if not self.settings.mapbox_token_present:
+            return HealthDependency(
+                status="not_configured",
+                detail="token missing; inspection context disabled",
+            )
+        if self.settings.mapbox_context_enabled:
+            return HealthDependency(
+                status="ready",
+                detail="token present; inspection context enabled",
+            )
+        return HealthDependency(
+            status="ready",
+            detail="token present; inspection context disabled by config",
+        )
 
     def _attach_mapbox_context(self, alert: Alert) -> Alert:
         context_path = self._mapbox_context_path(alert)

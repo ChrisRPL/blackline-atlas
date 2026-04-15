@@ -19,6 +19,7 @@ def build_api_client(
     simsat_baseline_endpoint: str | None,
     simsat_current_http_enabled: bool = False,
     simsat_baseline_http_enabled: bool = False,
+    mapbox_context_enabled: bool | None = None,
 ) -> TestClient:
     if simsat_current_endpoint is None:
         monkeypatch.delenv("SIMSAT_CURRENT_ENDPOINT", raising=False)
@@ -39,6 +40,13 @@ def build_api_client(
         monkeypatch.setenv("SIMSAT_BASELINE_HTTP_ENABLED", "true")
     else:
         monkeypatch.delenv("SIMSAT_BASELINE_HTTP_ENABLED", raising=False)
+
+    if mapbox_context_enabled is None:
+        monkeypatch.delenv("MAPBOX_CONTEXT_ENABLED", raising=False)
+    elif mapbox_context_enabled:
+        monkeypatch.setenv("MAPBOX_CONTEXT_ENABLED", "true")
+    else:
+        monkeypatch.setenv("MAPBOX_CONTEXT_ENABLED", "false")
 
     get_settings.cache_clear()
     return TestClient(create_app())
@@ -280,7 +288,9 @@ def test_health_endpoint_reflects_unconfigured_dependencies(tmp_path, monkeypatc
         "historical baseline endpoint not configured yet"
     )
     assert unconfigured_response.json()["mapbox"]["status"] == "not_configured"
-    assert unconfigured_response.json()["mapbox"]["detail"] == "token missing"
+    assert unconfigured_response.json()["mapbox"]["detail"] == (
+        "token missing; inspection context disabled"
+    )
     get_settings.cache_clear()
 
 
@@ -296,7 +306,9 @@ def test_health_endpoint_reflects_configured_mapbox_token(tmp_path, monkeypatch)
 
     assert configured_response.status_code == 200
     assert configured_response.json()["mapbox"]["status"] == "ready"
-    assert configured_response.json()["mapbox"]["detail"] == "token present"
+    assert configured_response.json()["mapbox"]["detail"] == (
+        "token present; inspection context enabled"
+    )
     get_settings.cache_clear()
 
 
@@ -314,7 +326,28 @@ def test_health_endpoint_reflects_fully_ready_dependencies(tmp_path, monkeypatch
     assert ready_response.json()["simsat_current"]["status"] == "ready"
     assert ready_response.json()["simsat_baseline"]["status"] == "ready"
     assert ready_response.json()["mapbox"]["status"] == "ready"
-    assert ready_response.json()["mapbox"]["detail"] == "token present"
+    assert ready_response.json()["mapbox"]["detail"] == (
+        "token present; inspection context enabled"
+    )
+    get_settings.cache_clear()
+
+
+def test_health_endpoint_reflects_disabled_mapbox_context_config(tmp_path, monkeypatch) -> None:
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setenv("MAPBOX_TOKEN", "test-mapbox-token")
+    disabled_client = build_api_client(
+        monkeypatch,
+        simsat_current_endpoint=None,
+        simsat_baseline_endpoint=None,
+        mapbox_context_enabled=False,
+    )
+    disabled_response = disabled_client.get("/health")
+
+    assert disabled_response.status_code == 200
+    assert disabled_response.json()["mapbox"]["status"] == "ready"
+    assert disabled_response.json()["mapbox"]["detail"] == (
+        "token present; inspection context disabled by config"
+    )
     get_settings.cache_clear()
 
 
@@ -626,6 +659,36 @@ def test_alerts_endpoint_attaches_mapbox_context_when_token_present(tmp_path, mo
         "blk_00017",
         "context.png",
     ).exists()
+    get_settings.cache_clear()
+
+
+def test_alerts_endpoint_skips_mapbox_context_when_disabled_by_env(tmp_path, monkeypatch) -> None:
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setenv("MAPBOX_TOKEN", "test-mapbox-token")
+    api_client = build_api_client(
+        monkeypatch,
+        simsat_current_endpoint=None,
+        simsat_baseline_endpoint=None,
+        mapbox_context_enabled=False,
+    )
+
+    alerts = api_client.get("/alerts")
+    health = api_client.get("/health")
+
+    assert alerts.status_code == 200
+    assert alerts.json()[0]["alert_id"] == "blk_00017"
+    assert alerts.json()[0]["mapbox_context_ref"] is None
+    assert not tmp_path.joinpath(
+        ".cache",
+        "mapbox",
+        "demo_port_01",
+        "blk_00017",
+        "context.png",
+    ).exists()
+    assert health.status_code == 200
+    assert health.json()["mapbox"]["detail"] == (
+        "token present; inspection context disabled by config"
+    )
     get_settings.cache_clear()
 
 

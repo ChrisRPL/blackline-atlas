@@ -31,10 +31,14 @@ class Settings:
     watchlist_path: str | None
     simsat_current_http_enabled: bool = False
     simsat_baseline_http_enabled: bool = False
+    mapbox_context_enabled: bool = True
 
 
-def env_flag(name: str) -> bool:
-    return os.getenv(name, "").strip().lower() in {"1", "true", "yes", "on"}
+def env_flag(name: str, default: bool = False) -> bool:
+    raw = os.getenv(name)
+    if raw is None or raw.strip() == "":
+        return default
+    return raw.strip().lower() in {"1", "true", "yes", "on"}
 
 
 @lru_cache(maxsize=1)
@@ -50,4 +54,5 @@ def get_settings() -> Settings:
         watchlist_path=os.getenv("WATCHLIST_PATH") or None,
         simsat_current_http_enabled=env_flag("SIMSAT_CURRENT_HTTP_ENABLED"),
         simsat_baseline_http_enabled=env_flag("SIMSAT_BASELINE_HTTP_ENABLED"),
+        mapbox_context_enabled=env_flag("MAPBOX_CONTEXT_ENABLED", default=True),
     )
