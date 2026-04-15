@@ -208,13 +208,18 @@ class StubAtlasService:
             baseline_endpoint=self.settings.simsat_baseline_endpoint,
         )
         fallback = FixtureSentinelSource(self.scenarios)
+        transport = FixtureSentinelPayloadTransport(self.scenarios)
         return _CompositeSentinelFrameClient(
             current=CurrentSentinelAdapter(
                 planner=planner,
                 fallback=fallback,
-                transport=FixtureSentinelPayloadTransport(self.scenarios),
+                transport=transport,
             ),
-            baseline=BaselineSentinelAdapter(planner=planner, fallback=fallback),
+            baseline=BaselineSentinelAdapter(
+                planner=planner,
+                fallback=fallback,
+                transport=transport,
+            ),
         )
 
 

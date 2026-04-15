@@ -6,6 +6,7 @@ from pathlib import Path
 from app.core.config import Settings
 from app.schemas.replay import ReplayStartRequest
 from app.services.frame_filters import FrameFilterPolicy
+from app.services.sentinel_client import FixtureSentinelPayloadTransport
 from app.services.stub import StubAtlasService
 
 
@@ -217,6 +218,50 @@ def test_stub_service_keeps_opt_in_sentinel_wiring_across_replay_switch(
         "base_demo_bridge_01_20251012",
         "metadata.json",
     ).exists()
+
+
+def test_stub_service_uses_fixture_payload_transport_for_baseline_when_configured(
+    tmp_path: Path, monkeypatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+
+    def fake_fetch(self, plan):
+        if plan.params["mode"] != "baseline":
+            return None
+        return {
+            "frame_id": "live_base_demo_bridge_01_20251012",
+            "captured_at": "2025-10-12T09:15:00Z",
+            "image_ref": "live/demo_bridge_01/baseline.png",
+            "cloud_cover": 0.02,
+        }
+
+    monkeypatch.setattr(FixtureSentinelPayloadTransport, "fetch", fake_fetch)
+    service = StubAtlasService(
+        Settings(
+            app_env="test",
+            app_port=8000,
+            model_version="lfm2.5-vl-450m-prompted",
+            simsat_current_endpoint="https://example.test/sentinel/current/",
+            simsat_baseline_endpoint="https://example.test/sentinel/baseline/",
+            mapbox_token_present=False,
+            watchlist_path=None,
+        )
+    )
+    service.start_replay(
+        ReplayStartRequest(
+            asset_id="demo_bridge_01",
+            scenario_id="bridge_access_obstruction",
+        )
+    )
+
+    baseline = service.get_baseline_frame()
+
+    assert baseline.frame.frame_id == "live_base_demo_bridge_01_20251012"
+    assert baseline.frame.source == (
+        "https://example.test/sentinel/baseline"
+        "?asset_id=demo_bridge_01&scenario_id=bridge_access_obstruction&mode=baseline"
+    )
+    assert baseline.frame.image_ref is not None
 
 
 def test_stub_service_loads_assets_from_watchlist_manifest(tmp_path: Path) -> None:
