@@ -123,8 +123,14 @@ def test_replay_prefers_explicit_scenario_id_over_asset_hint() -> None:
 
     current_frame = client.get("/frames/current")
     alerts = client.get("/alerts")
+    metrics = client.get("/metrics")
 
     assert current_frame.status_code == 200
     assert current_frame.json()["frame"]["asset_id"] == "demo_bridge_01"
     assert alerts.status_code == 200
     assert alerts.json()[0]["alert_id"] == "blk_00018"
+    assert metrics.status_code == 200
+    assert metrics.json()["frames_scanned"] == 88
+    assert metrics.json()["alerts_emitted"] == 2
+    assert metrics.json()["raw_frames_suppressed"] == 86
+    assert metrics.json()["downlink_rate"] == 0.023
