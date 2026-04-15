@@ -155,6 +155,24 @@ def test_health_endpoint_reflects_fully_ready_dependencies(tmp_path, monkeypatch
     get_settings.cache_clear()
 
 
+def test_health_endpoint_reflects_default_identity(tmp_path, monkeypatch) -> None:
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.delenv("APP_ENV", raising=False)
+    monkeypatch.delenv("MODEL_VERSION", raising=False)
+    default_client = build_api_client(
+        monkeypatch,
+        simsat_current_endpoint=None,
+        simsat_baseline_endpoint=None,
+    )
+    default_response = default_client.get("/health")
+
+    assert default_response.status_code == 200
+    assert default_response.json()["app_env"] == "development"
+    assert default_response.json()["model_backend"]["status"] == "ready"
+    assert default_response.json()["model_backend"]["detail"] == "lfm2.5-vl-450m-prompted"
+    get_settings.cache_clear()
+
+
 def test_assets_endpoint_returns_seeded_assets() -> None:
     response = client.get("/assets")
 
