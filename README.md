@@ -11,7 +11,7 @@ Blackline Atlas downlinks operator-ready disruption alerts.
 
 This repo is optimized for:
 - a narrow, credible civilian monitoring scope
-- one unforgettable end-to-end demo
+- one clear end-to-end demonstration path
 - structured outputs over chatty text
 - deterministic replay and cached fallback paths
 
@@ -29,10 +29,9 @@ Do not turn this into:
 This repo now contains:
 - a FastAPI backend skeleton
 - typed schemas for assets, frames, replay, metrics, and alerts
-- stub routes for the core product loop
+- routes for the core product loop
 - placeholder training scripts
-- smoke tests for API startup
-- local support docs and wiki notes stay untracked by design
+- tests for API and service behavior
 
 ## Repo layout
 
@@ -76,11 +75,8 @@ Then open `http://127.0.0.1:8000/docs`.
 
 ## Hugging Face workflows
 
-This project can lean on Hugging Face skills for:
+This project can optionally use Hugging Face tooling for:
 - dataset creation
 - evaluation
 - training on HF Jobs
 - Hub artifact handling
-
-In this Codex environment, Hugging Face skills are already available to invoke when needed.
-If you want a local checkout of [`huggingface/skills`](https://github.com/huggingface/skills), keep it in `vendor/huggingface-skills/`; that path is gitignored on purpose.
