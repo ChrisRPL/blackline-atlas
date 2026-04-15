@@ -16,6 +16,12 @@ from app.services.frame_client import CachedFrameClient, FixtureFrameClient
 from app.services.frame_filters import FrameFilterPolicy
 from app.services.frame_types import FrameRequest
 from app.services.scenario_fixtures import ScenarioFixture, build_stub_scenarios
+from app.services.sentinel_client import (
+    BaselineSentinelAdapter,
+    ConfiguredSentinelEndpointSource,
+    CurrentSentinelAdapter,
+    FixtureSentinelSource,
+)
 from app.services.watchlist_loader import load_watchlist_assets
 
 
@@ -41,7 +47,7 @@ class StubAtlasService:
             bridge_asset=self._asset_by_id("demo_bridge_01"),
         )
         self.frame_client = CachedFrameClient(
-            delegate=FixtureFrameClient(self.scenarios),
+            delegate=self._frame_delegate(),
             cache_layout=FrameCacheLayout(),
         )
         self.baseline_comparator = FixtureBaselineComparator()
@@ -191,3 +197,29 @@ class StubAtlasService:
             return self.scenarios["bridge_access_obstruction"]
 
         return self.scenarios["hero_port_disruption"]
+
+    def _frame_delegate(self):
+        if not self.settings.simsat_current_endpoint and not self.settings.simsat_baseline_endpoint:
+            return FixtureFrameClient(self.scenarios)
+
+        planner = ConfiguredSentinelEndpointSource(
+            current_endpoint=self.settings.simsat_current_endpoint,
+            baseline_endpoint=self.settings.simsat_baseline_endpoint,
+        )
+        fallback = FixtureSentinelSource(self.scenarios)
+        return _CompositeSentinelFrameClient(
+            current=CurrentSentinelAdapter(planner=planner, fallback=fallback),
+            baseline=BaselineSentinelAdapter(planner=planner, fallback=fallback),
+        )
+
+
+@dataclass(frozen=True)
+class _CompositeSentinelFrameClient:
+    current: CurrentSentinelAdapter | FixtureFrameClient
+    baseline: BaselineSentinelAdapter | FixtureFrameClient
+
+    def get_current_frame(self, request: FrameRequest) -> FrameEnvelope:
+        return self.current.get_current_frame(request)
+
+    def get_baseline_frame(self, request: FrameRequest) -> FrameEnvelope:
+        return self.baseline.get_baseline_frame(request)
