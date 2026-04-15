@@ -62,7 +62,7 @@ def test_health_endpoint_reflects_current_only_sentinel_config(monkeypatch) -> N
     assert current_response.status_code == 200
     assert current_response.json()["simsat_current"]["status"] == "ready"
     assert current_response.json()["simsat_current"]["detail"] == (
-        "https://example.test/sentinel/current/"
+        "https://example.test/sentinel/current/ (fixture transport)"
     )
     assert current_response.json()["simsat_baseline"]["status"] == "not_configured"
     assert current_response.json()["simsat_baseline"]["detail"] == (
@@ -86,7 +86,7 @@ def test_health_endpoint_reflects_baseline_only_sentinel_config(monkeypatch) -> 
     )
     assert baseline_response.json()["simsat_baseline"]["status"] == "ready"
     assert baseline_response.json()["simsat_baseline"]["detail"] == (
-        "https://example.test/sentinel/baseline/"
+        "https://example.test/sentinel/baseline/ (fixture transport)"
     )
     get_settings.cache_clear()
 
@@ -102,11 +102,75 @@ def test_health_endpoint_reflects_fully_configured_sentinel_state(monkeypatch) -
     assert configured_response.status_code == 200
     assert configured_response.json()["simsat_current"]["status"] == "ready"
     assert configured_response.json()["simsat_current"]["detail"] == (
-        "https://example.test/sentinel/current/"
+        "https://example.test/sentinel/current/ (fixture transport)"
     )
     assert configured_response.json()["simsat_baseline"]["status"] == "ready"
     assert configured_response.json()["simsat_baseline"]["detail"] == (
-        "https://example.test/sentinel/baseline/"
+        "https://example.test/sentinel/baseline/ (fixture transport)"
+    )
+    get_settings.cache_clear()
+
+
+def test_health_endpoint_reflects_current_http_transport_opt_in(monkeypatch) -> None:
+    current_http_client = build_api_client(
+        monkeypatch,
+        simsat_current_endpoint="https://example.test/sentinel/current/",
+        simsat_baseline_endpoint=None,
+        simsat_current_http_enabled=True,
+    )
+    current_http_response = current_http_client.get("/health")
+
+    assert current_http_response.status_code == 200
+    assert current_http_response.json()["simsat_current"]["status"] == "ready"
+    assert current_http_response.json()["simsat_current"]["detail"] == (
+        "https://example.test/sentinel/current/ (http transport enabled)"
+    )
+    assert current_http_response.json()["simsat_baseline"]["status"] == "not_configured"
+    assert current_http_response.json()["simsat_baseline"]["detail"] == (
+        "historical baseline endpoint not configured yet"
+    )
+    get_settings.cache_clear()
+
+
+def test_health_endpoint_reflects_baseline_http_transport_opt_in(monkeypatch) -> None:
+    baseline_http_client = build_api_client(
+        monkeypatch,
+        simsat_current_endpoint=None,
+        simsat_baseline_endpoint="https://example.test/sentinel/baseline/",
+        simsat_baseline_http_enabled=True,
+    )
+    baseline_http_response = baseline_http_client.get("/health")
+
+    assert baseline_http_response.status_code == 200
+    assert baseline_http_response.json()["simsat_current"]["status"] == "not_configured"
+    assert baseline_http_response.json()["simsat_current"]["detail"] == (
+        "current Sentinel endpoint not configured yet"
+    )
+    assert baseline_http_response.json()["simsat_baseline"]["status"] == "ready"
+    assert baseline_http_response.json()["simsat_baseline"]["detail"] == (
+        "https://example.test/sentinel/baseline/ (http transport enabled)"
+    )
+    get_settings.cache_clear()
+
+
+def test_health_endpoint_reflects_fully_http_opted_in_sentinel_state(monkeypatch) -> None:
+    fully_http_client = build_api_client(
+        monkeypatch,
+        simsat_current_endpoint="https://example.test/sentinel/current/",
+        simsat_baseline_endpoint="https://example.test/sentinel/baseline/",
+        simsat_current_http_enabled=True,
+        simsat_baseline_http_enabled=True,
+    )
+    fully_http_response = fully_http_client.get("/health")
+
+    assert fully_http_response.status_code == 200
+    assert fully_http_response.json()["simsat_current"]["status"] == "ready"
+    assert fully_http_response.json()["simsat_current"]["detail"] == (
+        "https://example.test/sentinel/current/ (http transport enabled)"
+    )
+    assert fully_http_response.json()["simsat_baseline"]["status"] == "ready"
+    assert fully_http_response.json()["simsat_baseline"]["detail"] == (
+        "https://example.test/sentinel/baseline/ (http transport enabled)"
     )
     get_settings.cache_clear()
 

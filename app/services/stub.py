@@ -73,10 +73,12 @@ class StubAtlasService:
             simsat_current=self._dependency_state(
                 self.settings.simsat_current_endpoint,
                 "current Sentinel endpoint not configured yet",
+                http_enabled=self.settings.simsat_current_http_enabled,
             ),
             simsat_baseline=self._dependency_state(
                 self.settings.simsat_baseline_endpoint,
                 "historical baseline endpoint not configured yet",
+                http_enabled=self.settings.simsat_baseline_http_enabled,
             ),
             mapbox=HealthDependency(
                 status="ready" if self.settings.mapbox_token_present else "not_configured",
@@ -172,9 +174,16 @@ class StubAtlasService:
             }
         )
 
-    def _dependency_state(self, endpoint: str | None, missing_detail: str) -> HealthDependency:
+    def _dependency_state(
+        self,
+        endpoint: str | None,
+        missing_detail: str,
+        *,
+        http_enabled: bool,
+    ) -> HealthDependency:
         if endpoint:
-            return HealthDependency(status="ready", detail=endpoint)
+            transport_mode = "http transport enabled" if http_enabled else "fixture transport"
+            return HealthDependency(status="ready", detail=f"{endpoint} ({transport_mode})")
         return HealthDependency(status="not_configured", detail=missing_detail)
 
     def _asset_by_id(self, asset_id: str) -> Asset:
