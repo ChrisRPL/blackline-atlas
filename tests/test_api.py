@@ -68,6 +68,9 @@ def test_default_frames_alerts_and_metrics_use_hero_scenario() -> None:
 
     assert metrics.status_code == 200
     assert metrics.json()["frames_scanned"] == 143
+    assert metrics.json()["alerts_emitted"] == 5
+    assert metrics.json()["raw_frames_suppressed"] == 138
+    assert metrics.json()["downlink_rate"] == 0.035
 
 
 def test_replay_switches_frames_alerts_and_metrics_to_selected_asset() -> None:
@@ -102,6 +105,8 @@ def test_replay_switches_frames_alerts_and_metrics_to_selected_asset() -> None:
     assert metrics.status_code == 200
     assert metrics.json()["frames_scanned"] == 88
     assert metrics.json()["alerts_emitted"] == 2
+    assert metrics.json()["raw_frames_suppressed"] == 86
+    assert metrics.json()["downlink_rate"] == 0.023
 
 
 def test_replay_prefers_explicit_scenario_id_over_asset_hint() -> None:
