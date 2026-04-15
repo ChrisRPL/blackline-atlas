@@ -137,6 +137,56 @@ def test_stub_service_uses_current_adapter_and_fixture_baseline_with_current_onl
     assert baseline.frame.image_ref is not None
 
 
+def test_stub_service_can_opt_in_current_http_transport(tmp_path: Path, monkeypatch) -> None:
+    monkeypatch.chdir(tmp_path)
+
+    def fake_urlopen(url: str, timeout: float):
+        assert url == (
+            "https://example.test/sentinel/current"
+            "?asset_id=demo_port_01&scenario_id=hero_port_disruption&mode=current"
+        )
+        assert timeout == 5.0
+        return _FakeHTTPResponse(
+            body=json.dumps(
+                {
+                    "frame_id": "live_cur_demo_port_01_20260415",
+                    "captured_at": "2026-04-15T07:10:00Z",
+                    "image_ref": "live/demo_port_01/current.png",
+                    "cloud_cover": 0.11,
+                    "baseline_frame_id": "base_demo_port_01_20250901",
+                    "overlay_ref": "live/demo_port_01/overlay.png",
+                    "accepted_for_alerting": True,
+                    "filter_reason": "accepted",
+                }
+            ).encode("utf-8")
+        )
+
+    monkeypatch.setattr("app.services.sentinel_client.urlopen", fake_urlopen)
+    service = StubAtlasService(
+        Settings(
+            app_env="test",
+            app_port=8000,
+            model_version="lfm2.5-vl-450m-prompted",
+            simsat_current_endpoint="https://example.test/sentinel/current/",
+            simsat_baseline_endpoint=None,
+            mapbox_token_present=False,
+            watchlist_path=None,
+            simsat_current_http_enabled=True,
+        )
+    )
+
+    current = service.get_current_frame()
+    baseline = service.get_baseline_frame()
+
+    assert current.frame.frame_id == "live_cur_demo_port_01_20260415"
+    assert current.frame.source == (
+        "https://example.test/sentinel/current"
+        "?asset_id=demo_port_01&scenario_id=hero_port_disruption&mode=current"
+    )
+    assert current.frame.image_ref is not None
+    assert baseline.frame.source == "sentinel_baseline_stub"
+
+
 def test_stub_service_uses_baseline_adapter_and_fixture_current_with_baseline_only_endpoint(
     tmp_path: Path, monkeypatch
 ) -> None:
@@ -308,3 +358,21 @@ def test_stub_service_loads_assets_from_watchlist_manifest(tmp_path: Path) -> No
     assert [asset.asset_id for asset in assets] == ["demo_port_01", "demo_bridge_01"]
     assert assets[0].asset_name == "Manifest Grain Port"
     assert service.hero_asset.asset_name == "Manifest Grain Port"
+
+
+class _FakeHTTPResponse:
+    def __init__(self, *, body: bytes, status: int = 200) -> None:
+        self.status = status
+        self._body = body
+
+    def __enter__(self) -> _FakeHTTPResponse:
+        return self
+
+    def __exit__(self, exc_type, exc, tb) -> None:
+        return None
+
+    def read(self) -> bytes:
+        return self._body
+
+    def getcode(self) -> int:
+        return self.status

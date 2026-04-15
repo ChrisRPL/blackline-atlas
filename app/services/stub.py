@@ -22,6 +22,7 @@ from app.services.sentinel_client import (
     CurrentSentinelAdapter,
     FixtureSentinelPayloadTransport,
     FixtureSentinelSource,
+    HttpSentinelPayloadTransport,
 )
 from app.services.watchlist_loader import load_watchlist_assets
 
@@ -208,17 +209,22 @@ class StubAtlasService:
             baseline_endpoint=self.settings.simsat_baseline_endpoint,
         )
         fallback = FixtureSentinelSource(self.scenarios)
-        transport = FixtureSentinelPayloadTransport(self.scenarios)
+        fixture_transport = FixtureSentinelPayloadTransport(self.scenarios)
+        current_transport = (
+            HttpSentinelPayloadTransport()
+            if self.settings.simsat_current_http_enabled
+            else fixture_transport
+        )
         return _CompositeSentinelFrameClient(
             current=CurrentSentinelAdapter(
                 planner=planner,
                 fallback=fallback,
-                transport=transport,
+                transport=current_transport,
             ),
             baseline=BaselineSentinelAdapter(
                 planner=planner,
                 fallback=fallback,
-                transport=transport,
+                transport=fixture_transport,
             ),
         )
 

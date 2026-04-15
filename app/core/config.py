@@ -29,6 +29,11 @@ class Settings:
     simsat_baseline_endpoint: str | None
     mapbox_token_present: bool
     watchlist_path: str | None
+    simsat_current_http_enabled: bool = False
+
+
+def env_flag(name: str) -> bool:
+    return os.getenv(name, "").strip().lower() in {"1", "true", "yes", "on"}
 
 
 @lru_cache(maxsize=1)
@@ -42,4 +47,5 @@ def get_settings() -> Settings:
         simsat_baseline_endpoint=os.getenv("SIMSAT_BASELINE_ENDPOINT") or None,
         mapbox_token_present=bool(os.getenv("MAPBOX_TOKEN")),
         watchlist_path=os.getenv("WATCHLIST_PATH") or None,
+        simsat_current_http_enabled=env_flag("SIMSAT_CURRENT_HTTP_ENABLED"),
     )
