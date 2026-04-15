@@ -368,6 +368,12 @@
         line-height: 1.08;
       }
 
+      .snapshot-card h3 {
+        font-size: 1rem;
+        line-height: 1.18;
+        word-break: break-word;
+      }
+
       .aperture p {
         margin: 0.7rem 0 0;
         color: var(--muted);
@@ -379,6 +385,20 @@
         justify-content: space-between;
         align-items: flex-start;
         gap: 0.8rem;
+      }
+
+      .snapshot-compare {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 1rem;
+      }
+
+      .snapshot-card {
+        padding: 0.1rem 0;
+      }
+
+      .snapshot-card .snapshot-list {
+        grid-template-columns: 1fr;
       }
 
       .snapshot-status {
@@ -531,7 +551,8 @@
         .console,
         .lane-grid,
         .aperture-grid,
-        .snapshot-list {
+        .snapshot-list,
+        .snapshot-compare {
           grid-template-columns: 1fr;
         }
 
@@ -658,33 +679,74 @@
             <article class="aperture aperture-wide">
               <div class="snapshot-top">
                 <div>
-                  <p class="panel-kicker">Current frame snapshot</p>
-                  <h3 id="snapshot-title">Waiting for current frame</h3>
+                  <p class="panel-kicker">Frame comparison</p>
+                  <h3>Current / baseline</h3>
                 </div>
-                <p class="snapshot-status loading" id="snapshot-status">loading</p>
+                <p class="snapshot-status loading" id="compare-status">loading</p>
               </div>
-              <dl class="snapshot-list">
-                <div class="snapshot-row">
-                  <dt>Asset</dt>
-                  <dd id="snapshot-asset">-</dd>
-                </div>
-                <div class="snapshot-row">
-                  <dt>Captured</dt>
-                  <dd id="snapshot-captured">-</dd>
-                </div>
-                <div class="snapshot-row">
-                  <dt>Baseline ref</dt>
-                  <dd id="snapshot-baseline">-</dd>
-                </div>
-                <div class="snapshot-row">
-                  <dt>Overlay</dt>
-                  <dd id="snapshot-overlay">-</dd>
-                </div>
-                <div class="snapshot-row">
-                  <dt>Source</dt>
-                  <dd id="snapshot-source">-</dd>
-                </div>
-              </dl>
+              <div class="snapshot-compare">
+                <section class="snapshot-card">
+                  <p class="panel-kicker">Current frame snapshot</p>
+                  <h3 id="current-snapshot-title">Waiting for current frame</h3>
+                  <dl class="snapshot-list">
+                    <div class="snapshot-row">
+                      <dt>Status</dt>
+                      <dd id="current-snapshot-status">-</dd>
+                    </div>
+                    <div class="snapshot-row">
+                      <dt>Asset</dt>
+                      <dd id="current-snapshot-asset">-</dd>
+                    </div>
+                    <div class="snapshot-row">
+                      <dt>Captured</dt>
+                      <dd id="current-snapshot-captured">-</dd>
+                    </div>
+                    <div class="snapshot-row">
+                      <dt>Baseline ref</dt>
+                      <dd id="current-snapshot-baseline">-</dd>
+                    </div>
+                    <div class="snapshot-row">
+                      <dt>Overlay</dt>
+                      <dd id="current-snapshot-overlay">-</dd>
+                    </div>
+                    <div class="snapshot-row">
+                      <dt>Source</dt>
+                      <dd id="current-snapshot-source">-</dd>
+                    </div>
+                  </dl>
+                </section>
+
+                <section class="snapshot-card">
+                  <p class="panel-kicker">Baseline frame snapshot</p>
+                  <h3 id="baseline-snapshot-title">Waiting for baseline frame</h3>
+                  <dl class="snapshot-list">
+                    <div class="snapshot-row">
+                      <dt>Asset</dt>
+                      <dd id="baseline-snapshot-asset">-</dd>
+                    </div>
+                    <div class="snapshot-row">
+                      <dt>Captured</dt>
+                      <dd id="baseline-snapshot-captured">-</dd>
+                    </div>
+                    <div class="snapshot-row">
+                      <dt>Cloud cover</dt>
+                      <dd id="baseline-snapshot-cloud">-</dd>
+                    </div>
+                    <div class="snapshot-row">
+                      <dt>Frame ref</dt>
+                      <dd id="baseline-snapshot-frame">-</dd>
+                    </div>
+                    <div class="snapshot-row">
+                      <dt>Source</dt>
+                      <dd id="baseline-snapshot-source">-</dd>
+                    </div>
+                    <div class="snapshot-row">
+                      <dt>Image ref</dt>
+                      <dd id="baseline-snapshot-image">-</dd>
+                    </div>
+                  </dl>
+                </section>
+              </div>
             </article>
             <article class="aperture">
               <p class="panel-kicker">Alert desk</p>
@@ -714,6 +776,7 @@
     <script>
       const healthUrl = new URL("/health", window.location.origin);
       const currentFrameUrl = new URL("/frames/current", window.location.origin);
+      const baselineFrameUrl = new URL("/frames/baseline", window.location.origin);
 
       const appEnv = document.querySelector("#app-env");
       const healthStatus = document.querySelector("#health-status");
@@ -731,13 +794,21 @@
       const laneBaselineDetail = document.querySelector("#lane-baseline-detail");
       const laneMapbox = document.querySelector("#lane-mapbox");
       const laneMapboxDetail = document.querySelector("#lane-mapbox-detail");
-      const snapshotTitle = document.querySelector("#snapshot-title");
-      const snapshotStatus = document.querySelector("#snapshot-status");
-      const snapshotAsset = document.querySelector("#snapshot-asset");
-      const snapshotCaptured = document.querySelector("#snapshot-captured");
-      const snapshotBaseline = document.querySelector("#snapshot-baseline");
-      const snapshotOverlay = document.querySelector("#snapshot-overlay");
-      const snapshotSource = document.querySelector("#snapshot-source");
+      const compareStatus = document.querySelector("#compare-status");
+      const currentSnapshotTitle = document.querySelector("#current-snapshot-title");
+      const currentSnapshotStatus = document.querySelector("#current-snapshot-status");
+      const currentSnapshotAsset = document.querySelector("#current-snapshot-asset");
+      const currentSnapshotCaptured = document.querySelector("#current-snapshot-captured");
+      const currentSnapshotBaseline = document.querySelector("#current-snapshot-baseline");
+      const currentSnapshotOverlay = document.querySelector("#current-snapshot-overlay");
+      const currentSnapshotSource = document.querySelector("#current-snapshot-source");
+      const baselineSnapshotTitle = document.querySelector("#baseline-snapshot-title");
+      const baselineSnapshotAsset = document.querySelector("#baseline-snapshot-asset");
+      const baselineSnapshotCaptured = document.querySelector("#baseline-snapshot-captured");
+      const baselineSnapshotCloud = document.querySelector("#baseline-snapshot-cloud");
+      const baselineSnapshotFrame = document.querySelector("#baseline-snapshot-frame");
+      const baselineSnapshotSource = document.querySelector("#baseline-snapshot-source");
+      const baselineSnapshotImage = document.querySelector("#baseline-snapshot-image");
       const dependencyList = document.querySelector("#dependency-list");
 
       const boolLabel = (value) => (value ? "enabled" : "disabled");
@@ -774,6 +845,13 @@
           return ["suppressed", frameEnvelope.filter_reason || "suppressed"];
         }
         return ["degraded", "unknown"];
+      }
+
+      function formatCloudCover(value) {
+        if (value === null || value === undefined) {
+          return "unknown";
+        }
+        return `${Math.round(value * 100)}%`;
       }
 
       function laneMode(dep, enabled, kind) {
@@ -873,14 +951,25 @@
       function renderCurrentFrame(frameEnvelope) {
         const [statusClass, statusLabel] = currentFrameStatus(frameEnvelope);
 
-        snapshotTitle.textContent = frameEnvelope.frame.frame_id;
-        snapshotStatus.textContent = statusLabel;
-        snapshotStatus.className = `snapshot-status ${statusClass}`;
-        snapshotAsset.textContent = frameEnvelope.frame.asset_id;
-        snapshotCaptured.textContent = formatTimestamp(frameEnvelope.frame.captured_at);
-        snapshotBaseline.textContent = frameEnvelope.baseline_frame_id || "pending";
-        snapshotOverlay.textContent = trimRef(frameEnvelope.overlay_ref);
-        snapshotSource.textContent = frameEnvelope.frame.source;
+        currentSnapshotTitle.textContent = frameEnvelope.frame.frame_id;
+        currentSnapshotStatus.textContent = statusLabel;
+        currentSnapshotAsset.textContent = frameEnvelope.frame.asset_id;
+        currentSnapshotCaptured.textContent = formatTimestamp(frameEnvelope.frame.captured_at);
+        currentSnapshotBaseline.textContent = frameEnvelope.baseline_frame_id || "pending";
+        currentSnapshotOverlay.textContent = trimRef(frameEnvelope.overlay_ref);
+        currentSnapshotSource.textContent = frameEnvelope.frame.source;
+        compareStatus.textContent = statusLabel;
+        compareStatus.className = `snapshot-status ${statusClass}`;
+      }
+
+      function renderBaselineFrame(frameEnvelope) {
+        baselineSnapshotTitle.textContent = frameEnvelope.frame.frame_id;
+        baselineSnapshotAsset.textContent = frameEnvelope.frame.asset_id;
+        baselineSnapshotCaptured.textContent = formatTimestamp(frameEnvelope.frame.captured_at);
+        baselineSnapshotCloud.textContent = formatCloudCover(frameEnvelope.frame.cloud_cover);
+        baselineSnapshotFrame.textContent = frameEnvelope.frame.frame_id;
+        baselineSnapshotSource.textContent = frameEnvelope.frame.source;
+        baselineSnapshotImage.textContent = trimRef(frameEnvelope.frame.image_ref);
       }
 
       function renderFailure(error) {
@@ -912,14 +1001,25 @@
       }
 
       function renderCurrentFrameFailure(error) {
-        snapshotTitle.textContent = "Current frame unavailable";
-        snapshotStatus.textContent = "degraded";
-        snapshotStatus.className = "snapshot-status degraded";
-        snapshotAsset.textContent = "unknown";
-        snapshotCaptured.textContent = error.message;
-        snapshotBaseline.textContent = "unknown";
-        snapshotOverlay.textContent = "unknown";
-        snapshotSource.textContent = currentFrameUrl.pathname;
+        currentSnapshotTitle.textContent = "Current frame unavailable";
+        currentSnapshotStatus.textContent = "degraded";
+        currentSnapshotAsset.textContent = "unknown";
+        currentSnapshotCaptured.textContent = error.message;
+        currentSnapshotBaseline.textContent = "unknown";
+        currentSnapshotOverlay.textContent = "unknown";
+        currentSnapshotSource.textContent = currentFrameUrl.pathname;
+        compareStatus.textContent = "degraded";
+        compareStatus.className = "snapshot-status degraded";
+      }
+
+      function renderBaselineFrameFailure(error) {
+        baselineSnapshotTitle.textContent = "Baseline frame unavailable";
+        baselineSnapshotAsset.textContent = "unknown";
+        baselineSnapshotCaptured.textContent = error.message;
+        baselineSnapshotCloud.textContent = "unknown";
+        baselineSnapshotFrame.textContent = "unknown";
+        baselineSnapshotSource.textContent = baselineFrameUrl.pathname;
+        baselineSnapshotImage.textContent = "unknown";
       }
 
       async function loadJson(url) {
@@ -932,9 +1032,10 @@
       }
 
       async function boot() {
-        const [healthResult, currentFrameResult] = await Promise.allSettled([
+        const [healthResult, currentFrameResult, baselineFrameResult] = await Promise.allSettled([
           loadJson(healthUrl),
           loadJson(currentFrameUrl),
+          loadJson(baselineFrameUrl),
         ]);
 
         if (healthResult.status === "fulfilled") {
@@ -952,6 +1053,16 @@
             currentFrameResult.reason instanceof Error
               ? currentFrameResult.reason
               : new Error("Unknown current frame error"),
+          );
+        }
+
+        if (baselineFrameResult.status === "fulfilled") {
+          renderBaselineFrame(baselineFrameResult.value);
+        } else {
+          renderBaselineFrameFailure(
+            baselineFrameResult.reason instanceof Error
+              ? baselineFrameResult.reason
+              : new Error("Unknown baseline frame error"),
           );
         }
       }

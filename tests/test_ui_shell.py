@@ -16,4 +16,6 @@ def test_ui_shell_serves_same_origin_dashboard() -> None:
     assert "Blackline Atlas" in response.text
     assert "/health.config" in response.text
     assert "/frames/current" in response.text
+    assert "/frames/baseline" in response.text
     assert "Current frame snapshot" in response.text
+    assert "Baseline frame snapshot" in response.text

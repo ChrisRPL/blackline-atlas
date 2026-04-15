@@ -11,6 +11,7 @@ Current scope:
 - same-origin shell at `/ui`
 - reads `/health`
 - reads `/frames/current`
+- reads `/frames/baseline`
 - renders backend mode truth from `/health.config`
-- renders a read-only current-frame snapshot in the center pane
+- renders read-only current and baseline snapshots in the center pane
 - no replay controls or multi-pane live dashboard yet
