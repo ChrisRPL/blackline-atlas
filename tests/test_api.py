@@ -214,6 +214,31 @@ def test_replay_status_reflects_default_identity(tmp_path, monkeypatch) -> None:
     get_settings.cache_clear()
 
 
+def test_replay_status_reflects_started_identity(tmp_path, monkeypatch) -> None:
+    monkeypatch.chdir(tmp_path)
+    replay_client = build_api_client(
+        monkeypatch,
+        simsat_current_endpoint=None,
+        simsat_baseline_endpoint=None,
+    )
+    start_response = replay_client.post(
+        "/replay/start",
+        json={
+            "asset_id": "demo_bridge_01",
+            "scenario_id": "bridge_access_obstruction",
+        },
+    )
+    status_response = replay_client.get("/replay/status")
+
+    assert start_response.status_code == 200
+    assert status_response.status_code == 200
+    assert status_response.json()["running"] is True
+    assert status_response.json()["asset_id"] == "demo_bridge_01"
+    assert status_response.json()["scenario_id"] == "bridge_access_obstruction"
+    assert status_response.json()["hero_asset_id"] == "demo_port_01"
+    get_settings.cache_clear()
+
+
 def test_replay_status_resets_identity_after_stop(tmp_path, monkeypatch) -> None:
     monkeypatch.chdir(tmp_path)
     replay_client = build_api_client(
