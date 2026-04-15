@@ -30,6 +30,7 @@ This repo now contains:
 - a FastAPI backend skeleton
 - typed schemas for assets, frames, replay, metrics, and alerts
 - optional Mapbox inspection context on accepted alerts when a token is present
+- a same-origin UI shell at `/ui`
 - routes for the core product loop
 - placeholder training scripts
 - tests for API and service behavior
@@ -52,6 +53,7 @@ make dev
 ```
 
 Then open `http://127.0.0.1:8000/docs`.
+The read-only UI shell lives at `http://127.0.0.1:8000/ui`.
 
 ## Core API routes
 

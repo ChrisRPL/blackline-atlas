@@ -86,7 +86,7 @@ def test_ui_shell_is_served_same_origin() -> None:
     assert response.status_code == 200
     assert "text/html" in response.headers["content-type"]
     assert "Blackline Atlas" in response.text
-    assert 'fetch("/health"' in response.text
+    assert "/health.config" in response.text
 
 
 def test_health_endpoint_reflects_current_only_sentinel_config(monkeypatch) -> None:

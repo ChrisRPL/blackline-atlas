@@ -23,6 +23,7 @@ def create_app() -> FastAPI:
     app.include_router(router)
 
     @app.get("/ui", include_in_schema=False)
+    @app.get("/ui/", include_in_schema=False)
     def ui_shell() -> FileResponse:
         return FileResponse(UI_INDEX_PATH)
 
