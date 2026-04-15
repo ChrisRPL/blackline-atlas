@@ -137,6 +137,24 @@ def test_health_endpoint_reflects_configured_mapbox_token(tmp_path, monkeypatch)
     get_settings.cache_clear()
 
 
+def test_health_endpoint_reflects_fully_ready_dependencies(tmp_path, monkeypatch) -> None:
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setenv("MAPBOX_TOKEN", "test-mapbox-token")
+    ready_client = build_api_client(
+        monkeypatch,
+        simsat_current_endpoint="https://example.test/sentinel/current/",
+        simsat_baseline_endpoint="https://example.test/sentinel/baseline/",
+    )
+    ready_response = ready_client.get("/health")
+
+    assert ready_response.status_code == 200
+    assert ready_response.json()["simsat_current"]["status"] == "ready"
+    assert ready_response.json()["simsat_baseline"]["status"] == "ready"
+    assert ready_response.json()["mapbox"]["status"] == "ready"
+    assert ready_response.json()["mapbox"]["detail"] == "token present"
+    get_settings.cache_clear()
+
+
 def test_assets_endpoint_returns_seeded_assets() -> None:
     response = client.get("/assets")
 
