@@ -454,6 +454,8 @@ def test_api_uses_configured_sentinel_adapters_through_replay_switch(tmp_path, m
     )
     current_frame = api_client.get("/frames/current")
     baseline_frame = api_client.get("/frames/baseline")
+    alerts = api_client.get("/alerts")
+    metrics = api_client.get("/metrics")
 
     assert start_response.status_code == 200
     assert start_response.json()["scenario_id"] == "bridge_access_obstruction"
@@ -468,8 +470,22 @@ def test_api_uses_configured_sentinel_adapters_through_replay_switch(tmp_path, m
         "https://example.test/sentinel/baseline"
         "?asset_id=demo_bridge_01&scenario_id=bridge_access_obstruction&mode=baseline"
     )
+    assert current_frame.json()["accepted_for_alerting"] is True
+    assert current_frame.json()["filter_reason"] == "accepted"
+    assert current_frame.json()["overlay_ref"].endswith(
+        "/demo_bridge_01/bridge_access_obstruction/overlay/cur_demo_bridge_01_20260414/image.png"
+    )
     assert current_frame.json()["frame"]["image_ref"] is not None
     assert baseline_frame.json()["frame"]["image_ref"] is not None
+    assert alerts.status_code == 200
+    assert alerts.json()[0]["alert_id"] == "blk_00018"
+    assert alerts.json()[0]["action"] == "defer"
+    assert alerts.json()[0]["asset_id"] == "demo_bridge_01"
+    assert metrics.status_code == 200
+    assert metrics.json()["frames_scanned"] == 88
+    assert metrics.json()["alerts_emitted"] == 2
+    assert metrics.json()["raw_frames_suppressed"] == 86
+    assert metrics.json()["downlink_rate"] == 0.023
     assert tmp_path.joinpath(
         ".cache",
         "frames",
