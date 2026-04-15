@@ -75,3 +75,33 @@ class ConfiguredSentinelEndpointSource:
                 "mode": "baseline",
             },
         )
+
+
+class CurrentSentinelAdapter:
+    def __init__(
+        self,
+        *,
+        planner: ConfiguredSentinelEndpointSource,
+        fallback: SentinelSource,
+    ) -> None:
+        self._planner = planner
+        self._fallback = fallback
+
+    def get_current_frame(self, request: FrameRequest) -> FrameEnvelope:
+        envelope = self._fallback.get_current_frame(request)
+        plan = self._planner.build_current_plan(request)
+        if plan is None:
+            return envelope
+
+        return envelope.model_copy(
+            update={
+                "frame": envelope.frame.model_copy(
+                    update={
+                        "source": plan.url,
+                    }
+                )
+            }
+        )
+
+    def get_baseline_frame(self, request: FrameRequest) -> FrameEnvelope:
+        return self._fallback.get_baseline_frame(request)
