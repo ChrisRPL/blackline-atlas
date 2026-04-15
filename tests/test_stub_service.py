@@ -107,6 +107,62 @@ def test_stub_service_composes_sentinel_adapters_when_endpoints_are_configured(
     ).exists()
 
 
+def test_stub_service_uses_current_adapter_and_fixture_baseline_with_current_only_endpoint(
+    tmp_path: Path, monkeypatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    service = StubAtlasService(
+        Settings(
+            app_env="test",
+            app_port=8000,
+            model_version="lfm2.5-vl-450m-prompted",
+            simsat_current_endpoint="https://example.test/sentinel/current/",
+            simsat_baseline_endpoint=None,
+            mapbox_token_present=False,
+            watchlist_path=None,
+        )
+    )
+
+    current = service.get_current_frame()
+    baseline = service.get_baseline_frame()
+
+    assert current.frame.source == (
+        "https://example.test/sentinel/current"
+        "?asset_id=demo_port_01&scenario_id=hero_port_disruption&mode=current"
+    )
+    assert baseline.frame.source == "sentinel_baseline_stub"
+    assert current.frame.image_ref is not None
+    assert baseline.frame.image_ref is not None
+
+
+def test_stub_service_uses_baseline_adapter_and_fixture_current_with_baseline_only_endpoint(
+    tmp_path: Path, monkeypatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    service = StubAtlasService(
+        Settings(
+            app_env="test",
+            app_port=8000,
+            model_version="lfm2.5-vl-450m-prompted",
+            simsat_current_endpoint=None,
+            simsat_baseline_endpoint="https://example.test/sentinel/baseline/",
+            mapbox_token_present=False,
+            watchlist_path=None,
+        )
+    )
+
+    current = service.get_current_frame()
+    baseline = service.get_baseline_frame()
+
+    assert current.frame.source == "sentinel_current_stub"
+    assert baseline.frame.source == (
+        "https://example.test/sentinel/baseline"
+        "?asset_id=demo_port_01&scenario_id=hero_port_disruption&mode=baseline"
+    )
+    assert current.frame.image_ref is not None
+    assert baseline.frame.image_ref is not None
+
+
 def test_stub_service_loads_assets_from_watchlist_manifest(tmp_path: Path) -> None:
     manifest_path = tmp_path / "watchlist.json"
     manifest_path.write_text(
