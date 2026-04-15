@@ -542,6 +542,46 @@ def test_api_uses_baseline_transport_payload_with_baseline_only_endpoint(
     )
 
 
+def test_api_falls_back_from_malformed_current_transport_payload(tmp_path, monkeypatch) -> None:
+    monkeypatch.chdir(tmp_path)
+
+    def fake_fetch(self, plan):
+        if plan.params["mode"] != "current":
+            return None
+        return {
+            "captured_at": "2026-04-14T18:42:00Z",
+        }
+
+    monkeypatch.setattr(FixtureSentinelPayloadTransport, "fetch", fake_fetch)
+    api_client = build_api_client(
+        monkeypatch,
+        simsat_current_endpoint="https://example.test/sentinel/current/",
+        simsat_baseline_endpoint=None,
+    )
+
+    start_response = api_client.post(
+        "/replay/start",
+        json={
+            "asset_id": "demo_bridge_01",
+            "scenario_id": "bridge_access_obstruction",
+        },
+    )
+    current_frame = api_client.get("/frames/current")
+
+    assert start_response.status_code == 200
+    assert current_frame.status_code == 200
+    assert current_frame.json()["frame"]["frame_id"] == "cur_demo_bridge_01_20260414"
+    assert current_frame.json()["frame"]["source"] == (
+        "https://example.test/sentinel/current"
+        "?asset_id=demo_bridge_01&scenario_id=bridge_access_obstruction&mode=current"
+    )
+    assert current_frame.json()["accepted_for_alerting"] is True
+    assert current_frame.json()["filter_reason"] == "accepted"
+    assert current_frame.json()["overlay_ref"].endswith(
+        "/demo_bridge_01/bridge_access_obstruction/overlay/cur_demo_bridge_01_20260414/image.png"
+    )
+
+
 def test_api_uses_configured_sentinel_adapters_for_suppressed_replay_switch(
     tmp_path, monkeypatch
 ) -> None:
