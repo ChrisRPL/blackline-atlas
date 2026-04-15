@@ -4,6 +4,7 @@ from fastapi.testclient import TestClient
 
 from app.core.config import get_settings
 from app.main import app, create_app
+from app.services.frame_filters import FrameFilterPolicy
 
 client = TestClient(app)
 
@@ -284,6 +285,23 @@ def test_replay_stop_response_reflects_reset_identity(tmp_path, monkeypatch) -> 
     assert stop_response.json()["asset_id"] is None
     assert stop_response.json()["scenario_id"] is None
     assert stop_response.json()["hero_asset_id"] == "demo_port_01"
+    get_settings.cache_clear()
+
+
+def test_alerts_endpoint_returns_empty_list_for_suppressed_frame(tmp_path, monkeypatch) -> None:
+    monkeypatch.chdir(tmp_path)
+    api_client = build_api_client(
+        monkeypatch,
+        simsat_current_endpoint=None,
+        simsat_baseline_endpoint=None,
+    )
+    api_client.app.state.atlas_service.frame_filter_policy = FrameFilterPolicy(
+        cloud_cover_threshold=0.01
+    )
+    alerts_response = api_client.get("/alerts")
+
+    assert alerts_response.status_code == 200
+    assert alerts_response.json() == []
     get_settings.cache_clear()
 
 
