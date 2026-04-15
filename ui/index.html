@@ -1,0 +1,220 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Blackline Atlas</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #07111d;
+        --panel: rgba(9, 22, 36, 0.86);
+        --line: rgba(134, 160, 190, 0.2);
+        --text: #eff5fb;
+        --muted: #8ea4bd;
+        --accent: #72d8ff;
+        --ok: #8effbe;
+        --warn: #ffd580;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        font-family: "IBM Plex Sans", "Avenir Next", sans-serif;
+        color: var(--text);
+        background:
+          radial-gradient(circle at top, rgba(114, 216, 255, 0.16), transparent 34%),
+          linear-gradient(180deg, #091726 0%, var(--bg) 100%);
+      }
+
+      main {
+        width: min(960px, calc(100vw - 2rem));
+        margin: 0 auto;
+        padding: 3rem 0 4rem;
+      }
+
+      .eyebrow {
+        margin: 0 0 0.75rem;
+        letter-spacing: 0.28em;
+        text-transform: uppercase;
+        font-size: 0.72rem;
+        color: var(--accent);
+      }
+
+      h1 {
+        margin: 0;
+        max-width: 11ch;
+        font-size: clamp(2.8rem, 8vw, 5.6rem);
+        line-height: 0.95;
+      }
+
+      .lede {
+        max-width: 34rem;
+        margin: 1rem 0 2.2rem;
+        color: var(--muted);
+        font-size: 1.05rem;
+        line-height: 1.6;
+      }
+
+      .panel {
+        padding: 1.4rem;
+        border: 1px solid var(--line);
+        background: var(--panel);
+        backdrop-filter: blur(18px);
+      }
+
+      .status-line {
+        display: flex;
+        align-items: center;
+        gap: 0.7rem;
+        margin-bottom: 1rem;
+        font-size: 0.94rem;
+      }
+
+      .dot {
+        width: 0.75rem;
+        height: 0.75rem;
+        border-radius: 999px;
+        background: var(--warn);
+        box-shadow: 0 0 0 0 rgba(255, 213, 128, 0.35);
+        animation: pulse 1.8s ease-out infinite;
+      }
+
+      .dot[data-state="ok"] {
+        background: var(--ok);
+        box-shadow: 0 0 0 0 rgba(142, 255, 190, 0.3);
+      }
+
+      .dot[data-state="error"] {
+        background: #ff7a7a;
+        box-shadow: 0 0 0 0 rgba(255, 122, 122, 0.3);
+      }
+
+      .grid {
+        display: grid;
+        gap: 0.9rem;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      }
+
+      .metric-label {
+        margin: 0 0 0.35rem;
+        font-size: 0.8rem;
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+        color: var(--muted);
+      }
+
+      .metric-value {
+        margin: 0;
+        font-size: 1rem;
+        line-height: 1.4;
+      }
+
+      .foot {
+        margin-top: 1rem;
+        color: var(--muted);
+        font-size: 0.9rem;
+      }
+
+      @keyframes pulse {
+        0% {
+          transform: scale(0.92);
+          box-shadow: 0 0 0 0 currentColor;
+        }
+        70% {
+          transform: scale(1);
+          box-shadow: 0 0 0 14px transparent;
+        }
+        100% {
+          transform: scale(0.92);
+          box-shadow: 0 0 0 0 transparent;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <p class="eyebrow">Blackline Atlas</p>
+      <h1>Onboard civilian lifeline monitoring.</h1>
+      <p class="lede">
+        Small same-origin shell. Reads backend health, proves the app is alive, and gives us a
+        real UI foothold before replay controls and frame panes land.
+      </p>
+
+      <section class="panel" aria-labelledby="health-title">
+        <div class="status-line">
+          <span class="dot" id="health-dot" aria-hidden="true"></span>
+          <strong id="health-title">Connecting to backend</strong>
+        </div>
+
+        <div class="grid">
+          <div>
+            <p class="metric-label">App</p>
+            <p class="metric-value" id="app-env">Loading</p>
+          </div>
+          <div>
+            <p class="metric-label">Model</p>
+            <p class="metric-value" id="model-status">Loading</p>
+          </div>
+          <div>
+            <p class="metric-label">Current Sentinel</p>
+            <p class="metric-value" id="current-endpoint">Loading</p>
+          </div>
+          <div>
+            <p class="metric-label">Baseline Sentinel</p>
+            <p class="metric-value" id="baseline-endpoint">Loading</p>
+          </div>
+        </div>
+
+        <p class="foot" id="checked-at">Waiting for first health check.</p>
+      </section>
+    </main>
+
+    <script>
+      const dot = document.getElementById("health-dot");
+      const title = document.getElementById("health-title");
+      const appEnv = document.getElementById("app-env");
+      const modelStatus = document.getElementById("model-status");
+      const currentEndpoint = document.getElementById("current-endpoint");
+      const baselineEndpoint = document.getElementById("baseline-endpoint");
+      const checkedAt = document.getElementById("checked-at");
+
+      function setError(message) {
+        dot.dataset.state = "error";
+        title.textContent = message;
+        appEnv.textContent = "Unavailable";
+        modelStatus.textContent = "Unavailable";
+        currentEndpoint.textContent = "Unavailable";
+        baselineEndpoint.textContent = "Unavailable";
+        checkedAt.textContent = "Health request failed.";
+      }
+
+      async function loadHealth() {
+        try {
+          const response = await fetch("/health", { headers: { Accept: "application/json" } });
+          if (!response.ok) {
+            throw new Error(`Health request failed with ${response.status}`);
+          }
+
+          const payload = await response.json();
+          dot.dataset.state = payload.status === "ok" ? "ok" : "error";
+          title.textContent =
+            payload.status === "ok" ? "Backend healthy and ready" : "Backend reported a problem";
+          appEnv.textContent = payload.app_env;
+          modelStatus.textContent = `${payload.model_backend.status} · ${payload.model_backend.detail}`;
+          currentEndpoint.textContent = payload.simsat_current.detail;
+          baselineEndpoint.textContent = payload.simsat_baseline.detail;
+          checkedAt.textContent = `Checked ${new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" })}`;
+        } catch (error) {
+          setError(error.message);
+        }
+      }
+
+      loadHealth();
+    </script>
+  </body>
+</html>

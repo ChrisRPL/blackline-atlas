@@ -80,6 +80,15 @@ def test_health_endpoint() -> None:
     assert payload["model_backend"]["status"] == "ready"
 
 
+def test_ui_shell_is_served_same_origin() -> None:
+    response = client.get("/ui")
+
+    assert response.status_code == 200
+    assert "text/html" in response.headers["content-type"]
+    assert "Blackline Atlas" in response.text
+    assert 'fetch("/health"' in response.text
+
+
 def test_health_endpoint_reflects_current_only_sentinel_config(monkeypatch) -> None:
     current_only_client = build_api_client(
         monkeypatch,

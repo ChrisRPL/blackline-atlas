@@ -1,10 +1,15 @@
 from __future__ import annotations
 
+from pathlib import Path
+
 from fastapi import FastAPI
+from fastapi.responses import FileResponse
 
 from app.api.routes import router
 from app.core.config import get_settings
 from app.services.stub import StubAtlasService
+
+UI_INDEX_PATH = Path(__file__).resolve().parent.parent / "ui" / "index.html"
 
 
 def create_app() -> FastAPI:
@@ -16,6 +21,11 @@ def create_app() -> FastAPI:
     )
     app.state.atlas_service = StubAtlasService(settings=settings)
     app.include_router(router)
+
+    @app.get("/ui", include_in_schema=False)
+    def ui_shell() -> FileResponse:
+        return FileResponse(UI_INDEX_PATH)
+
     return app
 
 
