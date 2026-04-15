@@ -49,12 +49,12 @@ class ConfiguredSentinelEndpointSource:
         current_endpoint: str | None,
         baseline_endpoint: str | None,
     ) -> None:
-        self.current_endpoint = current_endpoint
-        self.baseline_endpoint = baseline_endpoint
+        self.current_endpoint = current_endpoint.rstrip("/") if current_endpoint else None
+        self.baseline_endpoint = baseline_endpoint.rstrip("/") if baseline_endpoint else None
 
-    def build_current_plan(self, request: FrameRequest) -> SentinelRequestPlan:
+    def build_current_plan(self, request: FrameRequest) -> SentinelRequestPlan | None:
         if not self.current_endpoint:
-            raise ValueError("current Sentinel endpoint is not configured")
+            return None
         return SentinelRequestPlan(
             endpoint=self.current_endpoint,
             params={

@@ -21,14 +21,18 @@ def test_fixture_sentinel_source_serves_scenario_frames() -> None:
 
 def test_configured_sentinel_source_builds_current_and_baseline_plans() -> None:
     source = ConfiguredSentinelEndpointSource(
-        current_endpoint="https://example.test/sentinel/current",
-        baseline_endpoint="https://example.test/sentinel/baseline",
+        current_endpoint="https://example.test/sentinel/current/",
+        baseline_endpoint="https://example.test/sentinel/baseline/",
     )
     request = FrameRequest(asset_id="demo_bridge_01", scenario_id="bridge_access_obstruction")
 
     current = source.build_current_plan(request)
     baseline = source.build_baseline_plan(request)
 
+    assert current is not None
+    assert baseline is not None
+    assert current.endpoint == "https://example.test/sentinel/current"
+    assert baseline.endpoint == "https://example.test/sentinel/baseline"
     assert current.url == (
         "https://example.test/sentinel/current"
         "?asset_id=demo_bridge_01&scenario_id=bridge_access_obstruction&mode=current"
@@ -39,19 +43,14 @@ def test_configured_sentinel_source_builds_current_and_baseline_plans() -> None:
     )
 
 
-def test_configured_sentinel_source_requires_configured_endpoint() -> None:
+def test_configured_sentinel_source_returns_none_without_current_endpoint() -> None:
     source = ConfiguredSentinelEndpointSource(
         current_endpoint=None,
         baseline_endpoint="https://example.test/sentinel/baseline",
     )
     request = FrameRequest(asset_id="demo_port_01", scenario_id="hero_port_disruption")
 
-    try:
-        source.build_current_plan(request)
-    except ValueError as exc:
-        assert str(exc) == "current Sentinel endpoint is not configured"
-    else:
-        raise AssertionError("expected build_current_plan to require a configured endpoint")
+    assert source.build_current_plan(request) is None
 
 
 def _scenarios():
