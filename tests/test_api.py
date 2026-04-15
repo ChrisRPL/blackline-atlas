@@ -734,6 +734,40 @@ def test_configured_sentinel_alerts_attach_mapbox_context_when_token_present(
     get_settings.cache_clear()
 
 
+def test_configured_sentinel_suppressed_alerts_skip_mapbox_context(tmp_path, monkeypatch) -> None:
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setenv("MAPBOX_TOKEN", "test-mapbox-token")
+    api_client = build_api_client(
+        monkeypatch,
+        simsat_current_endpoint="https://example.test/sentinel/current/",
+        simsat_baseline_endpoint="https://example.test/sentinel/baseline/",
+    )
+    api_client.app.state.atlas_service.frame_filter_policy = FrameFilterPolicy(
+        cloud_cover_threshold=0.01
+    )
+
+    start_response = api_client.post(
+        "/replay/start",
+        json={
+            "asset_id": "demo_bridge_01",
+            "scenario_id": "bridge_access_obstruction",
+        },
+    )
+    alerts = api_client.get("/alerts")
+
+    assert start_response.status_code == 200
+    assert alerts.status_code == 200
+    assert alerts.json() == []
+    assert not tmp_path.joinpath(
+        ".cache",
+        "mapbox",
+        "demo_bridge_01",
+        "blk_00018",
+        "context.png",
+    ).exists()
+    get_settings.cache_clear()
+
+
 def test_api_uses_baseline_transport_payload_with_baseline_only_endpoint(
     tmp_path, monkeypatch
 ) -> None:
