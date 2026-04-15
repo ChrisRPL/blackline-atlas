@@ -16,6 +16,7 @@ def build_api_client(
     simsat_current_endpoint: str | None,
     simsat_baseline_endpoint: str | None,
     simsat_current_http_enabled: bool = False,
+    simsat_baseline_http_enabled: bool = False,
 ) -> TestClient:
     if simsat_current_endpoint is None:
         monkeypatch.delenv("SIMSAT_CURRENT_ENDPOINT", raising=False)
@@ -31,6 +32,11 @@ def build_api_client(
         monkeypatch.setenv("SIMSAT_CURRENT_HTTP_ENABLED", "true")
     else:
         monkeypatch.delenv("SIMSAT_CURRENT_HTTP_ENABLED", raising=False)
+
+    if simsat_baseline_http_enabled:
+        monkeypatch.setenv("SIMSAT_BASELINE_HTTP_ENABLED", "true")
+    else:
+        monkeypatch.delenv("SIMSAT_BASELINE_HTTP_ENABLED", raising=False)
 
     get_settings.cache_clear()
     return TestClient(create_app())
@@ -682,6 +688,57 @@ def test_api_can_opt_in_current_http_transport(tmp_path, monkeypatch) -> None:
     assert baseline_frame.status_code == 200
     assert baseline_frame.json()["frame"]["frame_id"] == "base_demo_bridge_01_20251012"
     assert baseline_frame.json()["frame"]["source"] == "sentinel_baseline_stub"
+
+
+def test_api_can_opt_in_baseline_http_transport(tmp_path, monkeypatch) -> None:
+    monkeypatch.chdir(tmp_path)
+
+    def fake_urlopen(url: str, timeout: float):
+        assert url == (
+            "https://example.test/sentinel/baseline"
+            "?asset_id=demo_bridge_01&scenario_id=bridge_access_obstruction&mode=baseline"
+        )
+        assert timeout == 5.0
+        return _FakeHTTPResponse(
+            body=(
+                b'{"frame_id":"live_base_demo_bridge_01_20251013",'
+                b'"captured_at":"2025-10-13T09:15:00Z",'
+                b'"image_ref":"live/demo_bridge_01/baseline.png",'
+                b'"cloud_cover":0.02}'
+            )
+        )
+
+    monkeypatch.setattr("app.services.sentinel_client.urlopen", fake_urlopen)
+    api_client = build_api_client(
+        monkeypatch,
+        simsat_current_endpoint=None,
+        simsat_baseline_endpoint="https://example.test/sentinel/baseline/",
+        simsat_baseline_http_enabled=True,
+    )
+
+    start_response = api_client.post(
+        "/replay/start",
+        json={
+            "asset_id": "demo_bridge_01",
+            "scenario_id": "bridge_access_obstruction",
+        },
+    )
+    current_frame = api_client.get("/frames/current")
+    baseline_frame = api_client.get("/frames/baseline")
+
+    assert start_response.status_code == 200
+    assert current_frame.status_code == 200
+    assert current_frame.json()["frame"]["frame_id"] == "cur_demo_bridge_01_20260414"
+    assert current_frame.json()["frame"]["source"] == "sentinel_current_stub"
+    assert baseline_frame.status_code == 200
+    assert baseline_frame.json()["frame"]["frame_id"] == "live_base_demo_bridge_01_20251013"
+    assert baseline_frame.json()["frame"]["source"] == (
+        "https://example.test/sentinel/baseline"
+        "?asset_id=demo_bridge_01&scenario_id=bridge_access_obstruction&mode=baseline"
+    )
+    assert baseline_frame.json()["frame"]["image_ref"].endswith(
+        "/demo_bridge_01/bridge_access_obstruction/baseline/live_base_demo_bridge_01_20251013/image.png"
+    )
 
 
 def test_api_uses_configured_sentinel_adapters_for_suppressed_replay_switch(
