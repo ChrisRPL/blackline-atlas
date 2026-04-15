@@ -159,7 +159,10 @@ class CurrentSentinelAdapter:
         if self._transport is not None:
             payload = self._transport.fetch(plan)
             if payload is not None:
-                return self._planner.build_current_envelope(request, payload)
+                try:
+                    return self._planner.build_current_envelope(request, payload)
+                except ValueError:
+                    pass
 
         envelope = self._fallback.get_current_frame(request)
 
@@ -200,7 +203,10 @@ class BaselineSentinelAdapter:
         if self._transport is not None:
             payload = self._transport.fetch(plan)
             if payload is not None:
-                return self._planner.build_baseline_envelope(request, payload)
+                try:
+                    return self._planner.build_baseline_envelope(request, payload)
+                except ValueError:
+                    pass
 
         envelope = self._fallback.get_baseline_frame(request)
 
