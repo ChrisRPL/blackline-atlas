@@ -8,6 +8,26 @@ from app.main import app, create_app
 client = TestClient(app)
 
 
+def build_api_client(
+    monkeypatch,
+    *,
+    simsat_current_endpoint: str | None,
+    simsat_baseline_endpoint: str | None,
+) -> TestClient:
+    if simsat_current_endpoint is None:
+        monkeypatch.delenv("SIMSAT_CURRENT_ENDPOINT", raising=False)
+    else:
+        monkeypatch.setenv("SIMSAT_CURRENT_ENDPOINT", simsat_current_endpoint)
+
+    if simsat_baseline_endpoint is None:
+        monkeypatch.delenv("SIMSAT_BASELINE_ENDPOINT", raising=False)
+    else:
+        monkeypatch.setenv("SIMSAT_BASELINE_ENDPOINT", simsat_baseline_endpoint)
+
+    get_settings.cache_clear()
+    return TestClient(create_app())
+
+
 def test_health_endpoint() -> None:
     response = client.get("/health")
 
@@ -15,6 +35,46 @@ def test_health_endpoint() -> None:
     payload = response.json()
     assert payload["status"] == "ok"
     assert payload["model_backend"]["status"] == "ready"
+
+
+def test_health_endpoint_reflects_current_only_sentinel_config(monkeypatch) -> None:
+    current_only_client = build_api_client(
+        monkeypatch,
+        simsat_current_endpoint="https://example.test/sentinel/current/",
+        simsat_baseline_endpoint=None,
+    )
+    current_response = current_only_client.get("/health")
+
+    assert current_response.status_code == 200
+    assert current_response.json()["simsat_current"]["status"] == "ready"
+    assert current_response.json()["simsat_current"]["detail"] == (
+        "https://example.test/sentinel/current/"
+    )
+    assert current_response.json()["simsat_baseline"]["status"] == "not_configured"
+    assert current_response.json()["simsat_baseline"]["detail"] == (
+        "historical baseline endpoint not configured yet"
+    )
+    get_settings.cache_clear()
+
+
+def test_health_endpoint_reflects_baseline_only_sentinel_config(monkeypatch) -> None:
+    baseline_only_client = build_api_client(
+        monkeypatch,
+        simsat_current_endpoint=None,
+        simsat_baseline_endpoint="https://example.test/sentinel/baseline/",
+    )
+    baseline_response = baseline_only_client.get("/health")
+
+    assert baseline_response.status_code == 200
+    assert baseline_response.json()["simsat_current"]["status"] == "not_configured"
+    assert baseline_response.json()["simsat_current"]["detail"] == (
+        "current Sentinel endpoint not configured yet"
+    )
+    assert baseline_response.json()["simsat_baseline"]["status"] == "ready"
+    assert baseline_response.json()["simsat_baseline"]["detail"] == (
+        "https://example.test/sentinel/baseline/"
+    )
+    get_settings.cache_clear()
 
 
 def test_assets_endpoint_returns_seeded_assets() -> None:
