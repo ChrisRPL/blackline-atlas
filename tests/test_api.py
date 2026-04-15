@@ -741,6 +741,96 @@ def test_api_can_opt_in_baseline_http_transport(tmp_path, monkeypatch) -> None:
     )
 
 
+def test_api_can_opt_in_both_http_transports_together(tmp_path, monkeypatch) -> None:
+    monkeypatch.chdir(tmp_path)
+
+    def fake_urlopen(url: str, timeout: float):
+        assert timeout == 5.0
+        if url.endswith("mode=current"):
+            return _FakeHTTPResponse(
+                body=(
+                    b'{"frame_id":"live_cur_demo_bridge_01_20260416",'
+                    b'"captured_at":"2026-04-16T06:20:00Z",'
+                    b'"image_ref":"live/demo_bridge_01/current.png",'
+                    b'"cloud_cover":0.09,'
+                    b'"baseline_frame_id":"live_base_demo_bridge_01_20251014",'
+                    b'"overlay_ref":"live/demo_bridge_01/overlay.png",'
+                    b'"accepted_for_alerting":true,'
+                    b'"filter_reason":"accepted"}'
+                )
+            )
+        if url.endswith("mode=baseline"):
+            return _FakeHTTPResponse(
+                body=(
+                    b'{"frame_id":"live_base_demo_bridge_01_20251014",'
+                    b'"captured_at":"2025-10-14T09:15:00Z",'
+                    b'"image_ref":"live/demo_bridge_01/baseline.png",'
+                    b'"cloud_cover":0.02}'
+                )
+            )
+        raise AssertionError(f"unexpected url: {url}")
+
+    monkeypatch.setattr("app.services.sentinel_client.urlopen", fake_urlopen)
+    api_client = build_api_client(
+        monkeypatch,
+        simsat_current_endpoint="https://example.test/sentinel/current/",
+        simsat_baseline_endpoint="https://example.test/sentinel/baseline/",
+        simsat_current_http_enabled=True,
+        simsat_baseline_http_enabled=True,
+    )
+
+    start_response = api_client.post(
+        "/replay/start",
+        json={
+            "asset_id": "demo_bridge_01",
+            "scenario_id": "bridge_access_obstruction",
+        },
+    )
+    current_frame = api_client.get("/frames/current")
+    baseline_frame = api_client.get("/frames/baseline")
+
+    assert start_response.status_code == 200
+    assert current_frame.status_code == 200
+    assert baseline_frame.status_code == 200
+    assert current_frame.json()["frame"]["frame_id"] == "live_cur_demo_bridge_01_20260416"
+    assert current_frame.json()["frame"]["source"] == (
+        "https://example.test/sentinel/current"
+        "?asset_id=demo_bridge_01&scenario_id=bridge_access_obstruction&mode=current"
+    )
+    assert current_frame.json()["frame"]["image_ref"].endswith(
+        "/demo_bridge_01/bridge_access_obstruction/current/live_cur_demo_bridge_01_20260416/image.png"
+    )
+    assert current_frame.json()["overlay_ref"].endswith(
+        "/demo_bridge_01/bridge_access_obstruction/overlay/live_cur_demo_bridge_01_20260416/image.png"
+    )
+    assert baseline_frame.json()["frame"]["frame_id"] == "live_base_demo_bridge_01_20251014"
+    assert baseline_frame.json()["frame"]["source"] == (
+        "https://example.test/sentinel/baseline"
+        "?asset_id=demo_bridge_01&scenario_id=bridge_access_obstruction&mode=baseline"
+    )
+    assert baseline_frame.json()["frame"]["image_ref"].endswith(
+        "/demo_bridge_01/bridge_access_obstruction/baseline/live_base_demo_bridge_01_20251014/image.png"
+    )
+    assert tmp_path.joinpath(
+        ".cache",
+        "frames",
+        "demo_bridge_01",
+        "bridge_access_obstruction",
+        "current",
+        "live_cur_demo_bridge_01_20260416",
+        "metadata.json",
+    ).exists()
+    assert tmp_path.joinpath(
+        ".cache",
+        "frames",
+        "demo_bridge_01",
+        "bridge_access_obstruction",
+        "baseline",
+        "live_base_demo_bridge_01_20251014",
+        "metadata.json",
+    ).exists()
+
+
 def test_api_uses_configured_sentinel_adapters_for_suppressed_replay_switch(
     tmp_path, monkeypatch
 ) -> None:
