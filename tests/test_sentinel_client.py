@@ -279,6 +279,63 @@ def test_baseline_sentinel_adapter_returns_fixture_frame_without_baseline_endpoi
     assert baseline.frame.source == "sentinel_baseline_stub"
 
 
+def test_baseline_sentinel_adapter_uses_transport_payload_when_available() -> None:
+    transport = _FakeTransport(
+        payload={
+            "frame_id": "live_base_demo_bridge_01_20251012",
+            "captured_at": "2025-10-12T09:15:00Z",
+            "image_ref": "live/demo_bridge_01/baseline.png",
+            "cloud_cover": 0.02,
+        }
+    )
+    adapter = BaselineSentinelAdapter(
+        planner=ConfiguredSentinelEndpointSource(
+            current_endpoint=None,
+            baseline_endpoint="https://example.test/sentinel/baseline/",
+        ),
+        fallback=FixtureSentinelSource(_scenarios()),
+        transport=transport,
+    )
+    request = FrameRequest(asset_id="demo_bridge_01", scenario_id="bridge_access_obstruction")
+
+    current = adapter.get_current_frame(request)
+    baseline = adapter.get_baseline_frame(request)
+
+    assert len(transport.plans) == 1
+    assert transport.plans[0].url == (
+        "https://example.test/sentinel/baseline"
+        "?asset_id=demo_bridge_01&scenario_id=bridge_access_obstruction&mode=baseline"
+    )
+    assert current.frame.frame_id == "cur_demo_bridge_01_20260414"
+    assert baseline.frame.frame_id == "live_base_demo_bridge_01_20251012"
+    assert baseline.frame.asset_id == "demo_bridge_01"
+    assert baseline.frame.source == transport.plans[0].url
+    assert baseline.frame.image_ref == "live/demo_bridge_01/baseline.png"
+    assert baseline.frame.cloud_cover == 0.02
+
+
+def test_baseline_sentinel_adapter_falls_back_when_transport_returns_none() -> None:
+    transport = _FakeTransport(payload=None)
+    adapter = BaselineSentinelAdapter(
+        planner=ConfiguredSentinelEndpointSource(
+            current_endpoint=None,
+            baseline_endpoint="https://example.test/sentinel/baseline/",
+        ),
+        fallback=FixtureSentinelSource(_scenarios()),
+        transport=transport,
+    )
+    request = FrameRequest(asset_id="demo_port_01", scenario_id="hero_port_disruption")
+
+    baseline = adapter.get_baseline_frame(request)
+
+    assert len(transport.plans) == 1
+    assert baseline.frame.frame_id == "base_demo_port_01_20250901"
+    assert baseline.frame.source == (
+        "https://example.test/sentinel/baseline"
+        "?asset_id=demo_port_01&scenario_id=hero_port_disruption&mode=baseline"
+    )
+
+
 def _scenarios():
     settings = Settings(
         app_env="test",

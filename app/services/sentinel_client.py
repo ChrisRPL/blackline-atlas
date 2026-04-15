@@ -168,18 +168,26 @@ class BaselineSentinelAdapter:
         *,
         planner: ConfiguredSentinelEndpointSource,
         fallback: SentinelSource,
+        transport: SentinelPayloadTransport | None = None,
     ) -> None:
         self._planner = planner
         self._fallback = fallback
+        self._transport = transport
 
     def get_current_frame(self, request: FrameRequest) -> FrameEnvelope:
         return self._fallback.get_current_frame(request)
 
     def get_baseline_frame(self, request: FrameRequest) -> FrameEnvelope:
-        envelope = self._fallback.get_baseline_frame(request)
         plan = self._planner.build_baseline_plan(request)
         if plan is None:
-            return envelope
+            return self._fallback.get_baseline_frame(request)
+
+        if self._transport is not None:
+            payload = self._transport.fetch(plan)
+            if payload is not None:
+                return self._planner.build_baseline_envelope(request, payload)
+
+        envelope = self._fallback.get_baseline_frame(request)
 
         return envelope.model_copy(
             update={
