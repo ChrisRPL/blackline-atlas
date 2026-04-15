@@ -5,6 +5,7 @@ from fastapi.testclient import TestClient
 from app.core.config import get_settings
 from app.main import app, create_app
 from app.services.frame_filters import FrameFilterPolicy
+from app.services.sentinel_client import FixtureSentinelPayloadTransport
 
 client = TestClient(app)
 
@@ -504,6 +505,41 @@ def test_api_uses_configured_sentinel_adapters_through_replay_switch(tmp_path, m
         "base_demo_bridge_01_20251012",
         "metadata.json",
     ).exists()
+
+
+def test_api_uses_baseline_transport_payload_with_baseline_only_endpoint(
+    tmp_path, monkeypatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+
+    def fake_fetch(self, plan):
+        if plan.params["mode"] != "baseline":
+            return None
+        return {
+            "frame_id": "live_base_demo_port_01_20250901",
+            "captured_at": "2025-09-01T10:00:00Z",
+            "image_ref": "live/demo_port_01/baseline.png",
+            "cloud_cover": 0.03,
+        }
+
+    monkeypatch.setattr(FixtureSentinelPayloadTransport, "fetch", fake_fetch)
+    api_client = build_api_client(
+        monkeypatch,
+        simsat_current_endpoint=None,
+        simsat_baseline_endpoint="https://example.test/sentinel/baseline/",
+    )
+
+    baseline_frame = api_client.get("/frames/baseline")
+
+    assert baseline_frame.status_code == 200
+    assert baseline_frame.json()["frame"]["frame_id"] == "live_base_demo_port_01_20250901"
+    assert baseline_frame.json()["frame"]["image_ref"].endswith(
+        "/demo_port_01/hero_port_disruption/baseline/live_base_demo_port_01_20250901/image.png"
+    )
+    assert baseline_frame.json()["frame"]["source"] == (
+        "https://example.test/sentinel/baseline"
+        "?asset_id=demo_port_01&scenario_id=hero_port_disruption&mode=baseline"
+    )
 
 
 def test_api_uses_configured_sentinel_adapters_for_suppressed_replay_switch(
