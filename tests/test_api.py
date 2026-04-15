@@ -351,6 +351,27 @@ def test_health_endpoint_reflects_disabled_mapbox_context_config(tmp_path, monke
     get_settings.cache_clear()
 
 
+def test_health_endpoint_exposes_machine_readable_config_flags(monkeypatch) -> None:
+    stub_sentinel_health_probe(monkeypatch, current_status=200, baseline_status=200)
+    configured_client = build_api_client(
+        monkeypatch,
+        simsat_current_endpoint="https://example.test/sentinel/current/",
+        simsat_baseline_endpoint="https://example.test/sentinel/baseline/",
+        simsat_current_http_enabled=True,
+        simsat_baseline_http_enabled=True,
+        mapbox_context_enabled=False,
+    )
+    configured_response = configured_client.get("/health")
+
+    assert configured_response.status_code == 200
+    assert configured_response.json()["config"] == {
+        "simsat_current_http_enabled": True,
+        "simsat_baseline_http_enabled": True,
+        "mapbox_context_enabled": False,
+    }
+    get_settings.cache_clear()
+
+
 def test_health_endpoint_reflects_default_identity(tmp_path, monkeypatch) -> None:
     monkeypatch.chdir(tmp_path)
     monkeypatch.delenv("APP_ENV", raising=False)

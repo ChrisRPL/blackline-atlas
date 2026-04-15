@@ -12,6 +12,12 @@ class HealthDependency(BaseModel):
     detail: str
 
 
+class HealthConfig(BaseModel):
+    simsat_current_http_enabled: bool
+    simsat_baseline_http_enabled: bool
+    mapbox_context_enabled: bool
+
+
 class HealthResponse(BaseModel):
     status: Literal["ok"]
     app_env: str
@@ -19,3 +25,4 @@ class HealthResponse(BaseModel):
     simsat_current: HealthDependency
     simsat_baseline: HealthDependency
     mapbox: HealthDependency
+    config: HealthConfig

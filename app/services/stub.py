@@ -8,7 +8,7 @@ from app.core.config import Settings
 from app.schemas.alert import Alert
 from app.schemas.asset import Asset
 from app.schemas.frame import FrameEnvelope
-from app.schemas.health import HealthDependency, HealthResponse
+from app.schemas.health import HealthConfig, HealthDependency, HealthResponse
 from app.schemas.metrics import Metrics
 from app.schemas.replay import ReplayStartRequest, ReplayState
 from app.services.baseline_compare import FixtureBaselineComparator
@@ -89,6 +89,11 @@ class StubAtlasService:
                 plan=planner.build_baseline_plan(request),
             ),
             mapbox=self._mapbox_dependency_state(),
+            config=HealthConfig(
+                simsat_current_http_enabled=self.settings.simsat_current_http_enabled,
+                simsat_baseline_http_enabled=self.settings.simsat_baseline_http_enabled,
+                mapbox_context_enabled=self.settings.mapbox_context_enabled,
+            ),
         )
 
     def list_assets(self) -> list[Asset]:
