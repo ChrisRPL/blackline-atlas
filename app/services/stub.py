@@ -16,6 +16,7 @@ from app.services.frame_client import CachedFrameClient, FixtureFrameClient
 from app.services.frame_filters import FrameFilterPolicy
 from app.services.frame_types import FrameRequest
 from app.services.scenario_fixtures import ScenarioFixture, build_stub_scenarios
+from app.services.watchlist_loader import load_watchlist_assets
 
 
 def utc_now() -> str:
@@ -33,25 +34,7 @@ class MutableReplayState:
 class StubAtlasService:
     def __init__(self, settings: Settings) -> None:
         self.settings = settings
-        self.assets = [
-            Asset(
-                asset_id="demo_port_01",
-                asset_name="Demo Grain Port",
-                asset_type="grain_port",
-                region="Black Sea",
-                latitude=46.501,
-                longitude=30.747,
-                hero=True,
-            ),
-            Asset(
-                asset_id="demo_bridge_01",
-                asset_name="Demo Logistics Bridge",
-                asset_type="bridge",
-                region="Lower Danube",
-                latitude=45.169,
-                longitude=28.801,
-            ),
-        ]
+        self.assets = load_watchlist_assets(settings.watchlist_path)
         self.scenarios = build_stub_scenarios(
             settings=self.settings,
             hero_asset=self.hero_asset,

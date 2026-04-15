@@ -1,0 +1,20 @@
+[
+  {
+    "asset_id": "demo_port_01",
+    "asset_name": "Demo Grain Port",
+    "asset_type": "grain_port",
+    "region": "Black Sea",
+    "latitude": 46.501,
+    "longitude": 30.747,
+    "hero": true
+  },
+  {
+    "asset_id": "demo_bridge_01",
+    "asset_name": "Demo Logistics Bridge",
+    "asset_type": "bridge",
+    "region": "Lower Danube",
+    "latitude": 45.169,
+    "longitude": 28.801,
+    "hero": false
+  }
+]
