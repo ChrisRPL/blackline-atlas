@@ -6,6 +6,11 @@ from app.services.frame_cache import FrameCacheLayout
 from app.services.frame_client import CachedFrameClient, FixtureFrameClient
 from app.services.frame_types import FrameRequest
 from app.services.scenario_fixtures import build_stub_scenarios
+from app.services.sentinel_client import (
+    BaselineSentinelAdapter,
+    ConfiguredSentinelEndpointSource,
+    FixtureSentinelSource,
+)
 
 
 def test_cached_frame_client_persists_current_frame_metadata_and_paths(tmp_path) -> None:
@@ -67,6 +72,42 @@ def test_cached_frame_client_reuses_cached_baseline_payload(tmp_path) -> None:
 
     assert first.frame.image_ref is not None
     assert second.frame.frame_id == "base_demo_bridge_01_cached"
+
+
+def test_cached_frame_client_materializes_baseline_adapter_output(tmp_path) -> None:
+    client = CachedFrameClient(
+        delegate=BaselineSentinelAdapter(
+            planner=ConfiguredSentinelEndpointSource(
+                current_endpoint=None,
+                baseline_endpoint="https://example.test/sentinel/baseline/",
+            ),
+            fallback=FixtureSentinelSource(_scenarios()),
+        ),
+        cache_layout=FrameCacheLayout(tmp_path),
+    )
+    request = FrameRequest(asset_id="demo_bridge_01", scenario_id="bridge_access_obstruction")
+
+    envelope = client.get_baseline_frame(request)
+
+    assert envelope.frame.source == (
+        "https://example.test/sentinel/baseline"
+        "?asset_id=demo_bridge_01&scenario_id=bridge_access_obstruction&mode=baseline"
+    )
+    assert envelope.frame.image_ref is not None
+    assert tmp_path.joinpath(
+        "demo_bridge_01",
+        "bridge_access_obstruction",
+        "baseline",
+        "base_demo_bridge_01_20251012",
+        "metadata.json",
+    ).exists()
+    assert tmp_path.joinpath(
+        "demo_bridge_01",
+        "bridge_access_obstruction",
+        "baseline",
+        "base_demo_bridge_01_20251012",
+        "image.png",
+    ).exists()
 
 
 def _scenarios():
