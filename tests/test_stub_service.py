@@ -4,6 +4,7 @@ import json
 from pathlib import Path
 
 from app.core.config import Settings
+from app.schemas.replay import ReplayStartRequest
 from app.services.frame_filters import FrameFilterPolicy
 from app.services.stub import StubAtlasService
 
@@ -161,6 +162,61 @@ def test_stub_service_uses_baseline_adapter_and_fixture_current_with_baseline_on
     )
     assert current.frame.image_ref is not None
     assert baseline.frame.image_ref is not None
+
+
+def test_stub_service_keeps_opt_in_sentinel_wiring_across_replay_switch(
+    tmp_path: Path, monkeypatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    service = StubAtlasService(
+        Settings(
+            app_env="test",
+            app_port=8000,
+            model_version="lfm2.5-vl-450m-prompted",
+            simsat_current_endpoint="https://example.test/sentinel/current/",
+            simsat_baseline_endpoint="https://example.test/sentinel/baseline/",
+            mapbox_token_present=False,
+            watchlist_path=None,
+        )
+    )
+    service.start_replay(
+        ReplayStartRequest(
+            asset_id="demo_bridge_01",
+            scenario_id="bridge_access_obstruction",
+        )
+    )
+
+    current = service.get_current_frame()
+    baseline = service.get_baseline_frame()
+
+    assert current.frame.source == (
+        "https://example.test/sentinel/current"
+        "?asset_id=demo_bridge_01&scenario_id=bridge_access_obstruction&mode=current"
+    )
+    assert baseline.frame.source == (
+        "https://example.test/sentinel/baseline"
+        "?asset_id=demo_bridge_01&scenario_id=bridge_access_obstruction&mode=baseline"
+    )
+    assert current.frame.image_ref is not None
+    assert baseline.frame.image_ref is not None
+    assert tmp_path.joinpath(
+        ".cache",
+        "frames",
+        "demo_bridge_01",
+        "bridge_access_obstruction",
+        "current",
+        "cur_demo_bridge_01_20260414",
+        "metadata.json",
+    ).exists()
+    assert tmp_path.joinpath(
+        ".cache",
+        "frames",
+        "demo_bridge_01",
+        "bridge_access_obstruction",
+        "baseline",
+        "base_demo_bridge_01_20251012",
+        "metadata.json",
+    ).exists()
 
 
 def test_stub_service_loads_assets_from_watchlist_manifest(tmp_path: Path) -> None:
