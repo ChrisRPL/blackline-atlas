@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from typing import Mapping, Protocol
 from urllib.parse import urlencode
 
-from app.schemas.frame import FrameEnvelope
+from app.schemas.frame import FrameEnvelope, FrameRecord
 from app.services.frame_types import FrameRequest
 from app.services.scenario_fixtures import ScenarioFixture
 
@@ -76,6 +76,49 @@ class ConfiguredSentinelEndpointSource:
             },
         )
 
+    def build_current_envelope(
+        self, request: FrameRequest, payload: Mapping[str, object]
+    ) -> FrameEnvelope:
+        return self._build_envelope(
+            request=request,
+            payload=payload,
+            plan=self.build_current_plan(request),
+        )
+
+    def build_baseline_envelope(
+        self, request: FrameRequest, payload: Mapping[str, object]
+    ) -> FrameEnvelope:
+        return self._build_envelope(
+            request=request,
+            payload=payload,
+            plan=self.build_baseline_plan(request),
+        )
+
+    def _build_envelope(
+        self,
+        *,
+        request: FrameRequest,
+        payload: Mapping[str, object],
+        plan: SentinelRequestPlan | None,
+    ) -> FrameEnvelope:
+        source = _string_or_none(payload.get("source")) or (
+            plan.url if plan else "sentinel_payload"
+        )
+        return FrameEnvelope(
+            frame=FrameRecord(
+                frame_id=_required_string(payload, "frame_id"),
+                asset_id=_string_or_none(payload.get("asset_id")) or request.asset_id,
+                captured_at=_required_string(payload, "captured_at"),
+                image_ref=_string_or_none(payload.get("image_ref")),
+                cloud_cover=_float_or_none(payload.get("cloud_cover")),
+                source=source,
+            ),
+            baseline_frame_id=_string_or_none(payload.get("baseline_frame_id")),
+            overlay_ref=_string_or_none(payload.get("overlay_ref")),
+            accepted_for_alerting=_bool_or_none(payload.get("accepted_for_alerting")),
+            filter_reason=_string_or_none(payload.get("filter_reason")),
+        )
+
 
 class CurrentSentinelAdapter:
     def __init__(
@@ -135,3 +178,30 @@ class BaselineSentinelAdapter:
                 )
             }
         )
+
+
+def _required_string(payload: Mapping[str, object], key: str) -> str:
+    value = payload.get(key)
+    if not isinstance(value, str) or not value:
+        raise ValueError(f"Sentinel payload missing required string field: {key}")
+    return value
+
+
+def _string_or_none(value: object) -> str | None:
+    return value if isinstance(value, str) and value else None
+
+
+def _float_or_none(value: object) -> float | None:
+    if value is None:
+        return None
+    if isinstance(value, (int, float)):
+        return float(value)
+    raise ValueError("Sentinel payload field cloud_cover must be numeric when provided")
+
+
+def _bool_or_none(value: object) -> bool | None:
+    if value is None:
+        return None
+    if isinstance(value, bool):
+        return value
+    raise ValueError("Sentinel payload boolean fields must be bool when provided")

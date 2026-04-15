@@ -68,6 +68,75 @@ def test_configured_sentinel_source_returns_none_without_baseline_endpoint() -> 
     assert source.build_baseline_plan(request) is None
 
 
+def test_configured_sentinel_source_maps_current_payload_into_frame_envelope() -> None:
+    source = ConfiguredSentinelEndpointSource(
+        current_endpoint="https://example.test/sentinel/current/",
+        baseline_endpoint=None,
+    )
+    request = FrameRequest(asset_id="demo_bridge_01", scenario_id="bridge_access_obstruction")
+
+    envelope = source.build_current_envelope(
+        request,
+        {
+            "frame_id": "live_cur_demo_bridge_01_20260415",
+            "captured_at": "2026-04-15T07:10:00Z",
+            "image_ref": "live/demo_bridge_01/current.png",
+            "cloud_cover": 0.12,
+            "baseline_frame_id": "base_demo_bridge_01_20251012",
+            "overlay_ref": "live/demo_bridge_01/overlay.png",
+            "accepted_for_alerting": True,
+            "filter_reason": "accepted",
+        },
+    )
+
+    assert envelope.frame.frame_id == "live_cur_demo_bridge_01_20260415"
+    assert envelope.frame.asset_id == "demo_bridge_01"
+    assert envelope.frame.captured_at == "2026-04-15T07:10:00Z"
+    assert envelope.frame.image_ref == "live/demo_bridge_01/current.png"
+    assert envelope.frame.cloud_cover == 0.12
+    assert envelope.frame.source == (
+        "https://example.test/sentinel/current"
+        "?asset_id=demo_bridge_01&scenario_id=bridge_access_obstruction&mode=current"
+    )
+    assert envelope.baseline_frame_id == "base_demo_bridge_01_20251012"
+    assert envelope.overlay_ref == "live/demo_bridge_01/overlay.png"
+    assert envelope.accepted_for_alerting is True
+    assert envelope.filter_reason == "accepted"
+
+
+def test_configured_sentinel_source_maps_baseline_payload_into_frame_envelope() -> None:
+    source = ConfiguredSentinelEndpointSource(
+        current_endpoint=None,
+        baseline_endpoint="https://example.test/sentinel/baseline/",
+    )
+    request = FrameRequest(asset_id="demo_port_01", scenario_id="hero_port_disruption")
+
+    envelope = source.build_baseline_envelope(
+        request,
+        {
+            "frame_id": "live_base_demo_port_01_20250901",
+            "asset_id": "demo_port_01",
+            "captured_at": "2025-09-01T10:00:00Z",
+            "image_ref": "live/demo_port_01/baseline.png",
+            "cloud_cover": 0,
+        },
+    )
+
+    assert envelope.frame.frame_id == "live_base_demo_port_01_20250901"
+    assert envelope.frame.asset_id == "demo_port_01"
+    assert envelope.frame.captured_at == "2025-09-01T10:00:00Z"
+    assert envelope.frame.image_ref == "live/demo_port_01/baseline.png"
+    assert envelope.frame.cloud_cover == 0.0
+    assert envelope.frame.source == (
+        "https://example.test/sentinel/baseline"
+        "?asset_id=demo_port_01&scenario_id=hero_port_disruption&mode=baseline"
+    )
+    assert envelope.baseline_frame_id is None
+    assert envelope.overlay_ref is None
+    assert envelope.accepted_for_alerting is None
+    assert envelope.filter_reason is None
+
+
 def test_current_sentinel_adapter_uses_configured_plan_and_fixture_fallback() -> None:
     adapter = CurrentSentinelAdapter(
         planner=ConfiguredSentinelEndpointSource(
