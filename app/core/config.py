@@ -30,6 +30,7 @@ class Settings:
     mapbox_token_present: bool
     watchlist_path: str | None
     simsat_current_http_enabled: bool = False
+    simsat_baseline_http_enabled: bool = False
 
 
 def env_flag(name: str) -> bool:
@@ -48,4 +49,5 @@ def get_settings() -> Settings:
         mapbox_token_present=bool(os.getenv("MAPBOX_TOKEN")),
         watchlist_path=os.getenv("WATCHLIST_PATH") or None,
         simsat_current_http_enabled=env_flag("SIMSAT_CURRENT_HTTP_ENABLED"),
+        simsat_baseline_http_enabled=env_flag("SIMSAT_BASELINE_HTTP_ENABLED"),
     )

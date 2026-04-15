@@ -215,6 +215,52 @@ def test_stub_service_uses_baseline_adapter_and_fixture_current_with_baseline_on
     assert baseline.frame.image_ref is not None
 
 
+def test_stub_service_can_opt_in_baseline_http_transport(tmp_path: Path, monkeypatch) -> None:
+    monkeypatch.chdir(tmp_path)
+
+    def fake_urlopen(url: str, timeout: float):
+        assert url == (
+            "https://example.test/sentinel/baseline"
+            "?asset_id=demo_port_01&scenario_id=hero_port_disruption&mode=baseline"
+        )
+        assert timeout == 5.0
+        return _FakeHTTPResponse(
+            body=json.dumps(
+                {
+                    "frame_id": "live_base_demo_port_01_20250902",
+                    "captured_at": "2025-09-02T10:00:00Z",
+                    "image_ref": "live/demo_port_01/baseline.png",
+                    "cloud_cover": 0.03,
+                }
+            ).encode("utf-8")
+        )
+
+    monkeypatch.setattr("app.services.sentinel_client.urlopen", fake_urlopen)
+    service = StubAtlasService(
+        Settings(
+            app_env="test",
+            app_port=8000,
+            model_version="lfm2.5-vl-450m-prompted",
+            simsat_current_endpoint=None,
+            simsat_baseline_endpoint="https://example.test/sentinel/baseline/",
+            mapbox_token_present=False,
+            watchlist_path=None,
+            simsat_baseline_http_enabled=True,
+        )
+    )
+
+    current = service.get_current_frame()
+    baseline = service.get_baseline_frame()
+
+    assert current.frame.source == "sentinel_current_stub"
+    assert baseline.frame.frame_id == "live_base_demo_port_01_20250902"
+    assert baseline.frame.source == (
+        "https://example.test/sentinel/baseline"
+        "?asset_id=demo_port_01&scenario_id=hero_port_disruption&mode=baseline"
+    )
+    assert baseline.frame.image_ref is not None
+
+
 def test_stub_service_keeps_opt_in_sentinel_wiring_across_replay_switch(
     tmp_path: Path, monkeypatch
 ) -> None:

@@ -215,6 +215,11 @@ class StubAtlasService:
             if self.settings.simsat_current_http_enabled
             else fixture_transport
         )
+        baseline_transport = (
+            HttpSentinelPayloadTransport()
+            if self.settings.simsat_baseline_http_enabled
+            else fixture_transport
+        )
         return _CompositeSentinelFrameClient(
             current=CurrentSentinelAdapter(
                 planner=planner,
@@ -224,7 +229,7 @@ class StubAtlasService:
             baseline=BaselineSentinelAdapter(
                 planner=planner,
                 fallback=fallback,
-                transport=fixture_transport,
+                transport=baseline_transport,
             ),
         )
 
