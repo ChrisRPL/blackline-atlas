@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from urllib.error import URLError
+
 from fastapi.testclient import TestClient
 
 from app.core.config import get_settings
@@ -1006,6 +1008,82 @@ def test_api_falls_back_when_both_http_transports_return_non_200(tmp_path, monke
     baseline_frame = api_client.get("/frames/baseline")
 
     assert start_response.status_code == 200
+    assert current_frame.status_code == 200
+    assert baseline_frame.status_code == 200
+    assert current_frame.json()["frame"]["frame_id"] == "cur_demo_bridge_01_20260414"
+    assert current_frame.json()["frame"]["source"] == (
+        "https://example.test/sentinel/current"
+        "?asset_id=demo_bridge_01&scenario_id=bridge_access_obstruction&mode=current"
+    )
+    assert current_frame.json()["overlay_ref"].endswith(
+        "/demo_bridge_01/bridge_access_obstruction/overlay/cur_demo_bridge_01_20260414/image.png"
+    )
+    assert baseline_frame.json()["frame"]["frame_id"] == "base_demo_bridge_01_20251012"
+    assert baseline_frame.json()["frame"]["source"] == (
+        "https://example.test/sentinel/baseline"
+        "?asset_id=demo_bridge_01&scenario_id=bridge_access_obstruction&mode=baseline"
+    )
+    assert baseline_frame.json()["frame"]["image_ref"].endswith(
+        "/demo_bridge_01/bridge_access_obstruction/baseline/base_demo_bridge_01_20251012/image.png"
+    )
+    assert tmp_path.joinpath(
+        ".cache",
+        "frames",
+        "demo_bridge_01",
+        "bridge_access_obstruction",
+        "current",
+        "cur_demo_bridge_01_20260414",
+        "metadata.json",
+    ).exists()
+    assert tmp_path.joinpath(
+        ".cache",
+        "frames",
+        "demo_bridge_01",
+        "bridge_access_obstruction",
+        "baseline",
+        "base_demo_bridge_01_20251012",
+        "metadata.json",
+    ).exists()
+
+
+def test_api_falls_back_when_both_http_transports_raise_url_error(tmp_path, monkeypatch) -> None:
+    monkeypatch.chdir(tmp_path)
+
+    def fake_urlopen(url: str, timeout: float):
+        assert timeout == 5.0
+        assert url.endswith("mode=current") or url.endswith("mode=baseline")
+        raise URLError("network down")
+
+    monkeypatch.setattr("app.services.sentinel_client.urlopen", fake_urlopen)
+    api_client = build_api_client(
+        monkeypatch,
+        simsat_current_endpoint="https://example.test/sentinel/current/",
+        simsat_baseline_endpoint="https://example.test/sentinel/baseline/",
+        simsat_current_http_enabled=True,
+        simsat_baseline_http_enabled=True,
+    )
+
+    start_response = api_client.post(
+        "/replay/start",
+        json={
+            "asset_id": "demo_bridge_01",
+            "scenario_id": "bridge_access_obstruction",
+        },
+    )
+    health_response = api_client.get("/health")
+    current_frame = api_client.get("/frames/current")
+    baseline_frame = api_client.get("/frames/baseline")
+
+    assert start_response.status_code == 200
+    assert health_response.status_code == 200
+    assert health_response.json()["simsat_current"]["status"] == "degraded"
+    assert health_response.json()["simsat_current"]["detail"] == (
+        "https://example.test/sentinel/current/ (http transport failed; fixture fallback active)"
+    )
+    assert health_response.json()["simsat_baseline"]["status"] == "degraded"
+    assert health_response.json()["simsat_baseline"]["detail"] == (
+        "https://example.test/sentinel/baseline/ (http transport failed; fixture fallback active)"
+    )
     assert current_frame.status_code == 200
     assert baseline_frame.status_code == 200
     assert current_frame.json()["frame"]["frame_id"] == "cur_demo_bridge_01_20260414"
