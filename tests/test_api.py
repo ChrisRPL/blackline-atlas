@@ -372,6 +372,24 @@ def test_health_endpoint_exposes_machine_readable_config_flags(monkeypatch) -> N
     get_settings.cache_clear()
 
 
+def test_health_endpoint_exposes_default_config_flags(tmp_path, monkeypatch) -> None:
+    monkeypatch.chdir(tmp_path)
+    default_client = build_api_client(
+        monkeypatch,
+        simsat_current_endpoint=None,
+        simsat_baseline_endpoint=None,
+    )
+    default_response = default_client.get("/health")
+
+    assert default_response.status_code == 200
+    assert default_response.json()["config"] == {
+        "simsat_current_http_enabled": False,
+        "simsat_baseline_http_enabled": False,
+        "mapbox_context_enabled": True,
+    }
+    get_settings.cache_clear()
+
+
 def test_health_endpoint_reflects_default_identity(tmp_path, monkeypatch) -> None:
     monkeypatch.chdir(tmp_path)
     monkeypatch.delenv("APP_ENV", raising=False)
