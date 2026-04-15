@@ -390,6 +390,31 @@ def test_health_endpoint_exposes_default_config_flags(tmp_path, monkeypatch) -> 
     get_settings.cache_clear()
 
 
+def test_health_endpoint_exposes_disabled_mapbox_config_flags(tmp_path, monkeypatch) -> None:
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setenv("MAPBOX_TOKEN", "test-mapbox-token")
+    configured_client = build_api_client(
+        monkeypatch,
+        simsat_current_endpoint=None,
+        simsat_baseline_endpoint=None,
+        mapbox_context_enabled=False,
+    )
+    configured_response = configured_client.get("/health")
+
+    assert configured_response.status_code == 200
+    assert configured_response.json()["status"] == "ok"
+    assert configured_response.json()["config"] == {
+        "simsat_current_http_enabled": False,
+        "simsat_baseline_http_enabled": False,
+        "mapbox_context_enabled": False,
+    }
+    assert configured_response.json()["mapbox"]["status"] == "ready"
+    assert configured_response.json()["mapbox"]["detail"] == (
+        "token present; inspection context disabled by config"
+    )
+    get_settings.cache_clear()
+
+
 def test_health_endpoint_reflects_default_identity(tmp_path, monkeypatch) -> None:
     monkeypatch.chdir(tmp_path)
     monkeypatch.delenv("APP_ENV", raising=False)
