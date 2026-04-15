@@ -164,13 +164,18 @@ class StubAtlasService:
             current=scenario.current_frame,
             baseline=scenario.baseline_frame,
         )
+        emitted_alerts = max(
+            scenario.metrics.alerts_emitted - (0 if decision.accepted else len(scenario.alerts)),
+            0,
+        )
         suppressed_frames = scenario.metrics.raw_frames_suppressed + (0 if decision.accepted else 1)
 
         return scenario.metrics.model_copy(
             update={
+                "alerts_emitted": emitted_alerts,
                 "raw_frames_suppressed": suppressed_frames,
                 "downlink_rate": round(
-                    scenario.metrics.alerts_emitted / scenario.metrics.frames_scanned,
+                    emitted_alerts / scenario.metrics.frames_scanned,
                     3,
                 ),
             }
