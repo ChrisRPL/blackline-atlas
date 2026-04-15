@@ -435,6 +435,37 @@ def test_health_endpoint_exposes_mixed_transport_config_flags(tmp_path, monkeypa
     get_settings.cache_clear()
 
 
+def test_health_endpoint_exposes_baseline_only_transport_config_flags(
+    tmp_path, monkeypatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setenv("MAPBOX_TOKEN", "test-mapbox-token")
+    stub_sentinel_health_probe(monkeypatch, baseline_status=200)
+    configured_client = build_api_client(
+        monkeypatch,
+        simsat_current_endpoint=None,
+        simsat_baseline_endpoint="https://example.test/sentinel/baseline/",
+        simsat_baseline_http_enabled=True,
+        mapbox_context_enabled=True,
+    )
+    configured_response = configured_client.get("/health")
+
+    assert configured_response.status_code == 200
+    assert configured_response.json()["status"] == "ok"
+    assert configured_response.json()["config"] == {
+        "simsat_current_http_enabled": False,
+        "simsat_baseline_http_enabled": True,
+        "mapbox_context_enabled": True,
+    }
+    assert configured_response.json()["simsat_current"]["status"] == "not_configured"
+    assert configured_response.json()["simsat_baseline"]["status"] == "ready"
+    assert configured_response.json()["mapbox"]["status"] == "ready"
+    assert configured_response.json()["mapbox"]["detail"] == (
+        "token present; inspection context enabled"
+    )
+    get_settings.cache_clear()
+
+
 def test_health_endpoint_reflects_default_identity(tmp_path, monkeypatch) -> None:
     monkeypatch.chdir(tmp_path)
     monkeypatch.delenv("APP_ENV", raising=False)
