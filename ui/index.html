@@ -344,7 +344,7 @@
 
       .aperture-grid {
         display: grid;
-        grid-template-columns: repeat(3, minmax(0, 1fr));
+        grid-template-columns: repeat(2, minmax(0, 1fr));
         gap: 0.9rem;
         padding-top: 1rem;
       }
@@ -358,6 +358,10 @@
           rgba(9, 17, 22, 0.6);
       }
 
+      .aperture-wide {
+        grid-column: 1 / -1;
+      }
+
       .aperture h3 {
         margin: 0.4rem 0 0;
         font-size: 1.18rem;
@@ -368,6 +372,74 @@
         margin: 0.7rem 0 0;
         color: var(--muted);
         line-height: 1.6;
+      }
+
+      .snapshot-top {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 0.8rem;
+      }
+
+      .snapshot-status {
+        margin: 0;
+        padding: 0.22rem 0.5rem;
+        border: 1px solid var(--line);
+        font-size: 0.7rem;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      .snapshot-status.accepted {
+        color: var(--accent);
+        background: var(--accent-soft);
+      }
+
+      .snapshot-status.suppressed {
+        color: var(--warn);
+        background: var(--warn-soft);
+      }
+
+      .snapshot-status.degraded,
+      .snapshot-status.loading {
+        color: var(--off);
+        background: var(--off-soft);
+      }
+
+      .snapshot-list {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        column-gap: 1rem;
+        margin: 0.9rem 0 0;
+      }
+
+      .snapshot-row {
+        display: flex;
+        justify-content: space-between;
+        gap: 1rem;
+        padding: 0.48rem 0;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .snapshot-row dt,
+      .snapshot-row dd {
+        margin: 0;
+      }
+
+      .snapshot-row dt {
+        color: var(--muted);
+        font-size: 0.74rem;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      .snapshot-row dd {
+        max-width: 58%;
+        color: var(--ink);
+        font-size: 0.8rem;
+        line-height: 1.45;
+        text-align: right;
+        word-break: break-word;
       }
 
       .dependency-list {
@@ -458,7 +530,8 @@
         .signal-strip,
         .console,
         .lane-grid,
-        .aperture-grid {
+        .aperture-grid,
+        .snapshot-list {
           grid-template-columns: 1fr;
         }
 
@@ -582,10 +655,36 @@
           </div>
 
           <div class="aperture-grid">
-            <article class="aperture">
-              <p class="panel-kicker">Frame pair</p>
-              <h3>Current / baseline / overlay</h3>
-              <p>Visual aperture reserved. Console proves the backend contract before imagery lands.</p>
+            <article class="aperture aperture-wide">
+              <div class="snapshot-top">
+                <div>
+                  <p class="panel-kicker">Current frame snapshot</p>
+                  <h3 id="snapshot-title">Waiting for current frame</h3>
+                </div>
+                <p class="snapshot-status loading" id="snapshot-status">loading</p>
+              </div>
+              <dl class="snapshot-list">
+                <div class="snapshot-row">
+                  <dt>Asset</dt>
+                  <dd id="snapshot-asset">-</dd>
+                </div>
+                <div class="snapshot-row">
+                  <dt>Captured</dt>
+                  <dd id="snapshot-captured">-</dd>
+                </div>
+                <div class="snapshot-row">
+                  <dt>Baseline ref</dt>
+                  <dd id="snapshot-baseline">-</dd>
+                </div>
+                <div class="snapshot-row">
+                  <dt>Overlay</dt>
+                  <dd id="snapshot-overlay">-</dd>
+                </div>
+                <div class="snapshot-row">
+                  <dt>Source</dt>
+                  <dd id="snapshot-source">-</dd>
+                </div>
+              </dl>
             </article>
             <article class="aperture">
               <p class="panel-kicker">Alert desk</p>
@@ -614,6 +713,7 @@
 
     <script>
       const healthUrl = new URL("/health", window.location.origin);
+      const currentFrameUrl = new URL("/frames/current", window.location.origin);
 
       const appEnv = document.querySelector("#app-env");
       const healthStatus = document.querySelector("#health-status");
@@ -631,9 +731,50 @@
       const laneBaselineDetail = document.querySelector("#lane-baseline-detail");
       const laneMapbox = document.querySelector("#lane-mapbox");
       const laneMapboxDetail = document.querySelector("#lane-mapbox-detail");
+      const snapshotTitle = document.querySelector("#snapshot-title");
+      const snapshotStatus = document.querySelector("#snapshot-status");
+      const snapshotAsset = document.querySelector("#snapshot-asset");
+      const snapshotCaptured = document.querySelector("#snapshot-captured");
+      const snapshotBaseline = document.querySelector("#snapshot-baseline");
+      const snapshotOverlay = document.querySelector("#snapshot-overlay");
+      const snapshotSource = document.querySelector("#snapshot-source");
       const dependencyList = document.querySelector("#dependency-list");
 
       const boolLabel = (value) => (value ? "enabled" : "disabled");
+
+      function formatTimestamp(value) {
+        if (!value) {
+          return "unknown";
+        }
+
+        const timestamp = new Date(value);
+        if (Number.isNaN(timestamp.getTime())) {
+          return value;
+        }
+
+        return (
+          timestamp.toISOString().replace("T", " ").replace(".000Z", " UTC").replace("Z", " UTC")
+        );
+      }
+
+      function trimRef(value) {
+        if (!value) {
+          return "held off";
+        }
+
+        const parts = value.split("/");
+        return parts.slice(-3).join("/");
+      }
+
+      function currentFrameStatus(frameEnvelope) {
+        if (frameEnvelope.accepted_for_alerting === true) {
+          return ["accepted", "accepted"];
+        }
+        if (frameEnvelope.accepted_for_alerting === false) {
+          return ["suppressed", frameEnvelope.filter_reason || "suppressed"];
+        }
+        return ["degraded", "unknown"];
+      }
 
       function laneMode(dep, enabled, kind) {
         if (dep.status === "not_configured") {
@@ -729,6 +870,19 @@
         renderDependencies(health);
       }
 
+      function renderCurrentFrame(frameEnvelope) {
+        const [statusClass, statusLabel] = currentFrameStatus(frameEnvelope);
+
+        snapshotTitle.textContent = frameEnvelope.frame.frame_id;
+        snapshotStatus.textContent = statusLabel;
+        snapshotStatus.className = `snapshot-status ${statusClass}`;
+        snapshotAsset.textContent = frameEnvelope.frame.asset_id;
+        snapshotCaptured.textContent = formatTimestamp(frameEnvelope.frame.captured_at);
+        snapshotBaseline.textContent = frameEnvelope.baseline_frame_id || "pending";
+        snapshotOverlay.textContent = trimRef(frameEnvelope.overlay_ref);
+        snapshotSource.textContent = frameEnvelope.frame.source;
+      }
+
       function renderFailure(error) {
         healthStatus.textContent = "Degraded";
         systemHeadline.textContent = "Health contract unreachable";
@@ -757,17 +911,48 @@
         `;
       }
 
-      async function boot() {
-        try {
-          const response = await fetch(healthUrl);
-          if (!response.ok) {
-            throw new Error(`/health returned ${response.status}`);
-          }
+      function renderCurrentFrameFailure(error) {
+        snapshotTitle.textContent = "Current frame unavailable";
+        snapshotStatus.textContent = "degraded";
+        snapshotStatus.className = "snapshot-status degraded";
+        snapshotAsset.textContent = "unknown";
+        snapshotCaptured.textContent = error.message;
+        snapshotBaseline.textContent = "unknown";
+        snapshotOverlay.textContent = "unknown";
+        snapshotSource.textContent = currentFrameUrl.pathname;
+      }
 
-          const health = await response.json();
-          renderHealth(health);
-        } catch (error) {
-          renderFailure(error instanceof Error ? error : new Error("Unknown shell error"));
+      async function loadJson(url) {
+        const response = await fetch(url);
+        if (!response.ok) {
+          throw new Error(`${url.pathname} returned ${response.status}`);
+        }
+
+        return response.json();
+      }
+
+      async function boot() {
+        const [healthResult, currentFrameResult] = await Promise.allSettled([
+          loadJson(healthUrl),
+          loadJson(currentFrameUrl),
+        ]);
+
+        if (healthResult.status === "fulfilled") {
+          renderHealth(healthResult.value);
+        } else {
+          renderFailure(
+            healthResult.reason instanceof Error ? healthResult.reason : new Error("Unknown shell error"),
+          );
+        }
+
+        if (currentFrameResult.status === "fulfilled") {
+          renderCurrentFrame(currentFrameResult.value);
+        } else {
+          renderCurrentFrameFailure(
+            currentFrameResult.reason instanceof Error
+              ? currentFrameResult.reason
+              : new Error("Unknown current frame error"),
+          );
         }
       }
 
