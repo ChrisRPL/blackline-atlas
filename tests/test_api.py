@@ -77,6 +77,26 @@ def test_health_endpoint_reflects_baseline_only_sentinel_config(monkeypatch) -> 
     get_settings.cache_clear()
 
 
+def test_health_endpoint_reflects_fully_configured_sentinel_state(monkeypatch) -> None:
+    configured_client = build_api_client(
+        monkeypatch,
+        simsat_current_endpoint="https://example.test/sentinel/current/",
+        simsat_baseline_endpoint="https://example.test/sentinel/baseline/",
+    )
+    configured_response = configured_client.get("/health")
+
+    assert configured_response.status_code == 200
+    assert configured_response.json()["simsat_current"]["status"] == "ready"
+    assert configured_response.json()["simsat_current"]["detail"] == (
+        "https://example.test/sentinel/current/"
+    )
+    assert configured_response.json()["simsat_baseline"]["status"] == "ready"
+    assert configured_response.json()["simsat_baseline"]["detail"] == (
+        "https://example.test/sentinel/baseline/"
+    )
+    get_settings.cache_clear()
+
+
 def test_assets_endpoint_returns_seeded_assets() -> None:
     response = client.get("/assets")
 
