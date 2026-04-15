@@ -504,3 +504,69 @@ def test_api_uses_configured_sentinel_adapters_through_replay_switch(tmp_path, m
         "base_demo_bridge_01_20251012",
         "metadata.json",
     ).exists()
+
+
+def test_api_uses_configured_sentinel_adapters_for_suppressed_replay_switch(
+    tmp_path, monkeypatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    api_client = build_api_client(
+        monkeypatch,
+        simsat_current_endpoint="https://example.test/sentinel/current/",
+        simsat_baseline_endpoint="https://example.test/sentinel/baseline/",
+    )
+    api_client.app.state.atlas_service.frame_filter_policy = FrameFilterPolicy(
+        cloud_cover_threshold=0.01
+    )
+
+    start_response = api_client.post(
+        "/replay/start",
+        json={
+            "asset_id": "demo_bridge_01",
+            "scenario_id": "bridge_access_obstruction",
+        },
+    )
+    current_frame = api_client.get("/frames/current")
+    baseline_frame = api_client.get("/frames/baseline")
+    alerts = api_client.get("/alerts")
+    metrics = api_client.get("/metrics")
+
+    assert start_response.status_code == 200
+    assert current_frame.status_code == 200
+    assert baseline_frame.status_code == 200
+    assert current_frame.json()["frame"]["source"] == (
+        "https://example.test/sentinel/current"
+        "?asset_id=demo_bridge_01&scenario_id=bridge_access_obstruction&mode=current"
+    )
+    assert baseline_frame.json()["frame"]["source"] == (
+        "https://example.test/sentinel/baseline"
+        "?asset_id=demo_bridge_01&scenario_id=bridge_access_obstruction&mode=baseline"
+    )
+    assert current_frame.json()["accepted_for_alerting"] is False
+    assert current_frame.json()["filter_reason"] == "cloud_cover_too_high"
+    assert current_frame.json()["overlay_ref"] is None
+    assert alerts.status_code == 200
+    assert alerts.json() == []
+    assert metrics.status_code == 200
+    assert metrics.json()["frames_scanned"] == 88
+    assert metrics.json()["alerts_emitted"] == 1
+    assert metrics.json()["raw_frames_suppressed"] == 87
+    assert metrics.json()["downlink_rate"] == 0.011
+    assert tmp_path.joinpath(
+        ".cache",
+        "frames",
+        "demo_bridge_01",
+        "bridge_access_obstruction",
+        "current",
+        "cur_demo_bridge_01_20260414",
+        "metadata.json",
+    ).exists()
+    assert tmp_path.joinpath(
+        ".cache",
+        "frames",
+        "demo_bridge_01",
+        "bridge_access_obstruction",
+        "baseline",
+        "base_demo_bridge_01_20251012",
+        "metadata.json",
+    ).exists()
