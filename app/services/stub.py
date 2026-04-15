@@ -150,7 +150,22 @@ class StubAtlasService:
         return self._active_scenario().alerts
 
     def get_metrics(self) -> Metrics:
-        return self._active_scenario().metrics
+        scenario = self._active_scenario()
+        decision = self.frame_filter_policy.evaluate(
+            current=scenario.current_frame,
+            baseline=scenario.baseline_frame,
+        )
+        suppressed_frames = scenario.metrics.raw_frames_suppressed + (0 if decision.accepted else 1)
+
+        return scenario.metrics.model_copy(
+            update={
+                "raw_frames_suppressed": suppressed_frames,
+                "downlink_rate": round(
+                    scenario.metrics.alerts_emitted / scenario.metrics.frames_scanned,
+                    3,
+                ),
+            }
+        )
 
     def _dependency_state(self, endpoint: str | None, missing_detail: str) -> HealthDependency:
         if endpoint:
