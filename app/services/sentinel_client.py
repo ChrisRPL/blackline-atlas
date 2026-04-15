@@ -1,8 +1,11 @@
 from __future__ import annotations
 
+import json
 from dataclasses import dataclass
 from typing import Mapping, Protocol
+from urllib.error import URLError
 from urllib.parse import urlencode
+from urllib.request import urlopen
 
 from app.schemas.frame import FrameEnvelope, FrameRecord
 from app.services.frame_types import FrameRequest
@@ -59,6 +62,23 @@ class FixtureSentinelPayloadTransport:
         scenario = self._scenarios[scenario_id]
         envelope = scenario.current_frame if mode == "current" else scenario.baseline_frame
         return _payload_from_envelope(envelope)
+
+
+class HttpSentinelPayloadTransport:
+    def __init__(self, *, timeout_seconds: float = 5.0) -> None:
+        self._timeout_seconds = timeout_seconds
+
+    def fetch(self, plan: SentinelRequestPlan) -> Mapping[str, object] | None:
+        try:
+            with urlopen(plan.url, timeout=self._timeout_seconds) as response:
+                status = getattr(response, "status", response.getcode())
+                if status != 200:
+                    return None
+                payload = json.loads(response.read().decode("utf-8"))
+        except (OSError, TimeoutError, URLError, ValueError):
+            return None
+
+        return payload if isinstance(payload, dict) else None
 
 
 class ConfiguredSentinelEndpointSource:

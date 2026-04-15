@@ -1,6 +1,9 @@
 from __future__ import annotations
 
+import json
 from dataclasses import dataclass, field
+
+import pytest
 
 from app.core.config import Settings
 from app.schemas.asset import Asset
@@ -12,6 +15,7 @@ from app.services.sentinel_client import (
     CurrentSentinelAdapter,
     FixtureSentinelPayloadTransport,
     FixtureSentinelSource,
+    HttpSentinelPayloadTransport,
     SentinelRequestPlan,
 )
 
@@ -48,6 +52,72 @@ def test_fixture_sentinel_payload_transport_returns_current_payload_for_plan() -
     assert payload["image_ref"] == "fixtures/demo_bridge_01/current-2026-04-14.png"
     assert payload["baseline_frame_id"] == "base_demo_bridge_01_20251012"
     assert payload["overlay_ref"] == "fixtures/demo_bridge_01/overlay-2026-04-14.png"
+
+
+@pytest.mark.parametrize(
+    ("plan", "payload"),
+    [
+        (
+            SentinelRequestPlan(
+                endpoint="https://example.test/sentinel/current",
+                params={
+                    "asset_id": "demo_bridge_01",
+                    "scenario_id": "bridge_access_obstruction",
+                    "mode": "current",
+                },
+            ),
+            {"frame_id": "live_cur_demo_bridge_01_20260415"},
+        ),
+        (
+            SentinelRequestPlan(
+                endpoint="https://example.test/sentinel/baseline",
+                params={
+                    "asset_id": "demo_bridge_01",
+                    "scenario_id": "bridge_access_obstruction",
+                    "mode": "baseline",
+                },
+            ),
+            {"frame_id": "live_base_demo_bridge_01_20251012"},
+        ),
+    ],
+)
+def test_http_sentinel_payload_transport_returns_decoded_json(
+    monkeypatch, plan: SentinelRequestPlan, payload: dict[str, object]
+) -> None:
+    captured: list[tuple[str, float]] = []
+
+    def fake_urlopen(url: str, timeout: float):
+        captured.append((url, timeout))
+        return _FakeHTTPResponse(status=200, body=json.dumps(payload).encode("utf-8"))
+
+    monkeypatch.setattr("app.services.sentinel_client.urlopen", fake_urlopen)
+    transport = HttpSentinelPayloadTransport(timeout_seconds=7.5)
+
+    result = transport.fetch(plan)
+
+    assert result == payload
+    assert captured == [(plan.url, 7.5)]
+
+
+def test_http_sentinel_payload_transport_returns_none_for_invalid_response(monkeypatch) -> None:
+    plan = SentinelRequestPlan(
+        endpoint="https://example.test/sentinel/current",
+        params={
+            "asset_id": "demo_port_01",
+            "scenario_id": "hero_port_disruption",
+            "mode": "current",
+        },
+    )
+
+    def fake_urlopen(url: str, timeout: float):
+        assert url == plan.url
+        assert timeout == 5.0
+        return _FakeHTTPResponse(status=200, body=b"{not-json}")
+
+    monkeypatch.setattr("app.services.sentinel_client.urlopen", fake_urlopen)
+    transport = HttpSentinelPayloadTransport()
+
+    assert transport.fetch(plan) is None
 
 
 def test_configured_sentinel_source_builds_current_and_baseline_plans() -> None:
@@ -455,3 +525,21 @@ class _FakeTransport:
     def fetch(self, plan: SentinelRequestPlan) -> dict[str, object] | None:
         self.plans.append(plan)
         return self.payload
+
+
+class _FakeHTTPResponse:
+    def __init__(self, *, status: int, body: bytes) -> None:
+        self.status = status
+        self._body = body
+
+    def __enter__(self) -> _FakeHTTPResponse:
+        return self
+
+    def __exit__(self, exc_type, exc, tb) -> None:
+        return None
+
+    def read(self) -> bytes:
+        return self._body
+
+    def getcode(self) -> int:
+        return self.status
