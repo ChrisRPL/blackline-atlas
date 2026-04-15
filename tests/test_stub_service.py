@@ -21,8 +21,10 @@ def test_stub_service_marks_cloudy_frame_as_suppressed() -> None:
 
     frame = service.get_current_frame()
     metrics = service.get_metrics()
+    alerts = service.list_alerts()
 
     assert frame.accepted_for_alerting is False
     assert frame.filter_reason == "cloud_cover_too_high"
     assert frame.overlay_ref is None
     assert metrics.raw_frames_suppressed == 139
+    assert alerts == []

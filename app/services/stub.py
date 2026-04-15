@@ -147,7 +147,16 @@ class StubAtlasService:
         return self.frame_client.get_baseline_frame(self._active_frame_request())
 
     def list_alerts(self) -> list[Alert]:
-        return self._active_scenario().alerts
+        scenario = self._active_scenario()
+        decision = self.frame_filter_policy.evaluate(
+            current=scenario.current_frame,
+            baseline=scenario.baseline_frame,
+        )
+
+        if not decision.accepted:
+            return []
+
+        return scenario.alerts
 
     def get_metrics(self) -> Metrics:
         scenario = self._active_scenario()
