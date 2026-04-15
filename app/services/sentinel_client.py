@@ -46,6 +46,21 @@ class FixtureSentinelSource:
         return self._scenarios[scenario_id]
 
 
+class FixtureSentinelPayloadTransport:
+    def __init__(self, scenarios: Mapping[str, ScenarioFixture]) -> None:
+        self._scenarios = dict(scenarios)
+
+    def fetch(self, plan: SentinelRequestPlan) -> Mapping[str, object] | None:
+        scenario_id = plan.params.get("scenario_id")
+        mode = plan.params.get("mode")
+        if scenario_id not in self._scenarios or mode not in {"current", "baseline"}:
+            return None
+
+        scenario = self._scenarios[scenario_id]
+        envelope = scenario.current_frame if mode == "current" else scenario.baseline_frame
+        return _payload_from_envelope(envelope)
+
+
 class ConfiguredSentinelEndpointSource:
     def __init__(
         self,
@@ -225,3 +240,17 @@ def _bool_or_none(value: object) -> bool | None:
     if isinstance(value, bool):
         return value
     raise ValueError("Sentinel payload boolean fields must be bool when provided")
+
+
+def _payload_from_envelope(envelope: FrameEnvelope) -> dict[str, object]:
+    return {
+        "frame_id": envelope.frame.frame_id,
+        "asset_id": envelope.frame.asset_id,
+        "captured_at": envelope.frame.captured_at,
+        "image_ref": envelope.frame.image_ref,
+        "cloud_cover": envelope.frame.cloud_cover,
+        "baseline_frame_id": envelope.baseline_frame_id,
+        "overlay_ref": envelope.overlay_ref,
+        "accepted_for_alerting": envelope.accepted_for_alerting,
+        "filter_reason": envelope.filter_reason,
+    }

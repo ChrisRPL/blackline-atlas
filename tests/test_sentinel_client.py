@@ -10,6 +10,7 @@ from app.services.sentinel_client import (
     BaselineSentinelAdapter,
     ConfiguredSentinelEndpointSource,
     CurrentSentinelAdapter,
+    FixtureSentinelPayloadTransport,
     FixtureSentinelSource,
     SentinelRequestPlan,
 )
@@ -25,6 +26,28 @@ def test_fixture_sentinel_source_serves_scenario_frames() -> None:
     assert current.frame.frame_id == "cur_demo_bridge_01_20260414"
     assert current.overlay_ref == "fixtures/demo_bridge_01/overlay-2026-04-14.png"
     assert baseline.frame.frame_id == "base_demo_bridge_01_20251012"
+
+
+def test_fixture_sentinel_payload_transport_returns_current_payload_for_plan() -> None:
+    transport = FixtureSentinelPayloadTransport(_scenarios())
+    plan = SentinelRequestPlan(
+        endpoint="https://example.test/sentinel/current",
+        params={
+            "asset_id": "demo_bridge_01",
+            "scenario_id": "bridge_access_obstruction",
+            "mode": "current",
+        },
+    )
+
+    payload = transport.fetch(plan)
+
+    assert payload is not None
+    assert payload["frame_id"] == "cur_demo_bridge_01_20260414"
+    assert payload["asset_id"] == "demo_bridge_01"
+    assert payload["captured_at"] == "2026-04-14T18:42:00Z"
+    assert payload["image_ref"] == "fixtures/demo_bridge_01/current-2026-04-14.png"
+    assert payload["baseline_frame_id"] == "base_demo_bridge_01_20251012"
+    assert payload["overlay_ref"] == "fixtures/demo_bridge_01/overlay-2026-04-14.png"
 
 
 def test_configured_sentinel_source_builds_current_and_baseline_plans() -> None:

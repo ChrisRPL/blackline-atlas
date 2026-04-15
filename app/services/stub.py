@@ -20,6 +20,7 @@ from app.services.sentinel_client import (
     BaselineSentinelAdapter,
     ConfiguredSentinelEndpointSource,
     CurrentSentinelAdapter,
+    FixtureSentinelPayloadTransport,
     FixtureSentinelSource,
 )
 from app.services.watchlist_loader import load_watchlist_assets
@@ -208,7 +209,11 @@ class StubAtlasService:
         )
         fallback = FixtureSentinelSource(self.scenarios)
         return _CompositeSentinelFrameClient(
-            current=CurrentSentinelAdapter(planner=planner, fallback=fallback),
+            current=CurrentSentinelAdapter(
+                planner=planner,
+                fallback=fallback,
+                transport=FixtureSentinelPayloadTransport(self.scenarios),
+            ),
             baseline=BaselineSentinelAdapter(planner=planner, fallback=fallback),
         )
 
