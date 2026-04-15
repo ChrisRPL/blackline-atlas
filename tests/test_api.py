@@ -288,24 +288,7 @@ def test_replay_stop_response_reflects_reset_identity(tmp_path, monkeypatch) -> 
     get_settings.cache_clear()
 
 
-def test_alerts_endpoint_returns_empty_list_for_suppressed_frame(tmp_path, monkeypatch) -> None:
-    monkeypatch.chdir(tmp_path)
-    api_client = build_api_client(
-        monkeypatch,
-        simsat_current_endpoint=None,
-        simsat_baseline_endpoint=None,
-    )
-    api_client.app.state.atlas_service.frame_filter_policy = FrameFilterPolicy(
-        cloud_cover_threshold=0.01
-    )
-    alerts_response = api_client.get("/alerts")
-
-    assert alerts_response.status_code == 200
-    assert alerts_response.json() == []
-    get_settings.cache_clear()
-
-
-def test_current_frame_endpoint_marks_suppressed_frame(tmp_path, monkeypatch) -> None:
+def test_suppressed_frame_outputs_remain_aligned(tmp_path, monkeypatch) -> None:
     monkeypatch.chdir(tmp_path)
     api_client = build_api_client(
         monkeypatch,
@@ -316,11 +299,19 @@ def test_current_frame_endpoint_marks_suppressed_frame(tmp_path, monkeypatch) ->
         cloud_cover_threshold=0.01
     )
     current_frame_response = api_client.get("/frames/current")
+    alerts_response = api_client.get("/alerts")
+    metrics_response = api_client.get("/metrics")
 
     assert current_frame_response.status_code == 200
     assert current_frame_response.json()["accepted_for_alerting"] is False
     assert current_frame_response.json()["filter_reason"] == "cloud_cover_too_high"
     assert current_frame_response.json()["overlay_ref"] is None
+    assert alerts_response.status_code == 200
+    assert alerts_response.json() == []
+    assert metrics_response.status_code == 200
+    assert metrics_response.json()["alerts_emitted"] == 4
+    assert metrics_response.json()["raw_frames_suppressed"] == 139
+    assert metrics_response.json()["downlink_rate"] == 0.028
     get_settings.cache_clear()
 
 
