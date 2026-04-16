@@ -398,6 +398,13 @@
         word-break: break-word;
       }
 
+      .snapshot-note {
+        margin: 0.45rem 0 0;
+        color: var(--muted);
+        font-size: 0.76rem;
+        line-height: 1.55;
+      }
+
       .aperture p {
         margin: 0.7rem 0 0;
         color: var(--muted);
@@ -501,6 +508,18 @@
           rgba(10, 19, 24, 0.6);
       }
 
+      .alert-card.quiet {
+        background:
+          linear-gradient(180deg, rgba(114, 129, 138, 0.08), transparent 42%),
+          rgba(10, 19, 24, 0.58);
+      }
+
+      .alert-card.degraded {
+        background:
+          linear-gradient(180deg, rgba(199, 119, 104, 0.1), transparent 42%),
+          rgba(15, 18, 20, 0.62);
+      }
+
       .alert-top {
         display: flex;
         justify-content: space-between;
@@ -557,6 +576,16 @@
       .alert-pill.low {
         color: var(--off);
         background: var(--off-soft);
+      }
+
+      .alert-pill.quiet {
+        color: var(--off);
+        background: var(--off-soft);
+      }
+
+      .alert-pill.degraded {
+        color: var(--warn);
+        background: var(--warn-soft);
       }
 
       .alert-empty {
@@ -782,7 +811,8 @@
 
         .lane-detail,
         .dependency-meta,
-        .alert-meta {
+        .alert-meta,
+        .snapshot-note {
           font-size: 0.72rem;
           line-height: 1.45;
         }
@@ -957,6 +987,9 @@
                 <section class="snapshot-card">
                   <p class="panel-kicker">Current frame snapshot</p>
                   <h3 id="current-snapshot-title">Waiting for current frame</h3>
+                  <p class="snapshot-note" id="current-snapshot-note">
+                    Waiting for selected current frame.
+                  </p>
                   <dl class="snapshot-list">
                     <div class="snapshot-row">
                       <dt>Status</dt>
@@ -988,6 +1021,9 @@
                 <section class="snapshot-card">
                   <p class="panel-kicker">Baseline frame snapshot</p>
                   <h3 id="baseline-snapshot-title">Waiting for baseline frame</h3>
+                  <p class="snapshot-note" id="baseline-snapshot-note">
+                    Waiting for selected baseline frame.
+                  </p>
                   <dl class="snapshot-list">
                     <div class="snapshot-row">
                       <dt>Asset</dt>
@@ -1089,6 +1125,7 @@
       const currentSnapshotAsset = document.querySelector("#current-snapshot-asset");
       const currentSnapshotCaptured = document.querySelector("#current-snapshot-captured");
       const currentSnapshotBaseline = document.querySelector("#current-snapshot-baseline");
+      const currentSnapshotNote = document.querySelector("#current-snapshot-note");
       const currentSnapshotOverlay = document.querySelector("#current-snapshot-overlay");
       const currentSnapshotSource = document.querySelector("#current-snapshot-source");
       const baselineSnapshotTitle = document.querySelector("#baseline-snapshot-title");
@@ -1096,12 +1133,14 @@
       const baselineSnapshotCaptured = document.querySelector("#baseline-snapshot-captured");
       const baselineSnapshotCloud = document.querySelector("#baseline-snapshot-cloud");
       const baselineSnapshotFrame = document.querySelector("#baseline-snapshot-frame");
+      const baselineSnapshotNote = document.querySelector("#baseline-snapshot-note");
       const baselineSnapshotSource = document.querySelector("#baseline-snapshot-source");
       const baselineSnapshotImage = document.querySelector("#baseline-snapshot-image");
       const latestAlertTitle = document.querySelector("#latest-alert-title");
       const latestAlertSeverity = document.querySelector("#latest-alert-severity");
       const latestAlertMeta = document.querySelector("#latest-alert-meta");
       const latestAlertSummary = document.querySelector("#latest-alert-summary");
+      const latestAlertCard = document.querySelector("#latest-alert-card");
       const dependencyList = document.querySelector("#dependency-list");
 
       const boolLabel = (value) => (value ? "enabled" : "disabled");
@@ -1261,16 +1300,18 @@
 
       function renderLatestAlert(alerts) {
         if (!alerts.length) {
+          latestAlertCard.className = "alert-card quiet";
           latestAlertTitle.textContent = "No accepted alert";
           latestAlertSeverity.textContent = "quiet";
-          latestAlertSeverity.className = "alert-pill low";
-          latestAlertMeta.textContent = "Suppressed frames stay local until one clears the filter path.";
-          latestAlertSummary.textContent = "No operator escalation is active right now.";
+          latestAlertSeverity.className = "alert-pill quiet";
+          latestAlertMeta.textContent = "Filter path is holding low-value frames local.";
+          latestAlertSummary.textContent = "No operator escalation is active.";
           latestAlertSummary.className = "alert-summary alert-empty";
           return;
         }
 
         const [alert] = alerts;
+        latestAlertCard.className = "alert-card";
         latestAlertTitle.textContent = alert.asset_name;
         latestAlertSeverity.textContent = alert.severity;
         latestAlertSeverity.className = `alert-pill ${alert.severity}`;
@@ -1288,6 +1329,10 @@
         currentSnapshotAsset.textContent = frameEnvelope.frame.asset_id;
         currentSnapshotCaptured.textContent = formatTimestamp(frameEnvelope.frame.captured_at);
         currentSnapshotBaseline.textContent = frameEnvelope.baseline_frame_id || "pending";
+        currentSnapshotNote.textContent =
+          frameEnvelope.accepted_for_alerting === false
+            ? "Suppressed locally before alerting."
+            : "Accepted lane cleared for operator review.";
         currentSnapshotOverlay.textContent = trimRef(frameEnvelope.overlay_ref);
         currentSnapshotSource.textContent = frameEnvelope.frame.source;
         compareStatus.textContent = statusLabel;
@@ -1300,6 +1345,7 @@
         baselineSnapshotCaptured.textContent = formatTimestamp(frameEnvelope.frame.captured_at);
         baselineSnapshotCloud.textContent = formatCloudCover(frameEnvelope.frame.cloud_cover);
         baselineSnapshotFrame.textContent = frameEnvelope.frame.frame_id;
+        baselineSnapshotNote.textContent = "Reference frame held for same asset and replay scope.";
         baselineSnapshotSource.textContent = frameEnvelope.frame.source;
         baselineSnapshotImage.textContent = trimRef(frameEnvelope.frame.image_ref);
       }
@@ -1316,18 +1362,18 @@
         baselineHttp.textContent = "unknown";
         mapboxContext.textContent = "unknown";
         laneCurrent.textContent = "unknown";
-        laneCurrentDetail.textContent = error.message;
+        laneCurrentDetail.textContent = "Health path unavailable.";
         laneBaseline.textContent = "unknown";
-        laneBaselineDetail.textContent = error.message;
+        laneBaselineDetail.textContent = "Health path unavailable.";
         laneMapbox.textContent = "unknown";
-        laneMapboxDetail.textContent = error.message;
+        laneMapboxDetail.textContent = "Health path unavailable.";
         dependencyList.innerHTML = `
           <li class="dependency-item">
             <div class="dependency-top">
               <p class="dependency-name">Backend health</p>
               <p class="dependency-state degraded">degraded</p>
             </div>
-            <p class="dependency-meta">${error.message}</p>
+            <p class="dependency-meta">Shell could not reach /health. Verify the backend and refresh.</p>
           </li>
         `;
       }
@@ -1336,11 +1382,12 @@
         currentSnapshotTitle.textContent = "Current frame unavailable";
         currentSnapshotStatus.textContent = "degraded";
         currentSnapshotAsset.textContent = "unknown";
-        currentSnapshotCaptured.textContent = error.message;
+        currentSnapshotCaptured.textContent = "surface unavailable";
         currentSnapshotBaseline.textContent = "unknown";
+        currentSnapshotNote.textContent = "Current frame surface unreachable.";
         currentSnapshotOverlay.textContent = "unknown";
         currentSnapshotSource.textContent = currentFrameUrl.pathname;
-        compareStatus.textContent = "degraded";
+        compareStatus.textContent = "fallback active";
         compareStatus.className = "snapshot-status degraded";
       }
 
@@ -1353,20 +1400,22 @@
       }
 
       function renderAlertFailure(error) {
+        latestAlertCard.className = "alert-card degraded";
         latestAlertTitle.textContent = "Alert surface degraded";
         latestAlertSeverity.textContent = "degraded";
-        latestAlertSeverity.className = "alert-pill low";
-        latestAlertMeta.textContent = alertsUrl.pathname;
-        latestAlertSummary.textContent = error.message;
+        latestAlertSeverity.className = "alert-pill degraded";
+        latestAlertMeta.textContent = "Latest accepted alert is temporarily unavailable.";
+        latestAlertSummary.textContent = "Alert surface unreachable; retry once backend recovers.";
         latestAlertSummary.className = "alert-summary alert-empty";
       }
 
       function renderBaselineFrameFailure(error) {
         baselineSnapshotTitle.textContent = "Baseline frame unavailable";
         baselineSnapshotAsset.textContent = "unknown";
-        baselineSnapshotCaptured.textContent = error.message;
+        baselineSnapshotCaptured.textContent = "surface unavailable";
         baselineSnapshotCloud.textContent = "unknown";
         baselineSnapshotFrame.textContent = "unknown";
+        baselineSnapshotNote.textContent = "Baseline frame surface unreachable.";
         baselineSnapshotSource.textContent = baselineFrameUrl.pathname;
         baselineSnapshotImage.textContent = "unknown";
       }
