@@ -150,6 +150,7 @@ def test_stub_service_can_opt_in_model_http_backend(tmp_path: Path, monkeypatch)
             watchlist_path=None,
             model_endpoint="https://example.test/model",
             model_http_enabled=True,
+            model_provider="atlas_json_http",
         )
     )
 

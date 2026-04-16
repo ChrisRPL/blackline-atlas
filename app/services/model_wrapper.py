@@ -1,18 +1,17 @@
 from __future__ import annotations
 
-import json
 from typing import Protocol
 from urllib.error import URLError
-from urllib.request import Request, urlopen
+from urllib.request import urlopen
 
 from app.schemas.asset import Asset
 from app.schemas.frame import FrameEnvelope
 from app.schemas.model_payload import (
     CandidateImageInput,
     CandidateRequestPayload,
-    CandidateResponsePayload,
     CandidateTextInput,
 )
+from app.services.model_provider import HttpCandidateProvider
 from app.services.prompt_builder import CandidatePrompt, CandidatePromptBuilder
 from app.services.scenario_fixtures import ScenarioFixture
 
@@ -42,10 +41,12 @@ class HttpRawCandidateBackend:
         self,
         *,
         endpoint: str,
+        provider: HttpCandidateProvider,
         api_key: str | None = None,
         timeout_seconds: float = 10.0,
     ) -> None:
         self.endpoint = endpoint
+        self.provider = provider
         self.api_key = api_key
         self.timeout_seconds = timeout_seconds
 
@@ -55,11 +56,10 @@ class HttpRawCandidateBackend:
         payload: CandidateRequestPayload,
         scenario: ScenarioFixture,
     ) -> str:
-        request = Request(
-            self.endpoint,
-            data=json.dumps(payload.model_dump(mode="json")).encode("utf-8"),
-            headers=self._headers(),
-            method="POST",
+        request = self.provider.build_request(
+            endpoint=self.endpoint,
+            payload=payload,
+            api_key=self.api_key,
         )
 
         try:
@@ -70,13 +70,7 @@ class HttpRawCandidateBackend:
         except (OSError, URLError, UnicodeDecodeError):
             return scenario.model_output_text
 
-        return _extract_output_text(body, fallback=scenario.model_output_text)
-
-    def _headers(self) -> dict[str, str]:
-        headers = {"Content-Type": "application/json"}
-        if self.api_key:
-            headers["Authorization"] = f"Bearer {self.api_key}"
-        return headers
+        return self.provider.parse_response(body=body, fallback=scenario.model_output_text)
 
 
 class PromptedCandidateModel:
@@ -187,15 +181,3 @@ class PromptedCandidateModel:
             current=current,
             baseline=baseline,
         )
-
-
-def _extract_output_text(body: str, *, fallback: str) -> str:
-    text = body.strip()
-    if not text:
-        return fallback
-
-    try:
-        payload = CandidateResponsePayload.model_validate(json.loads(text))
-    except (json.JSONDecodeError, ValueError):
-        return text
-    return payload.output_text

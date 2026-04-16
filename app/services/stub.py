@@ -17,6 +17,7 @@ from app.services.frame_cache import FrameCacheLayout
 from app.services.frame_client import CachedFrameClient, FixtureFrameClient
 from app.services.frame_filters import FrameFilterPolicy
 from app.services.frame_types import FrameRequest
+from app.services.model_provider import resolve_http_candidate_provider
 from app.services.model_wrapper import (
     FixtureRawCandidateBackend,
     HttpRawCandidateBackend,
@@ -97,7 +98,7 @@ class StubAtlasService:
         return HealthResponse(
             status="ok",
             app_env=self.settings.app_env,
-            model_backend=HealthDependency(status="ready", detail=self.settings.model_version),
+            model_backend=self._model_backend_dependency(),
             simsat_current=self._dependency_state(
                 self.settings.simsat_current_endpoint,
                 "current Sentinel endpoint not configured yet",
@@ -115,6 +116,8 @@ class StubAtlasService:
                 simsat_current_http_enabled=self.settings.simsat_current_http_enabled,
                 simsat_baseline_http_enabled=self.settings.simsat_baseline_http_enabled,
                 mapbox_context_enabled=self.settings.mapbox_context_enabled,
+                model_http_enabled=self.settings.model_http_enabled,
+                model_provider=self.settings.model_provider,
             ),
         )
 
@@ -203,6 +206,28 @@ class StubAtlasService:
             detail="token present; inspection context disabled by config",
         )
 
+    def _model_backend_dependency(self) -> HealthDependency:
+        if not self.settings.model_http_enabled:
+            return HealthDependency(
+                status="ready",
+                detail=f"{self.settings.model_version} (fixture backend)",
+            )
+        if not self.settings.model_endpoint:
+            return HealthDependency(
+                status="not_configured",
+                detail="model endpoint not configured yet",
+            )
+        provider = resolve_http_candidate_provider(self.settings.model_provider)
+        if provider is None:
+            return HealthDependency(
+                status="degraded",
+                detail=f"{self.settings.model_provider} unsupported; fixture backend active",
+            )
+        return HealthDependency(
+            status="ready",
+            detail=f"{self.settings.model_version} ({provider.provider_id} http backend)",
+        )
+
     def _attach_mapbox_context(self, alert: Alert) -> Alert:
         context_path = self._mapbox_context_path(alert)
         context_path.parent.mkdir(parents=True, exist_ok=True)
@@ -236,9 +261,15 @@ class StubAtlasService:
         return Path(".cache") / "mapbox" / alert.asset_id / alert.alert_id / "context.png"
 
     def _model_backend(self):
-        if self.settings.model_http_enabled and self.settings.model_endpoint:
+        provider = resolve_http_candidate_provider(self.settings.model_provider)
+        if (
+            self.settings.model_http_enabled
+            and self.settings.model_endpoint
+            and provider is not None
+        ):
             return HttpRawCandidateBackend(
                 endpoint=self.settings.model_endpoint,
+                provider=provider,
                 api_key=self.settings.model_api_key,
             )
         return FixtureRawCandidateBackend()

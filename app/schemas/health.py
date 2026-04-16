@@ -16,6 +16,8 @@ class HealthConfig(BaseModel):
     simsat_current_http_enabled: bool
     simsat_baseline_http_enabled: bool
     mapbox_context_enabled: bool
+    model_http_enabled: bool
+    model_provider: str
 
 
 class HealthResponse(BaseModel):

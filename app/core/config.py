@@ -35,6 +35,7 @@ class Settings:
     model_endpoint: str | None = None
     model_http_enabled: bool = False
     model_api_key: str | None = None
+    model_provider: str = "atlas_json_http"
 
 
 def env_flag(name: str, default: bool = False) -> bool:
@@ -61,4 +62,5 @@ def get_settings() -> Settings:
         model_endpoint=os.getenv("MODEL_ENDPOINT") or None,
         model_http_enabled=env_flag("MODEL_HTTP_ENABLED"),
         model_api_key=os.getenv("MODEL_API_KEY") or None,
+        model_provider=os.getenv("MODEL_PROVIDER", "atlas_json_http"),
     )
