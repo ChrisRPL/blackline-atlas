@@ -163,6 +163,59 @@ def test_stub_service_can_opt_in_model_http_backend(tmp_path: Path, monkeypatch)
     assert alerts[0].why == "Live backend confirmed macro disruption."
 
 
+def test_stub_service_can_opt_in_openai_responses_model_backend(
+    tmp_path: Path, monkeypatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+
+    def fake_urlopen(request, timeout: float):
+        assert request.full_url == "https://api.openai.com/v1/responses"
+        assert timeout == 10.0
+        body = json.loads(request.data.decode("utf-8"))
+        assert body["model"] == "gpt-4.1-mini"
+        assert body["input"][0]["role"] == "system"
+        assert body["input"][1]["role"] == "user"
+        return _FakeHTTPResponse(
+            body=json.dumps(
+                {
+                    "output_text": (
+                        '{"event_type":"probable_large_scale_disruption","severity":"high",'
+                        '"confidence":0.91,"bbox":[0.19,0.26,0.73,0.84],'
+                        '"civilian_impact":"trade_disruption",'
+                        '"why":"OpenAI provider confirmed macro disruption.",'
+                        '"action":"downlink_now"}'
+                    )
+                }
+            ).encode("utf-8")
+        )
+
+    monkeypatch.setattr("app.services.model_wrapper.urlopen", fake_urlopen)
+    service = StubAtlasService(
+        Settings(
+            app_env="test",
+            app_port=8000,
+            model_version="gpt-4.1-mini",
+            simsat_current_endpoint=None,
+            simsat_baseline_endpoint=None,
+            mapbox_token_present=False,
+            watchlist_path=None,
+            model_endpoint="https://api.openai.com/v1/responses",
+            model_http_enabled=True,
+            model_provider="openai_responses_http",
+            model_api_key="test-key",
+        )
+    )
+
+    frame = service.get_current_frame()
+    alerts = service.list_alerts()
+
+    assert frame.accepted_for_alerting is True
+    assert frame.filter_reason == "accepted"
+    assert alerts[0].confidence == 0.91
+    assert alerts[0].civilian_impact == "trade_disruption"
+    assert alerts[0].why == "OpenAI provider confirmed macro disruption."
+
+
 def test_stub_service_keeps_fixture_only_frames_without_sentinel_endpoints(
     tmp_path: Path, monkeypatch
 ) -> None:

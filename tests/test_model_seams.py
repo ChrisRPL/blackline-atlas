@@ -1,12 +1,16 @@
 from __future__ import annotations
 
+import base64
 import json
 from urllib.error import URLError
 
 from app.core.config import Settings
 from app.schemas.asset import Asset
 from app.schemas.frame import FrameEnvelope, FrameRecord
-from app.services.model_provider import AtlasJsonHttpCandidateProvider
+from app.services.model_provider import (
+    AtlasJsonHttpCandidateProvider,
+    OpenAIResponsesCandidateProvider,
+)
 from app.services.model_wrapper import HttpRawCandidateBackend, PromptedCandidateModel
 from app.services.prompt_builder import CandidatePromptBuilder
 from app.services.scenario_fixtures import build_stub_scenarios
@@ -211,6 +215,62 @@ def test_http_raw_candidate_backend_uses_provider_contract(monkeypatch) -> None:
     assert calls[2] == ("parse", '{"ignored":true}', scenario.model_output_text)
 
 
+def test_openai_responses_provider_builds_multimodal_request(tmp_path) -> None:
+    image_path = tmp_path / "frame.png"
+    image_path.write_bytes(base64.b64decode(_PNG_1X1_BASE64))
+    provider = OpenAIResponsesCandidateProvider()
+    payload = PromptedCandidateModel(
+        model_version="gpt-4.1-mini",
+        backend=_RecordingBackend(raw_text="{}"),
+    ).build_payload(
+        asset=_asset(),
+        scenario=_scenario(),
+        current=_current_frame_with_image(str(image_path)),
+        baseline=_baseline_frame_with_image("https://example.test/baseline.png"),
+    )
+
+    request = provider.build_request(
+        endpoint="https://api.openai.com/v1/responses",
+        payload=payload,
+        api_key="secret-token",
+    )
+    body = json.loads(request.data.decode("utf-8"))
+
+    assert request.full_url == "https://api.openai.com/v1/responses"
+    assert request.get_header("Authorization") == "Bearer secret-token"
+    assert body["model"] == "gpt-4.1-mini"
+    assert body["input"][0]["role"] == "system"
+    assert body["input"][1]["role"] == "user"
+    assert body["input"][1]["content"][0]["type"] == "input_text"
+    assert body["input"][1]["content"][1]["type"] == "input_image"
+    assert body["input"][1]["content"][1]["image_url"].startswith("data:image/png;base64,")
+    assert body["input"][1]["content"][2]["image_url"] == "https://example.test/baseline.png"
+
+
+def test_openai_responses_provider_parses_output_from_response_body() -> None:
+    provider = OpenAIResponsesCandidateProvider()
+
+    text = provider.parse_response(
+        body=json.dumps(
+            {
+                "output": [
+                    {
+                        "content": [
+                            {
+                                "type": "output_text",
+                                "text": '{"action":"defer","severity":"medium"}',
+                            }
+                        ]
+                    }
+                ]
+            }
+        ),
+        fallback="fallback",
+    )
+
+    assert text == '{"action":"defer","severity":"medium"}'
+
+
 class _RecordingBackend:
     def __init__(self, *, raw_text: str) -> None:
         self.raw_text = raw_text
@@ -241,6 +301,25 @@ class _FakeHTTPResponse:
 class _FakeProviderRequest:
     def __init__(self, full_url: str) -> None:
         self.full_url = full_url
+
+
+def _current_frame_with_image(image_ref: str) -> FrameEnvelope:
+    frame = _current_frame()
+    return frame.model_copy(
+        update={"frame": frame.frame.model_copy(update={"image_ref": image_ref})}
+    )
+
+
+def _baseline_frame_with_image(image_ref: str) -> FrameEnvelope:
+    frame = _baseline_frame()
+    return frame.model_copy(
+        update={"frame": frame.frame.model_copy(update={"image_ref": image_ref})}
+    )
+
+
+_PNG_1X1_BASE64 = (
+    "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9s8m2V0AAAAASUVORK5CYII="
+)
 
 
 def _asset() -> Asset:

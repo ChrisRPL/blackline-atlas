@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from urllib.error import URLError
 
 from fastapi.testclient import TestClient
@@ -561,6 +562,27 @@ def test_health_endpoint_marks_missing_model_endpoint_not_configured(tmp_path, m
     assert model_response.json()["model_backend"]["status"] == "not_configured"
     assert model_response.json()["model_backend"]["detail"] == "model endpoint not configured yet"
     assert model_response.json()["config"]["model_http_enabled"] is True
+    get_settings.cache_clear()
+
+
+def test_health_endpoint_exposes_openai_provider_backend_mode(tmp_path, monkeypatch) -> None:
+    monkeypatch.chdir(tmp_path)
+    model_client = build_api_client(
+        monkeypatch,
+        simsat_current_endpoint=None,
+        simsat_baseline_endpoint=None,
+        model_endpoint="https://api.openai.com/v1/responses",
+        model_http_enabled=True,
+        model_provider="openai_responses_http",
+    )
+    model_response = model_client.get("/health")
+
+    assert model_response.status_code == 200
+    assert model_response.json()["model_backend"]["status"] == "ready"
+    assert model_response.json()["model_backend"]["detail"] == (
+        "lfm2.5-vl-450m-prompted (openai_responses_http http backend)"
+    )
+    assert model_response.json()["config"]["model_provider"] == "openai_responses_http"
     get_settings.cache_clear()
 
 
@@ -1620,6 +1642,102 @@ def test_api_uses_configured_sentinel_adapters_for_suppressed_replay_switch(
         "base_demo_bridge_01_20251012",
         "metadata.json",
     ).exists()
+
+
+def test_api_uses_openai_provider_model_backend_smoke_path(tmp_path, monkeypatch) -> None:
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setenv("MODEL_VERSION", "gpt-4.1-mini")
+
+    def fake_urlopen(request, timeout: float):
+        assert request.full_url == "https://api.openai.com/v1/responses"
+        assert timeout == 10.0
+        body = json.loads(request.data.decode("utf-8"))
+        assert body["model"] == "gpt-4.1-mini"
+        assert body["input"][0]["role"] == "system"
+        assert body["input"][1]["role"] == "user"
+        return _FakeHTTPResponse(
+            body=json.dumps(
+                {
+                    "output": [
+                        {
+                            "content": [
+                                {
+                                    "type": "output_text",
+                                    "text": (
+                                        '{"event_type":"probable_large_scale_disruption",'
+                                        '"severity":"high","confidence":0.91,'
+                                        '"bbox":[0.19,0.26,0.73,0.84],'
+                                        '"civilian_impact":"trade_disruption",'
+                                        '"why":"OpenAI provider confirmed macro disruption.",'
+                                        '"action":"downlink_now"}'
+                                    ),
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ).encode("utf-8")
+        )
+
+    monkeypatch.setattr("app.services.model_wrapper.urlopen", fake_urlopen)
+    model_client = build_api_client(
+        monkeypatch,
+        simsat_current_endpoint=None,
+        simsat_baseline_endpoint=None,
+        model_endpoint="https://api.openai.com/v1/responses",
+        model_http_enabled=True,
+        model_provider="openai_responses_http",
+    )
+
+    frame = model_client.get("/frames/current")
+    alerts = model_client.get("/alerts")
+    metrics = model_client.get("/metrics")
+
+    assert frame.status_code == 200
+    assert frame.json()["accepted_for_alerting"] is True
+    assert frame.json()["filter_reason"] == "accepted"
+    assert alerts.status_code == 200
+    assert alerts.json()[0]["confidence"] == 0.91
+    assert alerts.json()[0]["civilian_impact"] == "trade_disruption"
+    assert alerts.json()[0]["why"] == "OpenAI provider confirmed macro disruption."
+    assert alerts.json()[0]["source"]["model_version"] == "gpt-4.1-mini"
+    assert metrics.status_code == 200
+    assert metrics.json()["alerts_emitted"] == 5
+    get_settings.cache_clear()
+
+
+def test_api_openai_provider_model_backend_falls_back_to_fixture_output(
+    tmp_path, monkeypatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setenv("MODEL_VERSION", "gpt-4.1-mini")
+
+    def fake_urlopen(request, timeout: float):
+        _ = request
+        _ = timeout
+        raise URLError("offline")
+
+    monkeypatch.setattr("app.services.model_wrapper.urlopen", fake_urlopen)
+    model_client = build_api_client(
+        monkeypatch,
+        simsat_current_endpoint=None,
+        simsat_baseline_endpoint=None,
+        model_endpoint="https://api.openai.com/v1/responses",
+        model_http_enabled=True,
+        model_provider="openai_responses_http",
+    )
+
+    alerts = model_client.get("/alerts")
+
+    assert alerts.status_code == 200
+    assert alerts.json()[0]["confidence"] == 0.89
+    assert alerts.json()[0]["civilian_impact"] == "shipping_or_aid_disruption"
+    assert (
+        alerts.json()[0]["why"]
+        == "Large terminal footprint change versus baseline near bulk loading berths."
+    )
+    assert alerts.json()[0]["source"]["model_version"] == "gpt-4.1-mini"
+    get_settings.cache_clear()
 
 
 class _FakeHTTPResponse:
