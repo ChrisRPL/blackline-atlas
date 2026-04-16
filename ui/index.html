@@ -435,19 +435,23 @@
         line-height: 1.65;
       }
 
-      .lane-grid {
+      .decision-band {
         display: grid;
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-        gap: 0.9rem;
-        padding: 1rem 0;
+        grid-template-columns: minmax(0, 1.45fr) repeat(2, minmax(0, 0.8fr));
+        gap: 1rem;
+        padding: 0;
         border-bottom: 1px solid var(--line);
+        align-items: start;
+        border: 1px solid var(--line);
+        background:
+          linear-gradient(180deg, rgba(132, 215, 206, 0.07), transparent 56%),
+          var(--panel-soft);
       }
 
-      .lane {
-        min-height: 9.4rem;
-        padding: 0.95rem;
-        border: 1px solid var(--line);
-        background: var(--panel-soft);
+      .decision-core,
+      .decision-meta {
+        min-height: 6.6rem;
+        padding: 0.95rem 1rem;
       }
 
       .lane-label,
@@ -477,6 +481,39 @@
         font-size: 0.76rem;
         line-height: 1.55;
         overflow-wrap: anywhere;
+      }
+
+      .decision-core {
+        padding-right: 1.2rem;
+      }
+
+      .decision-row {
+        display: flex;
+        align-items: baseline;
+        gap: 0.8rem;
+        margin-top: 0.6rem;
+      }
+
+      .decision-value {
+        margin: 0;
+        font-size: 1.46rem;
+        line-height: 1;
+        font-weight: 800;
+        letter-spacing: 0.02em;
+        text-transform: uppercase;
+      }
+
+      .decision-meta-value {
+        display: block;
+        margin-top: 0.58rem;
+        font-size: 1rem;
+        line-height: 1.05;
+        font-weight: 700;
+        text-transform: uppercase;
+      }
+
+      .decision-meta {
+        border-left: 1px solid var(--line);
       }
 
       .aperture-grid {
@@ -865,6 +902,16 @@
           padding: 0.95rem;
         }
 
+        .decision-band {
+          grid-template-columns: 1fr;
+          gap: 0;
+        }
+
+        .decision-meta {
+          border-left: 0;
+          border-top: 1px solid var(--line);
+        }
+
         .masthead {
           gap: 0.75rem;
           margin-bottom: 0.8rem;
@@ -1051,6 +1098,26 @@
 
           <p class="section-quiet-note" id="center-note">Current, baseline, then latest alert.</p>
 
+          <div class="decision-band">
+            <section class="decision-core">
+              <p class="lane-label">Decision</p>
+              <div class="decision-row">
+                <p class="decision-value" id="decision-action">-</p>
+              </div>
+              <p class="lane-detail" id="decision-action-detail">Waiting for evaluator output.</p>
+            </section>
+            <section class="decision-meta">
+              <p class="lane-label">Path</p>
+              <span class="decision-meta-value" id="decision-path">-</span>
+              <p class="lane-detail" id="decision-path-detail">Current acceptance path unresolved.</p>
+            </section>
+            <section class="decision-meta">
+              <p class="lane-label">Confidence</p>
+              <span class="decision-meta-value" id="decision-confidence-detail">-</span>
+              <p class="lane-detail" id="decision-rate-detail">Waiting for /metrics.</p>
+            </section>
+          </div>
+
           <div class="snapshot-compare stage-compare">
             <section class="snapshot-card">
               <p class="panel-kicker">Current frame snapshot</p>
@@ -1134,6 +1201,7 @@
       const replayStatusUrl = new URL("/replay/status", window.location.origin);
       const currentFrameUrl = new URL("/frames/current", window.location.origin);
       const baselineFrameUrl = new URL("/frames/baseline", window.location.origin);
+      const metricsUrl = new URL("/metrics", window.location.origin);
 
       const appEnv = document.querySelector("#app-env");
       const healthStatus = document.querySelector("#health-status");
@@ -1148,6 +1216,12 @@
       const replayHeroAsset = document.querySelector("#replay-hero-asset");
       const centerNote = document.querySelector("#center-note");
       const compareStatus = document.querySelector("#compare-status");
+      const decisionAction = document.querySelector("#decision-action");
+      const decisionActionDetail = document.querySelector("#decision-action-detail");
+      const decisionPath = document.querySelector("#decision-path");
+      const decisionPathDetail = document.querySelector("#decision-path-detail");
+      const decisionConfidenceDetail = document.querySelector("#decision-confidence-detail");
+      const decisionRateDetail = document.querySelector("#decision-rate-detail");
       const currentSnapshotTitle = document.querySelector("#current-snapshot-title");
       const currentSnapshotStatus = document.querySelector("#current-snapshot-status");
       const currentSnapshotAsset = document.querySelector("#current-snapshot-asset");
@@ -1325,8 +1399,31 @@
           frameEnvelope.accepted_for_alerting === false
             ? "Suppressed locally before alerting."
             : "Accepted lane cleared for operator review.";
-        compareStatus.textContent = statusLabel;
-        compareStatus.className = `snapshot-status ${statusClass}`;
+        compareStatus.textContent =
+          frameEnvelope.accepted_for_alerting === false ? "held local" : "compare ready";
+        compareStatus.className = "snapshot-status loading";
+      }
+
+      function renderDecisionStrip(frameEnvelope, alerts, metrics) {
+        const alert = alerts.length ? alerts[0] : null;
+        const rateLabel = `${metrics.downlink_rate} rate`;
+
+        if (frameEnvelope.accepted_for_alerting === true && alert) {
+          decisionAction.textContent = humanizeSlug(alert.action);
+          decisionActionDetail.textContent =
+            `${humanizeSlug(alert.event_type)} / ${alert.severity}`;
+          decisionPath.textContent = "accepted";
+          decisionPathDetail.textContent = `evaluator clear / ${rateLabel}`;
+          decisionConfidenceDetail.textContent = `${Math.round(alert.confidence * 100)}%`;
+          decisionRateDetail.textContent = `${metrics.alerts_emitted} alerts / ${metrics.frames_scanned} frames`;
+        } else {
+          decisionAction.textContent = "suppressed";
+          decisionActionDetail.textContent = "held local";
+          decisionPath.textContent = humanizeSlug(frameEnvelope.filter_reason || "unknown");
+          decisionPathDetail.textContent = `pre-alert filter / ${rateLabel}`;
+          decisionConfidenceDetail.textContent = "none";
+          decisionRateDetail.textContent = `${metrics.raw_frames_suppressed} suppressed total`;
+        }
       }
 
       function renderBaselineFrame(frameEnvelope) {
@@ -1347,6 +1444,12 @@
         currentHttp.textContent = "unknown";
         baselineHttp.textContent = "unknown";
         mapboxContext.textContent = "unknown";
+        decisionAction.textContent = "degraded";
+        decisionActionDetail.textContent = "health unreachable";
+        decisionPath.textContent = "unknown";
+        decisionPathDetail.textContent = "Evaluator truth unavailable.";
+        decisionConfidenceDetail.textContent = "none";
+        decisionRateDetail.textContent = "metrics unavailable";
         dependencyList.innerHTML = `
           <li class="dependency-row">
             <p class="dependency-name">Backend health</p>
@@ -1384,6 +1487,11 @@
         latestAlertSummary.className = "alert-summary alert-empty";
       }
 
+      function renderMetricsFailure(error) {
+        decisionPathDetail.textContent = "Metrics surface unreachable.";
+        decisionRateDetail.textContent = "metrics unavailable";
+      }
+
       function renderBaselineFrameFailure(error) {
         baselineSnapshotTitle.textContent = "Baseline frame unavailable";
         baselineSnapshotAsset.textContent = "unknown";
@@ -1401,12 +1509,13 @@
       }
 
       async function boot() {
-        const [healthResult, replayResult, currentFrameResult, baselineFrameResult, alertsResult] = await Promise.allSettled([
+        const [healthResult, replayResult, currentFrameResult, baselineFrameResult, alertsResult, metricsResult] = await Promise.allSettled([
           loadJson(healthUrl),
           loadJson(replayStatusUrl),
           loadJson(currentFrameUrl),
           loadJson(baselineFrameUrl),
           loadJson(alertsUrl),
+          loadJson(metricsUrl),
         ]);
 
         if (healthResult.status === "fulfilled") {
@@ -1452,6 +1561,26 @@
         } else {
           renderAlertFailure(
             alertsResult.reason instanceof Error ? alertsResult.reason : new Error("Unknown alerts error"),
+          );
+        }
+
+        if (metricsResult.status !== "fulfilled") {
+          renderMetricsFailure(
+            metricsResult.reason instanceof Error
+              ? metricsResult.reason
+              : new Error("Unknown metrics error"),
+          );
+        }
+
+        if (
+          currentFrameResult.status === "fulfilled" &&
+          alertsResult.status === "fulfilled" &&
+          metricsResult.status === "fulfilled"
+        ) {
+          renderDecisionStrip(
+            currentFrameResult.value,
+            alertsResult.value,
+            metricsResult.value,
           );
         }
       }
