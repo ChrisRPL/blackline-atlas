@@ -32,16 +32,16 @@ This repo now contains:
 - optional Mapbox inspection context on accepted alerts when a token is present
 - a same-origin UI shell at `/ui`
 - routes for the core product loop
-- placeholder training scripts
+- a tiny replay-pack exporter and offline eval harness
 - tests for API and service behavior
 
 ## Repo layout
 
 ```text
 app/        backend services, routes, schemas, policy spine
-tests/      API smoke tests
-training/   dataset, eval, and training placeholders
-ui/         dashboard placeholder
+tests/      API and service regressions
+training/   replay pack, eval harness, training helpers
+ui/         same-origin dashboard shell
 ```
 
 ## Fast start
