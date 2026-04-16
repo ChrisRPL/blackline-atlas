@@ -1380,7 +1380,7 @@
         latestAlertSeverity.textContent = alert.severity;
         latestAlertSeverity.className = `alert-pill ${alert.severity}`;
         latestAlertMeta.textContent =
-          `${formatTimestamp(alert.timestamp)} / ${humanizeSlug(alert.event_type)} / ${alert.action}`;
+          `${formatTimestamp(alert.timestamp)} / ${humanizeSlug(alert.civilian_impact)}`;
         latestAlertSummary.textContent = alert.why;
         latestAlertSummary.className = "alert-summary";
       }
