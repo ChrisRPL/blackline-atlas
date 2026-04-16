@@ -261,6 +261,29 @@
         border-bottom: 1px solid var(--line);
       }
 
+      .subsection-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        gap: 1rem;
+        margin-top: 1.1rem;
+        padding-top: 1rem;
+        border-top: 1px solid var(--line);
+      }
+
+      .subsection-head .section-label,
+      .subsection-head .section-note {
+        font-size: 0.72rem;
+      }
+
+      .replay-list {
+        margin: 0.5rem 0 0;
+      }
+
+      .replay-list .fact-row:first-child {
+        padding-top: 0.65rem;
+      }
+
       .microcopy {
         margin: 1rem 0 0;
         color: var(--muted);
@@ -636,6 +659,30 @@
             <li>fail-soft replay remains primary</li>
           </ul>
 
+          <div class="subsection-head">
+            <p class="section-label">Replay identity</p>
+            <p class="section-note" id="replay-state-label">Loading...</p>
+          </div>
+
+          <dl class="fact-list replay-list">
+            <div class="fact-row">
+              <dt>Mode</dt>
+              <dd id="replay-running">-</dd>
+            </div>
+            <div class="fact-row">
+              <dt>Asset</dt>
+              <dd id="replay-asset">-</dd>
+            </div>
+            <div class="fact-row">
+              <dt>Scenario</dt>
+              <dd id="replay-scenario">-</dd>
+            </div>
+            <div class="fact-row">
+              <dt>Hero asset</dt>
+              <dd id="replay-hero-asset">-</dd>
+            </div>
+          </dl>
+
           <p class="microcopy">
             Switches mirror <code>/health.config</code>. Future UI toggles can trust booleans, not prose.
           </p>
@@ -775,6 +822,7 @@
 
     <script>
       const healthUrl = new URL("/health", window.location.origin);
+      const replayStatusUrl = new URL("/replay/status", window.location.origin);
       const currentFrameUrl = new URL("/frames/current", window.location.origin);
       const baselineFrameUrl = new URL("/frames/baseline", window.location.origin);
 
@@ -788,6 +836,11 @@
       const currentHttp = document.querySelector("#cfg-current-http");
       const baselineHttp = document.querySelector("#cfg-baseline-http");
       const mapboxContext = document.querySelector("#cfg-mapbox");
+      const replayStateLabel = document.querySelector("#replay-state-label");
+      const replayRunning = document.querySelector("#replay-running");
+      const replayAsset = document.querySelector("#replay-asset");
+      const replayScenario = document.querySelector("#replay-scenario");
+      const replayHeroAsset = document.querySelector("#replay-hero-asset");
       const laneCurrent = document.querySelector("#lane-current");
       const laneCurrentDetail = document.querySelector("#lane-current-detail");
       const laneBaseline = document.querySelector("#lane-baseline");
@@ -852,6 +905,10 @@
           return "unknown";
         }
         return `${Math.round(value * 100)}%`;
+      }
+
+      function compactLabel(value, fallback = "none") {
+        return value === null || value === undefined || value === "" ? fallback : value;
       }
 
       function laneMode(dep, enabled, kind) {
@@ -948,6 +1005,14 @@
         renderDependencies(health);
       }
 
+      function renderReplayIdentity(replayState) {
+        replayStateLabel.textContent = replayState.running ? "Replay active" : "Replay idle";
+        replayRunning.textContent = replayState.running ? "running" : "idle";
+        replayAsset.textContent = compactLabel(replayState.asset_id);
+        replayScenario.textContent = compactLabel(replayState.scenario_id);
+        replayHeroAsset.textContent = compactLabel(replayState.hero_asset_id, "unknown");
+      }
+
       function renderCurrentFrame(frameEnvelope) {
         const [statusClass, statusLabel] = currentFrameStatus(frameEnvelope);
 
@@ -1012,6 +1077,14 @@
         compareStatus.className = "snapshot-status degraded";
       }
 
+      function renderReplayFailure(error) {
+        replayStateLabel.textContent = "Replay degraded";
+        replayRunning.textContent = "unknown";
+        replayAsset.textContent = "unknown";
+        replayScenario.textContent = "unknown";
+        replayHeroAsset.textContent = error.message;
+      }
+
       function renderBaselineFrameFailure(error) {
         baselineSnapshotTitle.textContent = "Baseline frame unavailable";
         baselineSnapshotAsset.textContent = "unknown";
@@ -1032,8 +1105,9 @@
       }
 
       async function boot() {
-        const [healthResult, currentFrameResult, baselineFrameResult] = await Promise.allSettled([
+        const [healthResult, replayResult, currentFrameResult, baselineFrameResult] = await Promise.allSettled([
           loadJson(healthUrl),
+          loadJson(replayStatusUrl),
           loadJson(currentFrameUrl),
           loadJson(baselineFrameUrl),
         ]);
@@ -1043,6 +1117,16 @@
         } else {
           renderFailure(
             healthResult.reason instanceof Error ? healthResult.reason : new Error("Unknown shell error"),
+          );
+        }
+
+        if (replayResult.status === "fulfilled") {
+          renderReplayIdentity(replayResult.value);
+        } else {
+          renderReplayFailure(
+            replayResult.reason instanceof Error
+              ? replayResult.reason
+              : new Error("Unknown replay state error"),
           );
         }
 

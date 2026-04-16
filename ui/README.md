@@ -10,8 +10,10 @@ Planned layout:
 Current scope:
 - same-origin shell at `/ui`
 - reads `/health`
+- reads `/replay/status`
 - reads `/frames/current`
 - reads `/frames/baseline`
 - renders backend mode truth from `/health.config`
+- renders compact replay identity in the left rail
 - renders read-only current and baseline snapshots in the center pane
 - no replay controls or multi-pane live dashboard yet
