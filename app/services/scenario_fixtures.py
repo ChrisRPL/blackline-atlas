@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from dataclasses import dataclass
 
 from app.core.config import Settings
@@ -15,6 +16,7 @@ class ScenarioFixture:
     asset_id: str
     current_frame: FrameEnvelope
     baseline_frame: FrameEnvelope
+    model_output_text: str
     alerts: list[Alert]
     metrics: Metrics
 
@@ -80,6 +82,20 @@ def build_stub_scenarios(
             asset_id=hero_asset.asset_id,
             current_frame=hero_current_frame,
             baseline_frame=hero_baseline_frame,
+            model_output_text=json.dumps(
+                {
+                    "event_type": "probable_large_scale_disruption",
+                    "severity": "high",
+                    "confidence": 0.89,
+                    "bbox": [0.19, 0.26, 0.73, 0.84],
+                    "civilian_impact": "shipping_or_aid_disruption",
+                    "why": (
+                        "Large terminal footprint change versus baseline "
+                        "near bulk loading berths."
+                    ),
+                    "action": "downlink_now",
+                }
+            ),
             alerts=[
                 Alert(
                     alert_id="blk_00017",
@@ -116,6 +132,19 @@ def build_stub_scenarios(
             asset_id=bridge_asset.asset_id,
             current_frame=bridge_current_frame,
             baseline_frame=bridge_baseline_frame,
+            model_output_text=json.dumps(
+                {
+                    "event_type": "probable_access_obstruction",
+                    "severity": "medium",
+                    "confidence": 0.78,
+                    "bbox": [0.31, 0.18, 0.68, 0.71],
+                    "civilian_impact": "public_mobility_disruption",
+                    "why": (
+                        "Bridge deck access appears partially obstructed " "versus stable baseline."
+                    ),
+                    "action": "defer",
+                }
+            ),
             alerts=[
                 Alert(
                     alert_id="blk_00018",

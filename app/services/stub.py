@@ -11,11 +11,13 @@ from app.schemas.frame import FrameEnvelope
 from app.schemas.health import HealthConfig, HealthDependency, HealthResponse
 from app.schemas.metrics import Metrics
 from app.schemas.replay import ReplayStartRequest, ReplayState
+from app.services.alert_pipeline import StructuredAlertPipeline
 from app.services.baseline_compare import FixtureBaselineComparator
 from app.services.frame_cache import FrameCacheLayout
 from app.services.frame_client import CachedFrameClient, FixtureFrameClient
 from app.services.frame_filters import FrameFilterPolicy
 from app.services.frame_types import FrameRequest
+from app.services.scenario_evaluator import ScenarioEvaluator
 from app.services.scenario_fixtures import ScenarioFixture, build_stub_scenarios
 from app.services.sentinel_client import (
     BaselineSentinelAdapter,
@@ -55,6 +57,12 @@ class StubAtlasService:
         )
         self.baseline_comparator = FixtureBaselineComparator()
         self.frame_filter_policy = FrameFilterPolicy()
+        self.alert_pipeline = StructuredAlertPipeline(model_version=self.settings.model_version)
+        self.scenario_evaluator = ScenarioEvaluator(
+            comparator=self.baseline_comparator,
+            frame_filter_policy=self.frame_filter_policy,
+            alert_pipeline=self.alert_pipeline,
+        )
         self.replay = MutableReplayState(
             running=False,
             asset_id=None,
@@ -124,68 +132,23 @@ class StubAtlasService:
         )
 
     def get_current_frame(self) -> FrameEnvelope:
-        request = self._active_frame_request()
-        current = self.frame_client.get_current_frame(request)
-        baseline = self.frame_client.get_baseline_frame(request)
-        compared = self.baseline_comparator.compare(current=current, baseline=baseline)
-        decision = self.frame_filter_policy.evaluate(current=compared, baseline=baseline)
-
-        if decision.accepted:
-            return compared.model_copy(
-                update={
-                    "accepted_for_alerting": True,
-                    "filter_reason": decision.reason,
-                }
-            )
-
-        return compared.model_copy(
-            update={
-                "accepted_for_alerting": False,
-                "filter_reason": decision.reason,
-                "overlay_ref": None,
-            }
-        )
+        return self._evaluate_active_scenario().current_frame
 
     def get_baseline_frame(self) -> FrameEnvelope:
         return self.frame_client.get_baseline_frame(self._active_frame_request())
 
     def list_alerts(self) -> list[Alert]:
-        scenario = self._active_scenario()
-        decision = self.frame_filter_policy.evaluate(
-            current=scenario.current_frame,
-            baseline=scenario.baseline_frame,
-        )
-
-        if not decision.accepted:
+        alerts = self._evaluate_active_scenario().alerts
+        if not alerts:
             return []
 
         if not self.settings.mapbox_token_present or not self.settings.mapbox_context_enabled:
-            return scenario.alerts
+            return alerts
 
-        return [self._attach_mapbox_context(alert) for alert in scenario.alerts]
+        return [self._attach_mapbox_context(alert) for alert in alerts]
 
     def get_metrics(self) -> Metrics:
-        scenario = self._active_scenario()
-        decision = self.frame_filter_policy.evaluate(
-            current=scenario.current_frame,
-            baseline=scenario.baseline_frame,
-        )
-        emitted_alerts = max(
-            scenario.metrics.alerts_emitted - (0 if decision.accepted else len(scenario.alerts)),
-            0,
-        )
-        suppressed_frames = scenario.metrics.raw_frames_suppressed + (0 if decision.accepted else 1)
-
-        return scenario.metrics.model_copy(
-            update={
-                "alerts_emitted": emitted_alerts,
-                "raw_frames_suppressed": suppressed_frames,
-                "downlink_rate": round(
-                    emitted_alerts / scenario.metrics.frames_scanned,
-                    3,
-                ),
-            }
-        )
+        return self._evaluate_active_scenario().metrics
 
     def _dependency_state(
         self,
@@ -257,6 +220,18 @@ class StubAtlasService:
 
     def _mapbox_context_path(self, alert: Alert) -> Path:
         return Path(".cache") / "mapbox" / alert.asset_id / alert.alert_id / "context.png"
+
+    def _evaluate_active_scenario(self):
+        scenario = self._active_scenario()
+        request = self._active_frame_request()
+        current = self.frame_client.get_current_frame(request)
+        baseline = self.frame_client.get_baseline_frame(request)
+        self.scenario_evaluator.frame_filter_policy = self.frame_filter_policy
+        return self.scenario_evaluator.evaluate(
+            scenario=scenario,
+            current=current,
+            baseline=baseline,
+        )
 
     def _frame_delegate(self):
         if not self.settings.simsat_current_endpoint and not self.settings.simsat_baseline_endpoint:

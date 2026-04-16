@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from dataclasses import replace
 from pathlib import Path
 
 from app.core.config import Settings
@@ -35,6 +36,37 @@ def test_stub_service_marks_cloudy_frame_as_suppressed() -> None:
     assert metrics.raw_frames_suppressed == 139
     assert metrics.downlink_rate == 0.028
     assert alerts == []
+
+
+def test_stub_service_uses_shared_eval_path_for_invalid_model_output() -> None:
+    service = StubAtlasService(
+        Settings(
+            app_env="test",
+            app_port=8000,
+            model_version="lfm2.5-vl-450m-prompted",
+            simsat_current_endpoint=None,
+            simsat_baseline_endpoint=None,
+            mapbox_token_present=False,
+            watchlist_path=None,
+        )
+    )
+    hero = service.scenarios["hero_port_disruption"]
+    service.scenarios["hero_port_disruption"] = replace(
+        hero,
+        model_output_text='{"event_type":"probable_large_scale_disruption"}',
+    )
+
+    frame = service.get_current_frame()
+    metrics = service.get_metrics()
+    alerts = service.list_alerts()
+
+    assert frame.accepted_for_alerting is False
+    assert frame.filter_reason == "invalid_model_output"
+    assert frame.overlay_ref is None
+    assert alerts == []
+    assert metrics.alerts_emitted == 4
+    assert metrics.raw_frames_suppressed == 139
+    assert metrics.downlink_rate == 0.028
 
 
 def test_stub_service_keeps_fixture_only_frames_without_sentinel_endpoints(
