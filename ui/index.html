@@ -115,70 +115,42 @@
       }
 
       .deck {
-        max-width: 18rem;
-        margin: 0;
-        color: var(--muted);
-        font-size: 0.82rem;
-        line-height: 1.38;
+        display: none;
       }
 
       .masthead {
         display: flex;
         justify-content: space-between;
-        align-items: flex-start;
-        gap: 1.2rem;
-        margin-bottom: 1rem;
+        align-items: center;
+        gap: 1rem;
+        padding-bottom: 0.75rem;
+        margin-bottom: 0.75rem;
+        border-bottom: 1px solid var(--line);
       }
 
       .masthead-copy {
-        display: grid;
-        gap: 0.28rem;
+        display: flex;
+        align-items: baseline;
+        gap: 0.7rem;
+        min-width: 0;
       }
 
       .masthead-copy h1 {
         margin: 0;
-        max-width: 11.5ch;
-        font-size: clamp(2rem, 4.8vw, 3.55rem);
-        line-height: 0.92;
-        letter-spacing: -0.055em;
+        min-width: 0;
+        max-width: none;
+        font-size: clamp(1.22rem, 2vw, 1.55rem);
+        line-height: 1.02;
+        letter-spacing: -0.035em;
+        white-space: nowrap;
       }
 
-      .status-bar {
-        min-width: min(32rem, 100%);
-        padding: 0.95rem 1.05rem;
-        border: 1px solid var(--line);
-        background:
-          linear-gradient(135deg, rgba(132, 215, 206, 0.08), transparent 40%),
-          linear-gradient(180deg, rgba(16, 27, 34, 0.98), rgba(8, 14, 18, 0.9));
-        box-shadow: var(--shadow);
-      }
-
-      .status-top {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        gap: 0.9rem;
-      }
-
-      .status-line {
+      .utility-strip {
         display: flex;
         align-items: center;
-        gap: 0.7rem;
+        justify-content: flex-end;
+        gap: 0.5rem;
         flex-wrap: wrap;
-      }
-
-      .status-label,
-      .status-copy,
-      .status-env {
-        margin: 0;
-      }
-
-      .status-label {
-        color: var(--muted);
-        font-family: "IBM Plex Mono", monospace;
-        font-size: 0.72rem;
-        letter-spacing: 0.12em;
-        text-transform: uppercase;
       }
 
       .state-chip {
@@ -209,24 +181,31 @@
         background: var(--warn-soft);
       }
 
-      .status-copy {
-        color: var(--ink);
-        font-size: 0.95rem;
-        line-height: 1.35;
-      }
-
-      .status-copy.secondary {
-        margin-top: 0.65rem;
+      .state-chip.utility {
         color: var(--muted);
-        font-size: 0.78rem;
+        background: rgba(114, 129, 138, 0.08);
       }
 
-      .status-env {
+      .utility-copy,
+      .status-label {
+        margin: 0;
         color: var(--muted);
         font-family: "IBM Plex Mono", monospace;
-        font-size: 0.8rem;
-        letter-spacing: 0.08em;
+        font-size: 0.72rem;
+        letter-spacing: 0.12em;
         text-transform: uppercase;
+      }
+
+      .utility-copy {
+        letter-spacing: 0.08em;
+        text-transform: none;
+      }
+
+      .section {
+        min-height: 31rem;
+        border: 1px solid var(--line);
+        background: var(--panel);
+        box-shadow: var(--shadow);
       }
 
       .signal-strip {
@@ -286,13 +265,6 @@
         gap: 1rem;
       }
 
-      .section {
-        min-height: 31rem;
-        border: 1px solid var(--line);
-        background: var(--panel);
-        box-shadow: var(--shadow);
-      }
-
       .section-left,
       .section-right,
       .section-center {
@@ -314,7 +286,7 @@
       .compact-stack {
         padding: 1rem;
         border: 1px solid var(--line);
-        background: rgba(9, 17, 22, 0.52);
+        background: rgba(9, 17, 22, 0.42);
       }
 
       .primary-stage {
@@ -563,7 +535,7 @@
       .snapshot-card {
         padding: 0.95rem;
         border: 1px solid var(--line);
-        background: rgba(9, 17, 22, 0.54);
+        background: rgba(9, 17, 22, 0.58);
       }
 
       .snapshot-card .snapshot-list {
@@ -664,12 +636,12 @@
       }
 
       .alert-card {
-        margin-bottom: 1rem;
+        margin-bottom: 0;
         padding: 0.95rem;
         border: 1px solid var(--line);
         background:
-          linear-gradient(180deg, rgba(132, 215, 206, 0.05), transparent 42%),
-          rgba(10, 19, 24, 0.6);
+          linear-gradient(180deg, rgba(132, 215, 206, 0.08), transparent 42%),
+          rgba(10, 19, 24, 0.72);
       }
 
       .alert-card.quiet {
@@ -864,7 +836,7 @@
         }
 
         .masthead,
-        .status-top,
+        .masthead-copy,
         .center-hero {
           flex-direction: column;
           align-items: flex-start;
@@ -883,6 +855,7 @@
         .masthead {
           gap: 0.75rem;
           margin-bottom: 0.8rem;
+          padding-bottom: 0.65rem;
         }
 
         .eyebrow {
@@ -891,17 +864,12 @@
         }
 
         .masthead-copy h1 {
-          max-width: 9.5ch;
-          font-size: clamp(1.7rem, 10vw, 2.55rem);
+          max-width: 12ch;
+          white-space: normal;
+          font-size: clamp(1.3rem, 7vw, 1.85rem);
         }
 
-        .deck {
-          max-width: none;
-          font-size: 0.74rem;
-          line-height: 1.3;
-        }
-
-        .status-bar,
+        .compact-stack,
         .compact-stack,
         .snapshot-card,
         .alert-card {
@@ -916,6 +884,14 @@
         .section-right,
         .section-center {
           padding: 0.9rem;
+        }
+
+        .section-right {
+          order: 2;
+        }
+
+        .section-left {
+          order: 3;
         }
 
         .section-head {
@@ -948,7 +924,7 @@
           font-size: 0.68rem;
         }
 
-        .status-copy,
+        .utility-copy,
         .lane-detail,
         .dependency-meta,
         .alert-meta,
@@ -1001,26 +977,12 @@
         <div class="masthead-copy">
           <p class="eyebrow">Blackline Atlas</p>
           <h1>Civilian lifeline monitoring</h1>
-          <p class="deck">Orient, compare, alert.</p>
         </div>
 
-        <div class="status-bar">
-          <div class="status-top">
-            <div>
-              <p class="status-label">Shell state</p>
-              <div class="status-line">
-                <span class="state-chip idle" id="health-status">connecting</span>
-                <p class="status-copy" id="system-headline">Waiting for /health</p>
-              </div>
-            </div>
-            <div>
-              <p class="status-label">Environment</p>
-              <p class="status-env" id="app-env">-</p>
-            </div>
-          </div>
-          <p class="status-copy secondary" id="system-summary">
-            Current / baseline first. Latest alert second.
-          </p>
+        <div class="utility-strip">
+          <span class="state-chip idle" id="health-status">connecting</span>
+          <span class="state-chip utility" id="system-headline">replay-safe</span>
+          <span class="state-chip utility" id="app-env">-</span>
         </div>
       </header>
 
@@ -1190,7 +1152,6 @@
       const appEnv = document.querySelector("#app-env");
       const healthStatus = document.querySelector("#health-status");
       const systemHeadline = document.querySelector("#system-headline");
-      const systemSummary = document.querySelector("#system-summary");
       const currentHttp = document.querySelector("#cfg-current-http");
       const baselineHttp = document.querySelector("#cfg-baseline-http");
       const mapboxContext = document.querySelector("#cfg-mapbox");
@@ -1317,8 +1278,8 @@
         if (degradedCount > 0) {
           healthStatus.textContent = "degraded";
           healthStatus.className = "state-chip degraded";
-          systemHeadline.textContent = "Live path failed; fixture fallback active";
-          systemSummary.textContent = `${degradedCount} degraded dependency`;
+          systemHeadline.textContent = "fallback active";
+          systemHeadline.className = "state-chip utility";
           centerNote.textContent = "Compare stays live on fallback frames.";
           return;
         }
@@ -1326,21 +1287,22 @@
         if (liveCount > 0) {
           healthStatus.textContent = "live";
           healthStatus.className = "state-chip live";
-          systemHeadline.textContent = "Live transport active where enabled";
-          systemSummary.textContent = `${liveCount} live lane${liveCount === 1 ? "" : "s"} armed`;
+          systemHeadline.textContent = liveCount === 1 ? "1 live lane" : `${liveCount} live lanes`;
+          systemHeadline.className = "state-chip utility";
           centerNote.textContent = "Compare uses live sources where enabled.";
           return;
         }
 
         healthStatus.textContent = "fixture";
         healthStatus.className = "state-chip fixture";
-        systemHeadline.textContent = "Replay-safe, fixture-first posture";
-        systemSummary.textContent = "Stable local demo path";
+        systemHeadline.textContent = "replay-safe";
+        systemHeadline.className = "state-chip utility";
         centerNote.textContent = "Compare stays anchored to replay frames.";
       }
 
       function renderHealth(health) {
         appEnv.textContent = health.app_env;
+        appEnv.className = "state-chip utility";
         currentHttp.textContent = boolLabel(health.config.simsat_current_http_enabled);
         baselineHttp.textContent = boolLabel(health.config.simsat_baseline_http_enabled);
         mapboxContext.textContent = boolLabel(health.config.mapbox_context_enabled);
@@ -1410,10 +1372,11 @@
       function renderFailure(error) {
         healthStatus.textContent = "degraded";
         healthStatus.className = "state-chip degraded";
-        systemHeadline.textContent = "Health contract unreachable";
-        systemSummary.textContent = "Console degraded";
+        systemHeadline.textContent = "health unreachable";
+        systemHeadline.className = "state-chip utility";
         centerNote.textContent = "Operator truth unavailable.";
         appEnv.textContent = "unknown";
+        appEnv.className = "state-chip utility";
         currentHttp.textContent = "unknown";
         baselineHttp.textContent = "unknown";
         mapboxContext.textContent = "unknown";
