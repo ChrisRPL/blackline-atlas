@@ -1326,7 +1326,6 @@
           healthStatus.className = "state-chip degraded";
           systemHeadline.textContent = "fallback active";
           systemHeadline.className = "state-chip utility";
-          centerNote.textContent = "Compare stays live on fallback frames.";
           return;
         }
 
@@ -1335,7 +1334,6 @@
           healthStatus.className = "state-chip live";
           systemHeadline.textContent = liveCount === 1 ? "1 live lane" : `${liveCount} live lanes`;
           systemHeadline.className = "state-chip utility";
-          centerNote.textContent = "Compare uses live sources where enabled.";
           return;
         }
 
@@ -1343,7 +1341,6 @@
         healthStatus.className = "state-chip fixture";
         systemHeadline.textContent = "replay-safe";
         systemHeadline.className = "state-chip utility";
-        centerNote.textContent = "Compare stays anchored to replay frames.";
       }
 
       function renderHealth(health) {
@@ -1400,7 +1397,11 @@
             ? "Suppressed locally before alerting."
             : "Accepted lane cleared for operator review.";
         compareStatus.textContent =
-          frameEnvelope.accepted_for_alerting === false ? "held local" : "compare ready";
+          frameEnvelope.accepted_for_alerting === false
+            ? "overlay held"
+            : frameEnvelope.overlay_ref
+              ? "overlay ready"
+              : "compare ready";
         compareStatus.className = "snapshot-status loading";
       }
 
@@ -1431,6 +1432,20 @@
         baselineSnapshotAsset.textContent = frameEnvelope.frame.asset_id;
         baselineSnapshotCaptured.textContent = formatTimestamp(frameEnvelope.frame.captured_at);
         baselineSnapshotNote.textContent = "Reference frame held for same asset and replay scope.";
+      }
+
+      function renderCompareCue(currentFrame, baselineFrame) {
+        if (currentFrame.accepted_for_alerting === true && currentFrame.overlay_ref) {
+          centerNote.textContent = "Overlay ready against baseline.";
+          return;
+        }
+
+        if (currentFrame.accepted_for_alerting === false) {
+          centerNote.textContent = "Overlay held before compare.";
+          return;
+        }
+
+        centerNote.textContent = "Baseline staged for compare.";
       }
 
       function renderFailure(error) {
@@ -1465,8 +1480,9 @@
         currentSnapshotAsset.textContent = "unknown";
         currentSnapshotCaptured.textContent = "surface unavailable";
         currentSnapshotNote.textContent = "Current frame surface unreachable.";
-        compareStatus.textContent = "fallback active";
+        compareStatus.textContent = "compare degraded";
         compareStatus.className = "snapshot-status degraded";
+        centerNote.textContent = "Current compare surface unavailable.";
       }
 
       function renderReplayFailure(error) {
@@ -1497,6 +1513,7 @@
         baselineSnapshotAsset.textContent = "unknown";
         baselineSnapshotCaptured.textContent = "surface unavailable";
         baselineSnapshotNote.textContent = "Baseline frame surface unreachable.";
+        centerNote.textContent = "Baseline compare surface unavailable.";
       }
 
       async function loadJson(url) {
@@ -1574,6 +1591,7 @@
 
         if (
           currentFrameResult.status === "fulfilled" &&
+          baselineFrameResult.status === "fulfilled" &&
           alertsResult.status === "fulfilled" &&
           metricsResult.status === "fulfilled"
         ) {
@@ -1582,6 +1600,7 @@
             alertsResult.value,
             metricsResult.value,
           );
+          renderCompareCue(currentFrameResult.value, baselineFrameResult.value);
         }
       }
 
