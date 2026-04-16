@@ -7,6 +7,8 @@ from pathlib import Path
 from app.core.config import Settings
 from app.schemas.replay import ReplayStartRequest
 from app.services.frame_filters import FrameFilterPolicy
+from app.services.model_wrapper import PromptedCandidateModel
+from app.services.prompt_builder import CandidatePromptBuilder
 from app.services.sentinel_client import FixtureSentinelPayloadTransport
 from app.services.stub import StubAtlasService
 
@@ -38,6 +40,17 @@ def test_stub_service_marks_cloudy_frame_as_suppressed() -> None:
     assert alerts == []
 
 
+class StaticResponder:
+    def __init__(self, raw_output_text: str) -> None:
+        self.raw_output_text = raw_output_text
+
+    def generate(self, *, prompt, model_version: str, scenario) -> str:
+        _ = prompt
+        _ = model_version
+        _ = scenario
+        return self.raw_output_text
+
+
 def test_stub_service_uses_shared_eval_path_for_invalid_model_output() -> None:
     service = StubAtlasService(
         Settings(
@@ -67,6 +80,42 @@ def test_stub_service_uses_shared_eval_path_for_invalid_model_output() -> None:
     assert metrics.alerts_emitted == 4
     assert metrics.raw_frames_suppressed == 139
     assert metrics.downlink_rate == 0.028
+
+
+def test_stub_service_routes_through_model_wrapper() -> None:
+    service = StubAtlasService(
+        Settings(
+            app_env="test",
+            app_port=8000,
+            model_version="lfm2.5-vl-450m-prompted",
+            simsat_current_endpoint=None,
+            simsat_baseline_endpoint=None,
+            mapbox_token_present=False,
+            watchlist_path=None,
+        )
+    )
+    service.model_wrapper = PromptedCandidateModel(
+        model_version="lfm2.5-vl-450m-prompted",
+        backend=StaticResponder(
+            raw_output_text=(
+                '{"event_type":"no_event","severity":"low","confidence":0.11,'
+                '"bbox":[0.10,0.10,0.40,0.40],"civilian_impact":"no_material_impact",'
+                '"why":"No durable disruption visible.","action":"discard"}'
+            )
+        ),
+        prompt_builder=CandidatePromptBuilder(),
+    )
+
+    frame = service.get_current_frame()
+    metrics = service.get_metrics()
+    alerts = service.list_alerts()
+
+    assert frame.accepted_for_alerting is False
+    assert frame.filter_reason == "model_discarded"
+    assert frame.overlay_ref is None
+    assert alerts == []
+    assert metrics.alerts_emitted == 4
+    assert metrics.raw_frames_suppressed == 139
 
 
 def test_stub_service_keeps_fixture_only_frames_without_sentinel_endpoints(

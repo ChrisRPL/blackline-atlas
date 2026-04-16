@@ -17,6 +17,13 @@ from app.services.frame_cache import FrameCacheLayout
 from app.services.frame_client import CachedFrameClient, FixtureFrameClient
 from app.services.frame_filters import FrameFilterPolicy
 from app.services.frame_types import FrameRequest
+from app.services.model_wrapper import (
+    FixtureRawCandidateBackend,
+    PromptedCandidateModel,
+)
+from app.services.prompt_builder import (
+    CandidatePromptBuilder,
+)
 from app.services.scenario_evaluator import ScenarioEvaluator
 from app.services.scenario_fixtures import ScenarioFixture, build_stub_scenarios
 from app.services.sentinel_client import (
@@ -58,10 +65,16 @@ class StubAtlasService:
         self.baseline_comparator = FixtureBaselineComparator()
         self.frame_filter_policy = FrameFilterPolicy()
         self.alert_pipeline = StructuredAlertPipeline(model_version=self.settings.model_version)
+        self.model_wrapper = PromptedCandidateModel(
+            model_version=self.settings.model_version,
+            backend=FixtureRawCandidateBackend(),
+            prompt_builder=CandidatePromptBuilder(),
+        )
         self.scenario_evaluator = ScenarioEvaluator(
             comparator=self.baseline_comparator,
             frame_filter_policy=self.frame_filter_policy,
             alert_pipeline=self.alert_pipeline,
+            model_wrapper=self.model_wrapper,
         )
         self.replay = MutableReplayState(
             running=False,
@@ -227,7 +240,9 @@ class StubAtlasService:
         current = self.frame_client.get_current_frame(request)
         baseline = self.frame_client.get_baseline_frame(request)
         self.scenario_evaluator.frame_filter_policy = self.frame_filter_policy
+        self.scenario_evaluator.model_wrapper = self.model_wrapper
         return self.scenario_evaluator.evaluate(
+            asset=self._asset_by_id(scenario.asset_id),
             scenario=scenario,
             current=current,
             baseline=baseline,

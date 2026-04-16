@@ -3,11 +3,13 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from app.schemas.alert import Alert
+from app.schemas.asset import Asset
 from app.schemas.frame import FrameEnvelope
 from app.schemas.metrics import Metrics
 from app.services.alert_pipeline import StructuredAlertPipeline
 from app.services.baseline_compare import FixtureBaselineComparator
 from app.services.frame_filters import FrameFilterPolicy
+from app.services.model_wrapper import PromptedCandidateModel
 from app.services.scenario_fixtures import ScenarioFixture
 
 
@@ -26,14 +28,17 @@ class ScenarioEvaluator:
         comparator: FixtureBaselineComparator,
         frame_filter_policy: FrameFilterPolicy,
         alert_pipeline: StructuredAlertPipeline,
+        model_wrapper: PromptedCandidateModel,
     ) -> None:
         self.comparator = comparator
         self.frame_filter_policy = frame_filter_policy
         self.alert_pipeline = alert_pipeline
+        self.model_wrapper = model_wrapper
 
     def evaluate(
         self,
         *,
+        asset: Asset,
         scenario: ScenarioFixture,
         current: FrameEnvelope,
         baseline: FrameEnvelope,
@@ -45,8 +50,14 @@ class ScenarioEvaluator:
         final_reason = decision.reason
 
         if decision.accepted:
+            raw_output_text = self.model_wrapper.generate_raw_candidate_text(
+                asset=asset,
+                scenario=scenario,
+                current=compared,
+                baseline=baseline,
+            )
             resolution = self.alert_pipeline.resolve(
-                raw_output_text=scenario.model_output_text,
+                raw_output_text=raw_output_text,
                 alert_seed=scenario.alerts[0] if scenario.alerts else None,
                 current_frame_id=compared.frame.frame_id,
                 baseline_frame_id=compared.baseline_frame_id or baseline.frame.frame_id,
