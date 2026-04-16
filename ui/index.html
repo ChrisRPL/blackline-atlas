@@ -491,6 +491,76 @@
         padding: 0;
       }
 
+      .alert-card {
+        margin-bottom: 1rem;
+        padding: 0.95rem;
+        border: 1px solid var(--line);
+        background:
+          linear-gradient(180deg, rgba(132, 215, 206, 0.05), transparent 42%),
+          rgba(10, 19, 24, 0.6);
+      }
+
+      .alert-top {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 1rem;
+      }
+
+      .alert-title,
+      .alert-meta,
+      .alert-summary {
+        margin: 0;
+      }
+
+      .alert-title {
+        margin-top: 0.4rem;
+        font-size: 1.08rem;
+        line-height: 1.12;
+      }
+
+      .alert-meta {
+        margin-top: 0.55rem;
+        color: var(--muted);
+        font-size: 0.76rem;
+        line-height: 1.6;
+      }
+
+      .alert-summary {
+        margin-top: 0.8rem;
+        color: var(--ink);
+        line-height: 1.55;
+      }
+
+      .alert-pill {
+        padding: 0.24rem 0.55rem;
+        border: 1px solid var(--line);
+        font-size: 0.72rem;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        white-space: nowrap;
+      }
+
+      .alert-pill.high {
+        color: var(--warn);
+        background: var(--warn-soft);
+      }
+
+      .alert-pill.medium {
+        color: var(--accent);
+        background: var(--accent-soft);
+      }
+
+      .alert-pill.low {
+        color: var(--off);
+        background: var(--off-soft);
+      }
+
+      .alert-empty {
+        color: var(--muted);
+        line-height: 1.6;
+      }
+
       .dependency-item {
         padding: 0.95rem 0;
         border-bottom: 1px solid var(--line);
@@ -813,6 +883,19 @@
             <p class="section-label">Dependency truth</p>
             <p class="section-note">Live read from /health</p>
           </div>
+
+          <article class="alert-card" id="latest-alert-card">
+            <div class="alert-top">
+              <div>
+                <p class="panel-kicker">Latest alert</p>
+                <h3 class="alert-title" id="latest-alert-title">Waiting for /alerts</h3>
+              </div>
+              <p class="alert-pill low" id="latest-alert-severity">idle</p>
+            </div>
+            <p class="alert-meta" id="latest-alert-meta">Right rail will show the latest accepted alert only.</p>
+            <p class="alert-summary" id="latest-alert-summary">Waiting for alert surface.</p>
+          </article>
+
           <ul class="dependency-list" id="dependency-list">
             <li class="dependency-item loading">Waiting for /health...</li>
           </ul>
@@ -822,6 +905,7 @@
 
     <script>
       const healthUrl = new URL("/health", window.location.origin);
+      const alertsUrl = new URL("/alerts", window.location.origin);
       const replayStatusUrl = new URL("/replay/status", window.location.origin);
       const currentFrameUrl = new URL("/frames/current", window.location.origin);
       const baselineFrameUrl = new URL("/frames/baseline", window.location.origin);
@@ -862,6 +946,10 @@
       const baselineSnapshotFrame = document.querySelector("#baseline-snapshot-frame");
       const baselineSnapshotSource = document.querySelector("#baseline-snapshot-source");
       const baselineSnapshotImage = document.querySelector("#baseline-snapshot-image");
+      const latestAlertTitle = document.querySelector("#latest-alert-title");
+      const latestAlertSeverity = document.querySelector("#latest-alert-severity");
+      const latestAlertMeta = document.querySelector("#latest-alert-meta");
+      const latestAlertSummary = document.querySelector("#latest-alert-summary");
       const dependencyList = document.querySelector("#dependency-list");
 
       const boolLabel = (value) => (value ? "enabled" : "disabled");
@@ -909,6 +997,12 @@
 
       function compactLabel(value, fallback = "none") {
         return value === null || value === undefined || value === "" ? fallback : value;
+      }
+
+      function humanizeSlug(value) {
+        return compactLabel(value)
+          .replaceAll("_", " ")
+          .replaceAll("-", " ");
       }
 
       function laneMode(dep, enabled, kind) {
@@ -1013,6 +1107,27 @@
         replayHeroAsset.textContent = compactLabel(replayState.hero_asset_id, "unknown");
       }
 
+      function renderLatestAlert(alerts) {
+        if (!alerts.length) {
+          latestAlertTitle.textContent = "No accepted alert";
+          latestAlertSeverity.textContent = "quiet";
+          latestAlertSeverity.className = "alert-pill low";
+          latestAlertMeta.textContent = "Suppressed frames stay local until one clears the filter path.";
+          latestAlertSummary.textContent = "No operator escalation is active right now.";
+          latestAlertSummary.className = "alert-summary alert-empty";
+          return;
+        }
+
+        const [alert] = alerts;
+        latestAlertTitle.textContent = alert.asset_name;
+        latestAlertSeverity.textContent = alert.severity;
+        latestAlertSeverity.className = `alert-pill ${alert.severity}`;
+        latestAlertMeta.textContent =
+          `${formatTimestamp(alert.timestamp)} / ${humanizeSlug(alert.event_type)} / ${alert.action}`;
+        latestAlertSummary.textContent = alert.why;
+        latestAlertSummary.className = "alert-summary";
+      }
+
       function renderCurrentFrame(frameEnvelope) {
         const [statusClass, statusLabel] = currentFrameStatus(frameEnvelope);
 
@@ -1085,6 +1200,15 @@
         replayHeroAsset.textContent = error.message;
       }
 
+      function renderAlertFailure(error) {
+        latestAlertTitle.textContent = "Alert surface degraded";
+        latestAlertSeverity.textContent = "degraded";
+        latestAlertSeverity.className = "alert-pill low";
+        latestAlertMeta.textContent = alertsUrl.pathname;
+        latestAlertSummary.textContent = error.message;
+        latestAlertSummary.className = "alert-summary alert-empty";
+      }
+
       function renderBaselineFrameFailure(error) {
         baselineSnapshotTitle.textContent = "Baseline frame unavailable";
         baselineSnapshotAsset.textContent = "unknown";
@@ -1105,11 +1229,12 @@
       }
 
       async function boot() {
-        const [healthResult, replayResult, currentFrameResult, baselineFrameResult] = await Promise.allSettled([
+        const [healthResult, replayResult, currentFrameResult, baselineFrameResult, alertsResult] = await Promise.allSettled([
           loadJson(healthUrl),
           loadJson(replayStatusUrl),
           loadJson(currentFrameUrl),
           loadJson(baselineFrameUrl),
+          loadJson(alertsUrl),
         ]);
 
         if (healthResult.status === "fulfilled") {
@@ -1147,6 +1272,14 @@
             baselineFrameResult.reason instanceof Error
               ? baselineFrameResult.reason
               : new Error("Unknown baseline frame error"),
+          );
+        }
+
+        if (alertsResult.status === "fulfilled") {
+          renderLatestAlert(alertsResult.value);
+        } else {
+          renderAlertFailure(
+            alertsResult.reason instanceof Error ? alertsResult.reason : new Error("Unknown alerts error"),
           );
         }
       }

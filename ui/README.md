@@ -13,7 +13,9 @@ Current scope:
 - reads `/replay/status`
 - reads `/frames/current`
 - reads `/frames/baseline`
+- reads `/alerts`
 - renders backend mode truth from `/health.config`
 - renders compact replay identity in the left rail
 - renders read-only current and baseline snapshots in the center pane
+- renders a compact latest-alert card in the right rail
 - no replay controls or multi-pane live dashboard yet
