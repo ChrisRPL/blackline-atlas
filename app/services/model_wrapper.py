@@ -1,9 +1,18 @@
 from __future__ import annotations
 
+import json
 from typing import Protocol
+from urllib.error import URLError
+from urllib.request import Request, urlopen
 
 from app.schemas.asset import Asset
 from app.schemas.frame import FrameEnvelope
+from app.schemas.model_payload import (
+    CandidateImageInput,
+    CandidateRequestPayload,
+    CandidateResponsePayload,
+    CandidateTextInput,
+)
 from app.services.prompt_builder import CandidatePrompt, CandidatePromptBuilder
 from app.services.scenario_fixtures import ScenarioFixture
 
@@ -12,8 +21,7 @@ class RawCandidateBackend(Protocol):
     def generate(
         self,
         *,
-        prompt: CandidatePrompt,
-        model_version: str,
+        payload: CandidateRequestPayload,
         scenario: ScenarioFixture,
     ) -> str: ...
 
@@ -22,13 +30,53 @@ class FixtureRawCandidateBackend:
     def generate(
         self,
         *,
-        prompt: CandidatePrompt,
-        model_version: str,
+        payload: CandidateRequestPayload,
         scenario: ScenarioFixture,
     ) -> str:
-        _ = prompt
-        _ = model_version
+        _ = payload
         return scenario.model_output_text
+
+
+class HttpRawCandidateBackend:
+    def __init__(
+        self,
+        *,
+        endpoint: str,
+        api_key: str | None = None,
+        timeout_seconds: float = 10.0,
+    ) -> None:
+        self.endpoint = endpoint
+        self.api_key = api_key
+        self.timeout_seconds = timeout_seconds
+
+    def generate(
+        self,
+        *,
+        payload: CandidateRequestPayload,
+        scenario: ScenarioFixture,
+    ) -> str:
+        request = Request(
+            self.endpoint,
+            data=json.dumps(payload.model_dump(mode="json")).encode("utf-8"),
+            headers=self._headers(),
+            method="POST",
+        )
+
+        try:
+            with urlopen(request, timeout=self.timeout_seconds) as response:
+                if response.status != 200:
+                    return scenario.model_output_text
+                body = response.read().decode("utf-8")
+        except (OSError, URLError, UnicodeDecodeError):
+            return scenario.model_output_text
+
+        return _extract_output_text(body, fallback=scenario.model_output_text)
+
+    def _headers(self) -> dict[str, str]:
+        headers = {"Content-Type": "application/json"}
+        if self.api_key:
+            headers["Authorization"] = f"Bearer {self.api_key}"
+        return headers
 
 
 class PromptedCandidateModel:
@@ -56,6 +104,56 @@ class PromptedCandidateModel:
             baseline=baseline,
         )
 
+    def build_payload(
+        self,
+        *,
+        asset: Asset,
+        scenario: ScenarioFixture,
+        current: FrameEnvelope,
+        baseline: FrameEnvelope,
+    ) -> CandidateRequestPayload:
+        prompt = self.build_prompt(
+            asset=asset,
+            current=current,
+            baseline=baseline,
+        )
+        inputs: list[CandidateTextInput | CandidateImageInput] = [
+            CandidateTextInput(type="input_text", role="system", text=prompt.system),
+            CandidateTextInput(type="input_text", role="user", text=prompt.user),
+        ]
+
+        if current.frame.image_ref:
+            inputs.append(
+                CandidateImageInput(
+                    type="input_image",
+                    role="current",
+                    image_ref=current.frame.image_ref,
+                )
+            )
+        if baseline.frame.image_ref:
+            inputs.append(
+                CandidateImageInput(
+                    type="input_image",
+                    role="baseline",
+                    image_ref=baseline.frame.image_ref,
+                )
+            )
+        if current.overlay_ref:
+            inputs.append(
+                CandidateImageInput(
+                    type="input_image",
+                    role="overlay",
+                    image_ref=current.overlay_ref,
+                )
+            )
+
+        return CandidateRequestPayload(
+            model_version=self.model_version,
+            asset_id=asset.asset_id,
+            scenario_id=scenario.scenario_id,
+            inputs=inputs,
+        )
+
     def generate_candidate_text(
         self,
         *,
@@ -64,14 +162,14 @@ class PromptedCandidateModel:
         current: FrameEnvelope,
         baseline: FrameEnvelope,
     ) -> str:
-        prompt = self.build_prompt(
+        payload = self.build_payload(
             asset=asset,
+            scenario=scenario,
             current=current,
             baseline=baseline,
         )
         return self.backend.generate(
-            prompt=prompt,
-            model_version=self.model_version,
+            payload=payload,
             scenario=scenario,
         )
 
@@ -89,3 +187,15 @@ class PromptedCandidateModel:
             current=current,
             baseline=baseline,
         )
+
+
+def _extract_output_text(body: str, *, fallback: str) -> str:
+    text = body.strip()
+    if not text:
+        return fallback
+
+    try:
+        payload = CandidateResponsePayload.model_validate(json.loads(text))
+    except (json.JSONDecodeError, ValueError):
+        return text
+    return payload.output_text

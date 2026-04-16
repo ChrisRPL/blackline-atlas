@@ -44,9 +44,8 @@ class StaticResponder:
     def __init__(self, raw_output_text: str) -> None:
         self.raw_output_text = raw_output_text
 
-    def generate(self, *, prompt, model_version: str, scenario) -> str:
-        _ = prompt
-        _ = model_version
+    def generate(self, *, payload, scenario) -> str:
+        _ = payload
         _ = scenario
         return self.raw_output_text
 
@@ -116,6 +115,51 @@ def test_stub_service_routes_through_model_wrapper() -> None:
     assert alerts == []
     assert metrics.alerts_emitted == 4
     assert metrics.raw_frames_suppressed == 139
+
+
+def test_stub_service_can_opt_in_model_http_backend(tmp_path: Path, monkeypatch) -> None:
+    monkeypatch.chdir(tmp_path)
+
+    def fake_urlopen(request, timeout: float):
+        assert request.full_url == "https://example.test/model"
+        assert timeout == 10.0
+        body = json.loads(request.data.decode("utf-8"))
+        assert body["scenario_id"] == "hero_port_disruption"
+        return _FakeHTTPResponse(
+            body=json.dumps(
+                {
+                    "output_text": (
+                        '{"event_type":"probable_large_scale_disruption","severity":"high",'
+                        '"confidence":0.93,"bbox":[0.19,0.26,0.73,0.84],'
+                        '"civilian_impact":"shipping_or_aid_disruption",'
+                        '"why":"Live backend confirmed macro disruption.","action":"downlink_now"}'
+                    )
+                }
+            ).encode("utf-8")
+        )
+
+    monkeypatch.setattr("app.services.model_wrapper.urlopen", fake_urlopen)
+    service = StubAtlasService(
+        Settings(
+            app_env="test",
+            app_port=8000,
+            model_version="lfm2.5-vl-450m-prompted",
+            simsat_current_endpoint=None,
+            simsat_baseline_endpoint=None,
+            mapbox_token_present=False,
+            watchlist_path=None,
+            model_endpoint="https://example.test/model",
+            model_http_enabled=True,
+        )
+    )
+
+    frame = service.get_current_frame()
+    alerts = service.list_alerts()
+
+    assert frame.accepted_for_alerting is True
+    assert frame.filter_reason == "accepted"
+    assert alerts[0].confidence == 0.93
+    assert alerts[0].why == "Live backend confirmed macro disruption."
 
 
 def test_stub_service_keeps_fixture_only_frames_without_sentinel_endpoints(

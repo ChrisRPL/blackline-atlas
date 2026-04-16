@@ -32,6 +32,9 @@ class Settings:
     simsat_current_http_enabled: bool = False
     simsat_baseline_http_enabled: bool = False
     mapbox_context_enabled: bool = True
+    model_endpoint: str | None = None
+    model_http_enabled: bool = False
+    model_api_key: str | None = None
 
 
 def env_flag(name: str, default: bool = False) -> bool:
@@ -55,4 +58,7 @@ def get_settings() -> Settings:
         simsat_current_http_enabled=env_flag("SIMSAT_CURRENT_HTTP_ENABLED"),
         simsat_baseline_http_enabled=env_flag("SIMSAT_BASELINE_HTTP_ENABLED"),
         mapbox_context_enabled=env_flag("MAPBOX_CONTEXT_ENABLED", default=True),
+        model_endpoint=os.getenv("MODEL_ENDPOINT") or None,
+        model_http_enabled=env_flag("MODEL_HTTP_ENABLED"),
+        model_api_key=os.getenv("MODEL_API_KEY") or None,
     )

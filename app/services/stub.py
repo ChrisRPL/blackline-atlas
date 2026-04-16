@@ -19,6 +19,7 @@ from app.services.frame_filters import FrameFilterPolicy
 from app.services.frame_types import FrameRequest
 from app.services.model_wrapper import (
     FixtureRawCandidateBackend,
+    HttpRawCandidateBackend,
     PromptedCandidateModel,
 )
 from app.services.prompt_builder import (
@@ -67,7 +68,7 @@ class StubAtlasService:
         self.alert_pipeline = StructuredAlertPipeline(model_version=self.settings.model_version)
         self.model_wrapper = PromptedCandidateModel(
             model_version=self.settings.model_version,
-            backend=FixtureRawCandidateBackend(),
+            backend=self._model_backend(),
             prompt_builder=CandidatePromptBuilder(),
         )
         self.scenario_evaluator = ScenarioEvaluator(
@@ -233,6 +234,14 @@ class StubAtlasService:
 
     def _mapbox_context_path(self, alert: Alert) -> Path:
         return Path(".cache") / "mapbox" / alert.asset_id / alert.alert_id / "context.png"
+
+    def _model_backend(self):
+        if self.settings.model_http_enabled and self.settings.model_endpoint:
+            return HttpRawCandidateBackend(
+                endpoint=self.settings.model_endpoint,
+                api_key=self.settings.model_api_key,
+            )
+        return FixtureRawCandidateBackend()
 
     def _evaluate_active_scenario(self):
         scenario = self._active_scenario()

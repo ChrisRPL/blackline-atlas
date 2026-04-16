@@ -1,9 +1,12 @@
 from __future__ import annotations
 
+import json
+from urllib.error import URLError
+
 from app.core.config import Settings
 from app.schemas.asset import Asset
 from app.schemas.frame import FrameEnvelope, FrameRecord
-from app.services.model_wrapper import PromptedCandidateModel
+from app.services.model_wrapper import HttpRawCandidateBackend, PromptedCandidateModel
 from app.services.prompt_builder import CandidatePromptBuilder
 from app.services.scenario_fixtures import build_stub_scenarios
 from app.services.watchlist_loader import load_watchlist_assets
@@ -25,6 +28,33 @@ def test_candidate_prompt_builder_targets_candidate_json_only() -> None:
     assert "frame_id: base_demo_port_01_20250901" in prompt.user
     assert "overlay_ref: fixtures/demo_port_01/overlay-2026-04-14.png" in prompt.user
     assert "action=discard" in prompt.user
+
+
+def test_prompted_candidate_model_builds_minimal_multimodal_payload() -> None:
+    model = PromptedCandidateModel(
+        model_version="lfm2.5-vl-450m-prompted",
+        backend=_RecordingBackend(raw_text="{}"),
+    )
+
+    payload = model.build_payload(
+        asset=_asset(),
+        scenario=_scenario(),
+        current=_current_frame(),
+        baseline=_baseline_frame(),
+    )
+
+    assert payload.model_version == "lfm2.5-vl-450m-prompted"
+    assert payload.asset_id == "demo_port_01"
+    assert payload.scenario_id == "hero_port_disruption"
+    assert [item.type for item in payload.inputs] == [
+        "input_text",
+        "input_text",
+        "input_image",
+        "input_image",
+        "input_image",
+    ]
+    assert payload.inputs[2].image_ref == "fixtures/demo_port_01/current-2026-04-14.png"
+    assert payload.inputs[4].image_ref == "fixtures/demo_port_01/overlay-2026-04-14.png"
 
 
 def test_prompted_candidate_model_passes_prompt_and_returns_raw_text() -> None:
@@ -50,10 +80,10 @@ def test_prompted_candidate_model_passes_prompt_and_returns_raw_text() -> None:
     )
 
     assert raw_text == backend.raw_text
-    assert backend.model_version == "lfm2.5-vl-450m-prompted"
-    assert backend.prompt is not None
-    assert "candidate, not a full alert" in backend.prompt.system
-    assert "Current frame" in backend.prompt.user
+    assert backend.payload is not None
+    assert backend.payload.model_version == "lfm2.5-vl-450m-prompted"
+    assert backend.payload.inputs[0].role == "system"
+    assert backend.scenario.scenario_id == "hero_port_disruption"
 
 
 def test_prompted_candidate_model_exposes_prompt_build_step() -> None:
@@ -72,17 +102,92 @@ def test_prompted_candidate_model_exposes_prompt_build_step() -> None:
     assert prompt.render().startswith("You are Blackline Atlas candidate generation.")
 
 
+def test_http_raw_candidate_backend_posts_payload(monkeypatch) -> None:
+    captured = {}
+
+    def fake_urlopen(request, timeout: float):
+        captured["url"] = request.full_url
+        captured["auth"] = request.get_header("Authorization")
+        captured["body"] = json.loads(request.data.decode("utf-8"))
+        captured["timeout"] = timeout
+        return _FakeHTTPResponse(
+            body=json.dumps({"output_text": '{"action":"defer"}'}).encode("utf-8")
+        )
+
+    monkeypatch.setattr("app.services.model_wrapper.urlopen", fake_urlopen)
+    backend = HttpRawCandidateBackend(
+        endpoint="https://example.test/model",
+        api_key="secret-token",
+        timeout_seconds=7.0,
+    )
+    model = PromptedCandidateModel(
+        model_version="lfm2.5-vl-450m-prompted",
+        backend=backend,
+    )
+
+    raw_text = model.generate_candidate_text(
+        asset=_asset(),
+        scenario=_scenario(),
+        current=_current_frame(),
+        baseline=_baseline_frame(),
+    )
+
+    assert raw_text == '{"action":"defer"}'
+    assert captured["url"] == "https://example.test/model"
+    assert captured["auth"] == "Bearer secret-token"
+    assert captured["body"]["scenario_id"] == "hero_port_disruption"
+    assert captured["timeout"] == 7.0
+
+
+def test_http_raw_candidate_backend_falls_back_to_fixture_text_on_failure(monkeypatch) -> None:
+    def fake_urlopen(request, timeout: float):
+        _ = request
+        _ = timeout
+        raise URLError("offline")
+
+    monkeypatch.setattr("app.services.model_wrapper.urlopen", fake_urlopen)
+    backend = HttpRawCandidateBackend(endpoint="https://example.test/model")
+    model = PromptedCandidateModel(
+        model_version="lfm2.5-vl-450m-prompted",
+        backend=backend,
+    )
+    scenario = _scenario()
+
+    raw_text = model.generate_candidate_text(
+        asset=_asset(),
+        scenario=scenario,
+        current=_current_frame(),
+        baseline=_baseline_frame(),
+    )
+
+    assert raw_text == scenario.model_output_text
+
+
 class _RecordingBackend:
     def __init__(self, *, raw_text: str) -> None:
         self.raw_text = raw_text
-        self.prompt = None
-        self.model_version = None
+        self.payload = None
+        self.scenario = None
 
-    def generate(self, *, prompt, model_version: str, scenario) -> str:
-        self.prompt = prompt
-        self.model_version = model_version
+    def generate(self, *, payload, scenario) -> str:
+        self.payload = payload
         self.scenario = scenario
         return self.raw_text
+
+
+class _FakeHTTPResponse:
+    def __init__(self, *, body: bytes, status: int = 200) -> None:
+        self.body = body
+        self.status = status
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc, tb) -> None:
+        return None
+
+    def read(self) -> bytes:
+        return self.body
 
 
 def _asset() -> Asset:
