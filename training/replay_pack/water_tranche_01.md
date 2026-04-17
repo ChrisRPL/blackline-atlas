@@ -13,6 +13,8 @@ Purpose:
   - `Doha West` -> exact site, but clouded + mixed-use
   - `Ras Abu Jarjur` -> exact site, but no honest macro-visible change
   - `Babiri` -> strong civilian story, but service-outage framing and parcel still soft
+  - `Maisat / Wazzani` -> strong source trail, but border-sensitive and still too soft for a first positive row
+  - `Bahri` -> exact coords + clean windows, but dense urban fabric blocked the hard parcel-tight pass
 
 Rule:
 - the next water row should be a `facility`, not a `city`
@@ -20,7 +22,58 @@ Rule:
 
 ## Promotion candidates
 
-### `water_01` Al-Khafsa Water Treatment Plant
+### `water_01` Bahri Water Treatment Plant
+
+- country:
+  - `Sudan`
+- type:
+  - pure treatment plant
+- why:
+  - explicit city-serving drinking-water plant for Khartoum North / Bahri
+  - large Nile-edge footprint, better user value than another border utility
+  - strong public reporting of war damage
+- parcel state:
+  - exact lead exists at `15.6169, 32.5347`
+  - source trail calls this the `Khartoum State Water Corporation Bahri Station`
+- probe truth:
+  - clean Sentinel windows already confirmed:
+    - pre request `2023-12-01T08:00:00Z` -> returned `2023-11-28T08:25:46Z` with `0.000982` cloud
+    - mid request `2024-12-01T08:00:00Z` -> returned `2024-11-27T08:25:47Z` with `0.001288` cloud
+    - post request `2025-03-29T08:00:00Z` -> returned `2025-03-27T08:26:11Z` with `0.0025` cloud
+  - first `3.0 km` and `1.5 km` sweeps at the lead coordinates did not yet isolate one defendable plant-compound scar inside the dense urban fabric
+  - follow-up `0.8 km` parcel-tight `3x3` grid around the lead still failed to isolate a clean treatment-plant footprint honest enough for promotion
+- status:
+  - `hold_dense_urban_fabric`
+- next action:
+  - do not spend more time unless a stronger plant polygon or independent parcel anchor appears
+- sources:
+  - [Sudan Tribune on heavy damage to Bahri water station](https://sudantribune.com/archives/296726)
+  - [Wikimapia lead for Khartoum State Water Corporation Bahri Station](https://wikimapia.org/891493/Khartoum-State-Water-Corporation-Bahri-Station)
+
+### `water_02` Kosti New Water Treatment Plant (JICA)
+
+- country:
+  - `Sudan`
+- type:
+  - pure treatment plant
+- why:
+  - explicit city-serving drinking-water role
+  - cholera-linked civilian impact after attack-driven outage
+  - cleaner humanitarian story than mixed utility sites
+- parcel state:
+  - named facility is clear
+  - exact parcel still needs one hard geocode / map pass
+- status:
+  - `active_exact_geocode`
+- next action:
+  - lock exact parcel from JICA + local-source naming
+  - only then run the first SimSat probe
+- sources:
+  - [AP on Kosti water-supply facility outage and cholera surge](https://apnews.com/article/47ac3f39c10eb549785c7fc24608551a)
+  - [JICA project page for the Kosti water-treatment plant](https://www.jica.go.jp/english/our_work/social_environmental/id/africa/sudan/c8h0vm00009u5bwh.html)
+  - [Sudan Events on Kosti new drinking-water station / JICA](https://sudanevents.com/index.php/2024/08/16/resumption-of-operations-at-the-new-drinking-water-station-in-kosti/)
+
+### `water_03` Al-Khafsa Water Treatment Plant
 
 - country:
   - `Syria`
@@ -54,7 +107,7 @@ Rule:
   - [ICRC on Al-Khafsa water station role](https://www.icrcnewsroom.org/story/en/2058/syria-urgent-action-needed-to-address-humanitarian-needs)
   - [SNHR on `2025-02-23` damage to Al-Khafsa station main building](https://news.snhr.org/2025/02/24/sdf-bomb-a-water-station-in-e-aleppo-february-23-2025/)
 
-### `water_02` Babiri Pumping Station
+### `water_04` Babiri Pumping Station
 
 - country:
   - `Syria`
@@ -79,7 +132,7 @@ Rule:
   - [Anadolu on Babiri serving Aleppo city and countryside](https://www.aa.com.tr/en/middle-east/sdf-cuts-water-supply-to-syria-s-aleppo/3796034)
   - [Levant24 on Babiri restoration and field inspection](https://levant24.com/news/2026/01/syria-boosts-water-security-through-major-infrastructure-projects/)
 
-### `water_03` Southern Gaza Seawater Desalination Plant
+### `water_05` Southern Gaza Seawater Desalination Plant
 
 - country:
   - `Gaza`
@@ -144,6 +197,16 @@ Rule:
 
 ## Keep out
 
+### Maisat / Wazzani water-project lane
+
+- why out for tranche 01:
+  - report evidence is strong, but first parcel pass is still too soft
+  - border sensitivity is too high for the first clean water-positive lane
+  - first `1.5 km` SimSat sweep around `Maisat` / `Wazzani` clues used:
+    - pre request `2024-01-25T08:00:00Z` -> returned `2024-01-20T08:30:58Z` with `8.311412` cloud
+    - post request `2025-03-15T08:00:00Z` -> returned `2025-03-10T08:31:22Z` with `26.562682` cloud
+  - keep as evidence and possible retrospective benchmark, not the first promoted water row
+
 ### Qeshm Island desalination lane
 
 - why out:
@@ -153,7 +216,8 @@ Rule:
 
 ## Immediate next work order
 
-1. keep `Al-Khafsa` out of the positive queue unless a stronger parcel lock appears
-2. treat `Ras Abu Jarjur` and `Doha West` as the first real water controls
-3. reopen the next positive hunt on a new pure-water site
-4. only then reopen `Babiri` or `Southern Gaza`
+1. do one exact geocode pass on `Kosti JICA`
+2. keep `Bahri` on hold unless a stronger parcel anchor appears
+3. keep `Ras Abu Jarjur` and `Doha West` as the first real water controls
+4. keep `Maisat / Wazzani` as evidence only for now
+5. only then reopen `Babiri` or `Southern Gaza`

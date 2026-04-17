@@ -265,6 +265,71 @@ Primary buckets:
   - [ICRC on Al-Khafsa water station role](https://www.icrcnewsroom.org/story/en/2058/syria-urgent-action-needed-to-address-humanitarian-needs)
   - [SNHR on `2025-02-23` damage to the station main building](https://news.snhr.org/2025/02/24/sdf-bomb-a-water-station-in-e-aleppo-february-23-2025/)
 
+#### Maisat / Wazzani Water Project
+- asset type: `water_infrastructure`
+- why:
+  - report-backed city-serving water lifeline
+  - the strongest Lebanon water story we have found so far
+  - useful to keep because it serves around `150,000` people in over `30` towns and villages
+- status: `hold_border_sensitive_and_parcel_soft`
+- coordinates:
+  - `Maisat` village clue: `33.2626526, 35.6193188`
+  - `Wazzani` locality clue: `33.26112, 35.62242`
+- dates probed:
+  - pre request `2024-01-25T08:00:00Z` -> returned `2024-01-20T08:30:58Z`
+  - post request `2025-03-15T08:00:00Z` -> returned `2025-03-10T08:31:22Z`
+- notes:
+  - the VoiceEU / Insecurity Insight report explicitly names:
+    - the `Maisat water pumping station`
+    - the associated `Wazzani water intake centre`
+  - first `1.5 km` sweeps around village / locality / guessed station / guessed intake proved the story is real, but not yet exact enough for a positive eval row
+  - current-side cloud was moderate (`26.562682`) and the lane remains too close to the Lebanon border for the first clean Blackline water-positive case
+  - keep as evidence only until:
+    - one exact parcel anchor is locked
+    - and the promoted row can be framed as civilian water lifeline monitoring, not border-adjacent infrastructure watching
+- sources:
+  - [VoiceEU report on Maisat and Wazzani damage](https://voiceeu.org/publications/when-bombs-turn-the-taps-off-the-impact-of-conflict-on-water-infrastructure-in-lebanon.pdf)
+  - [Xinhua on destruction of the Wazzani pumping project](https://english.news.cn/20250309/cb1745da21c243569ba1aa796c5ba018/c.html)
+
+#### Bahri Water Treatment Plant
+- asset type: `water_infrastructure`
+- why:
+  - better product fit than the Lebanon border lane
+  - exact city-serving plant
+  - strong civilian-useful story for Khartoum North residents
+- status: `hold_dense_urban_fabric`
+- coordinates:
+  - `15.6169, 32.5347`
+- dates probed:
+  - pre request `2023-12-01T08:00:00Z` -> returned `2023-11-28T08:25:46Z`
+  - mid request `2024-12-01T08:00:00Z` -> returned `2024-11-27T08:25:47Z`
+  - post request `2025-03-29T08:00:00Z` -> returned `2025-03-27T08:26:11Z`
+- notes:
+  - exact lead comes from `Khartoum State Water Corporation Bahri Station`
+  - clean `3.0 km` and `1.5 km` sweeps are already available with near-zero cloud
+  - a follow-up `0.8 km` parcel-tight `3x3` grid around the lead also failed to isolate one defendable plant-compound scar inside the dense urban fabric around the Nile-edge site
+  - good source trail and perfect cloud are not enough on their own
+  - downgrade for now and only reopen if a stronger plant polygon or independent parcel anchor appears
+- sources:
+  - [Sudan Tribune on heavy damage to Bahri water station](https://sudantribune.com/archives/296726)
+  - [Wikimapia lead for Khartoum State Water Corporation Bahri Station](https://wikimapia.org/891493/Khartoum-State-Water-Corporation-Bahri-Station)
+
+#### Kosti New Water Treatment Plant (JICA)
+- asset type: `water_infrastructure`
+- why:
+  - strong civilian-useful case
+  - named pure drinking-water plant
+  - attack-linked outage tied to cholera spread
+- status: `active_exact_geocode`
+- notes:
+  - best current next water-positive lead after `Bahri` failed the hard parcel-tight pass
+  - named locally as `محطة مياه كوستي الجديدة` / `محطة جايكا الجديدة`
+  - do not probe until one exact parcel anchor is locked
+- sources:
+  - [AP on the Kosti outage and cholera surge](https://apnews.com/article/47ac3f39c10eb549785c7fc24608551a)
+  - [JICA project page for the Kosti treatment plant](https://www.jica.go.jp/english/our_work/social_environmental/id/africa/sudan/c8h0vm00009u5bwh.html)
+  - [Sudan Events on Kosti's new drinking-water station / JICA](https://sudanevents.com/index.php/2024/08/16/resumption-of-operations-at-the-new-drinking-water-station-in-kosti/)
+
 #### Doha West Power And Desalination Plant
 - asset type: `water_infrastructure`
 - why:
