@@ -33,11 +33,13 @@ def test_write_lfm25_vl_corpus_joins_capture_and_replay_sources(tmp_path: Path) 
     assert grounding_rows[0]["record_id"] == "hero_port_disruption__grounding"
     assert (
         grounding_rows[0]["messages"][0]["content"][0]["image"]
-        == "hero_port_disruption/current.png"
+        == "images/hero_port_disruption/current.png"
     )
     assert grounding_rows[0]["targets"][0]["label"] == "probable_large_scale_disruption"
-    assert candidate_rows[0]["current_image_path"] == "hero_port_disruption/current.png"
-    assert candidate_rows[0]["baseline_image_path"] == "hero_port_disruption/baseline.png"
+    assert grounding_path.parent.joinpath(grounding_rows[0]["image_path"]).exists()
+    assert candidate_rows[0]["current_image_path"] == "images/hero_port_disruption/current.png"
+    assert candidate_rows[0]["baseline_image_path"] == "images/hero_port_disruption/baseline.png"
+    assert candidate_eval_path.parent.joinpath(candidate_rows[0]["current_image_path"]).exists()
     assert candidate_rows[0]["prompt"]["system"].startswith(
         "You are Blackline Atlas candidate generation."
     )
@@ -68,6 +70,111 @@ def test_build_lfm25_vl_corpus_skips_cases_without_real_capture_images(tmp_path:
     assert [row["case_id"] for row in grounding_rows] == ["hero_port_disruption"]
     assert [row["case_id"] for row in candidate_rows] == ["hero_port_disruption"]
     assert splits["split_counts"]["holdout_geo"] == 2
+
+
+def test_build_lfm25_vl_corpus_respects_explicit_case_split(tmp_path: Path) -> None:
+    replay_dataset_path = tmp_path / "non_demo_eval.jsonl"
+    replay_dataset_path.write_text(
+        json.dumps(
+            {
+                "case_id": "baltimore_bridge_collapse",
+                "asset": {
+                    "asset_id": "baltimore_bridge_01",
+                    "asset_name": "Francis Scott Key Bridge",
+                    "asset_type": "bridge",
+                    "region": "Baltimore Harbor",
+                    "latitude": 39.218,
+                    "longitude": -76.531,
+                    "hero": False,
+                },
+                "hero": False,
+                "current_frame": {
+                    "frame": {
+                        "frame_id": "cur_baltimore_bridge_01_20240415",
+                        "asset_id": "baltimore_bridge_01",
+                        "captured_at": "2024-04-15T15:00:00Z",
+                        "image_ref": "pending://baltimore/current.png",
+                        "cloud_cover": 4.72,
+                        "source": "seed",
+                    },
+                    "baseline_frame_id": "base_baltimore_bridge_01_20240326",
+                },
+                "baseline_frame": {
+                    "frame": {
+                        "frame_id": "base_baltimore_bridge_01_20240326",
+                        "asset_id": "baltimore_bridge_01",
+                        "captured_at": "2024-03-26T15:00:00Z",
+                        "image_ref": "pending://baltimore/baseline.png",
+                        "cloud_cover": 0.02,
+                        "source": "seed",
+                    }
+                },
+                "model_output_text": (
+                    '{"event_type":"probable_access_obstruction","severity":"high",'
+                    '"confidence":0.95,"bbox":[0.31,0.28,0.72,0.66],'
+                    '"civilian_impact":"public_mobility_disruption",'
+                    '"why":"Bridge span is broken.","action":"downlink_now"}'
+                ),
+                "expected_candidate": {
+                    "event_type": "probable_access_obstruction",
+                    "severity": "high",
+                    "confidence": 0.95,
+                    "bbox": [0.31, 0.28, 0.72, 0.66],
+                    "civilian_impact": "public_mobility_disruption",
+                    "why": "Bridge span is broken.",
+                    "action": "downlink_now",
+                },
+                "expected_alert": {
+                    "alert_id": "blk_nd_00002",
+                    "timestamp": "2024-04-15T15:00:00Z",
+                    "asset_id": "baltimore_bridge_01",
+                    "asset_name": "Francis Scott Key Bridge",
+                    "asset_type": "bridge",
+                    "event_type": "probable_access_obstruction",
+                    "severity": "high",
+                    "confidence": 0.95,
+                    "bbox": [0.31, 0.28, 0.72, 0.66],
+                    "civilian_impact": "public_mobility_disruption",
+                    "why": "Bridge span is broken.",
+                    "action": "downlink_now",
+                    "source": {
+                        "current_frame_id": "cur_baltimore_bridge_01_20240415",
+                        "baseline_frame_id": "base_baltimore_bridge_01_20240326",
+                        "model_version": "lfm2.5-vl-450m-prompted",
+                    },
+                    "mapbox_context_ref": None,
+                },
+                "expected_action": "downlink_now",
+                "expected_metrics": {
+                    "frames_scanned": 61,
+                    "alerts_emitted": 1,
+                    "raw_frames_suppressed": 57,
+                    "downlink_rate": 0.028,
+                },
+                "split": "dev",
+                "annotation_source": "manual_public_satellite_event",
+            }
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    capture_manifest_path = _write_capture_manifest(
+        tmp_path / "simsat_capture",
+        replay_dataset_path,
+    )
+
+    _, _, splits = build_lfm25_vl_corpus.build_lfm25_vl_corpus(
+        capture_manifest_path=capture_manifest_path,
+        replay_dataset_path=replay_dataset_path,
+    )
+
+    assert splits["split_counts"] == {
+        "dev": 1,
+        "holdout_geo": 0,
+        "holdout_stress": 0,
+        "train": 0,
+    }
+    assert splits["cases"][0]["split"] == "dev"
 
 
 def _write_capture_manifest(

@@ -12,6 +12,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from app.core.config import get_settings  # noqa: E402
+from app.schemas.annotated_case import AnnotatedCaseRecord  # noqa: E402
 from app.schemas.simsat_capture import (  # noqa: E402
     SimSatCaptureFrame,
     SimSatCaptureRecord,
@@ -35,34 +36,30 @@ def build_simsat_capture_manifest(
     *,
     historical_endpoint: str,
     output_dir: Path = DEFAULT_OUTPUT_DIR,
+    cases_dataset_path: Path | None = None,
     spectral_bands: tuple[str, ...] = DEFAULT_SPECTRAL_BANDS,
     size_km: float = DEFAULT_SIZE_KM,
     window_seconds: float = DEFAULT_WINDOW_SECONDS,
     timeout_seconds: float = DEFAULT_TIMEOUT_SECONDS,
     scenario_ids: tuple[str, ...] = SCENARIO_ORDER,
 ) -> list[dict[str, object]]:
-    settings = get_settings()
-    assets = {asset.asset_id: asset for asset in load_watchlist_assets(settings.watchlist_path)}
-    scenarios = build_stub_scenarios(
-        settings=settings,
-        hero_asset=assets["demo_port_01"],
-        bridge_asset=assets["demo_bridge_01"],
+    cases = _load_capture_cases(
+        cases_dataset_path=cases_dataset_path,
+        scenario_ids=scenario_ids,
     )
 
     records: list[dict[str, object]] = []
-    for scenario_id in scenario_ids:
-        scenario = scenarios[scenario_id]
-        asset = assets[scenario.asset_id]
-        case_dir = output_dir / scenario_id
+    for case in cases:
+        case_dir = output_dir / case.case_id
 
         current = _capture_frame(
             endpoint=historical_endpoint,
             output_dir=case_dir,
             variant="current",
-            frame_id=scenario.current_frame.frame.frame_id,
-            lon=asset.longitude,
-            lat=asset.latitude,
-            requested_timestamp=scenario.current_frame.frame.captured_at,
+            frame_id=case.current_frame.frame.frame_id,
+            lon=case.asset.longitude,
+            lat=case.asset.latitude,
+            requested_timestamp=case.current_frame.frame.captured_at,
             spectral_bands=spectral_bands,
             size_km=size_km,
             window_seconds=window_seconds,
@@ -72,10 +69,10 @@ def build_simsat_capture_manifest(
             endpoint=historical_endpoint,
             output_dir=case_dir,
             variant="baseline",
-            frame_id=scenario.baseline_frame.frame.frame_id,
-            lon=asset.longitude,
-            lat=asset.latitude,
-            requested_timestamp=scenario.baseline_frame.frame.captured_at,
+            frame_id=case.baseline_frame.frame.frame_id,
+            lon=case.asset.longitude,
+            lat=case.asset.latitude,
+            requested_timestamp=case.baseline_frame.frame.captured_at,
             spectral_bands=spectral_bands,
             size_km=size_km,
             window_seconds=window_seconds,
@@ -83,9 +80,9 @@ def build_simsat_capture_manifest(
         )
 
         record = SimSatCaptureRecord(
-            case_id=scenario_id,
+            case_id=case.case_id,
             pack_version=PACK_VERSION,
-            asset=asset,
+            asset=case.asset,
             current=current,
             baseline=baseline,
         )
@@ -100,6 +97,7 @@ def write_simsat_capture_manifest(
     *,
     manifest_name: str = DEFAULT_MANIFEST_NAME,
     dataset_name: str = DEFAULT_DATASET_NAME,
+    cases_dataset_path: Path | None = None,
     spectral_bands: tuple[str, ...] = DEFAULT_SPECTRAL_BANDS,
     size_km: float = DEFAULT_SIZE_KM,
     window_seconds: float = DEFAULT_WINDOW_SECONDS,
@@ -110,6 +108,7 @@ def write_simsat_capture_manifest(
     records = build_simsat_capture_manifest(
         historical_endpoint=historical_endpoint,
         output_dir=output_dir,
+        cases_dataset_path=cases_dataset_path,
         spectral_bands=spectral_bands,
         size_km=size_km,
         window_seconds=window_seconds,
@@ -146,6 +145,15 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         help=(
             "SimSat Sentinel historical endpoint, typically /data/image/sentinel. "
             "Defaults to SIMSAT_BASELINE_ENDPOINT if set."
+        ),
+    )
+    parser.add_argument(
+        "--cases-dataset",
+        type=Path,
+        default=None,
+        help=(
+            "Annotated case JSON/JSONL to capture instead of the built-in replay pack. "
+            "Useful for non-demo AOIs."
         ),
     )
     parser.add_argument(
@@ -206,12 +214,17 @@ def main(argv: list[str] | None = None) -> int:
             "Missing SimSat Sentinel historical endpoint. "
             "Pass --historical-endpoint or set SIMSAT_BASELINE_ENDPOINT."
         )
-    scenario_ids = tuple(args.scenario_ids) if args.scenario_ids else SCENARIO_ORDER
+    scenario_ids = (
+        tuple(args.scenario_ids)
+        if args.scenario_ids
+        else (() if args.cases_dataset is not None else SCENARIO_ORDER)
+    )
     manifest_path, dataset_path = write_simsat_capture_manifest(
         args.historical_endpoint,
         args.output_dir,
         manifest_name=args.manifest_name,
         dataset_name=args.dataset_name,
+        cases_dataset_path=args.cases_dataset,
         spectral_bands=tuple(args.spectral_bands),
         size_km=args.size_km,
         window_seconds=args.window_seconds,
@@ -299,6 +312,61 @@ def _build_request_url(
         doseq=True,
     )
     return f"{endpoint}?{params}"
+
+
+def _load_capture_cases(
+    *,
+    cases_dataset_path: Path | None,
+    scenario_ids: tuple[str, ...],
+) -> list[AnnotatedCaseRecord]:
+    if cases_dataset_path is None:
+        settings = get_settings()
+        assets = {asset.asset_id: asset for asset in load_watchlist_assets(settings.watchlist_path)}
+        scenarios = build_stub_scenarios(
+            settings=settings,
+            hero_asset=assets["demo_port_01"],
+            bridge_asset=assets["demo_bridge_01"],
+        )
+        return [
+            AnnotatedCaseRecord(
+                case_id=scenario_id,
+                asset=assets[scenarios[scenario_id].asset_id],
+                hero=assets[scenarios[scenario_id].asset_id].hero,
+                current_frame=scenarios[scenario_id].current_frame,
+                baseline_frame=scenarios[scenario_id].baseline_frame,
+                model_output_text=scenarios[scenario_id].model_output_text,
+                expected_candidate=json.loads(scenarios[scenario_id].model_output_text),
+                expected_alert=scenarios[scenario_id].alerts[0],
+                expected_action=scenarios[scenario_id].alerts[0].action,
+                expected_metrics=scenarios[scenario_id].metrics,
+                split="holdout_geo",
+                holdout_reason="hero_demo",
+                annotation_source="stub_replay_pack",
+            )
+            for scenario_id in scenario_ids
+        ]
+
+    entries = _load_json_records(cases_dataset_path)
+    cases = [AnnotatedCaseRecord.model_validate(entry) for entry in entries]
+    if not scenario_ids:
+        return cases
+    selected = {case.case_id for case in cases if case.case_id in set(scenario_ids)}
+    missing = [case_id for case_id in scenario_ids if case_id not in selected]
+    if missing:
+        raise ValueError(f"missing case_id(s) in {cases_dataset_path}: {', '.join(missing)}")
+    return [case for case in cases if case.case_id in selected]
+
+
+def _load_json_records(path: Path) -> list[dict[str, object]]:
+    raw = path.read_text(encoding="utf-8")
+    if path.suffix == ".jsonl":
+        return [json.loads(line) for line in raw.splitlines() if line.strip()]
+    payload = json.loads(raw)
+    if isinstance(payload, dict) and isinstance(payload.get("cases"), list):
+        return list(payload["cases"])
+    if isinstance(payload, list):
+        return payload
+    raise ValueError(f"unsupported record layout in {path}")
 
 
 if __name__ == "__main__":

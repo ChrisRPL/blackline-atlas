@@ -5,16 +5,15 @@ import json
 import sys
 from collections import Counter
 from pathlib import Path
+from shutil import copy2
 from urllib.parse import parse_qs, urlparse
 
 ROOT = Path(__file__).resolve().parents[2]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from app.schemas.alert import Alert, AlertCandidate  # noqa: E402
-from app.schemas.asset import Asset  # noqa: E402
+from app.schemas.annotated_case import AnnotatedCaseRecord  # noqa: E402
 from app.schemas.frame import FrameEnvelope  # noqa: E402
-from app.schemas.metrics import Metrics  # noqa: E402
 from app.schemas.simsat_capture import SimSatCaptureRecord  # noqa: E402
 from app.schemas.training_corpus import (  # noqa: E402
     BlacklineCandidateEvalRecord,
@@ -67,7 +66,7 @@ def build_lfm25_vl_corpus(
         if replay_case is None:
             raise ValueError(f"missing replay case for capture case_id={case_id}")
 
-        split, holdout_reason = _assign_split(capture_case.asset)
+        split, holdout_reason = _assign_split(replay_case)
         split_counts[split] += 1
         split_cases.append(
             CorpusSplitCase(
@@ -141,6 +140,13 @@ def write_lfm25_vl_corpus(
         capture_manifest_path=capture_manifest_path,
         replay_dataset_path=replay_dataset_path,
     )
+    capture_root = capture_manifest_path.parent.resolve()
+    grounding_records, candidate_eval_records = _materialize_corpus_images(
+        grounding_records=grounding_records,
+        candidate_eval_records=candidate_eval_records,
+        capture_root=capture_root,
+        output_dir=output_dir,
+    )
 
     grounding_path = output_dir / grounding_name
     candidate_eval_path = output_dir / candidate_eval_name
@@ -208,9 +214,9 @@ def _build_grounding_record(
     case_id: str,
     split: CorpusSplit,
     image_path: str,
-    replay_case: dict[str, object],
+    replay_case: AnnotatedCaseRecord,
 ) -> LiquidGroundingRecord:
-    expected_candidate = AlertCandidate.model_validate(replay_case["expected_candidate"])
+    expected_candidate = replay_case.expected_candidate
     task_text = GROUNDING_PROMPT.format(target=expected_candidate.event_type)
     target = GroundingTarget(
         label=expected_candidate.event_type,
@@ -220,7 +226,7 @@ def _build_grounding_record(
     return LiquidGroundingRecord(
         record_id=f"{case_id}__grounding",
         case_id=case_id,
-        asset_id=str(replay_case["asset"]["asset_id"]),
+        asset_id=replay_case.asset.asset_id,
         split=split,
         image_path=image_path,
         task_text=task_text,
@@ -248,38 +254,37 @@ def _build_candidate_eval_record(
     split: CorpusSplit,
     current_image_path: str,
     baseline_image_path: str,
-    replay_case: dict[str, object],
+    replay_case: AnnotatedCaseRecord,
     capture_case: SimSatCaptureRecord,
 ) -> BlacklineCandidateEvalRecord:
-    asset = Asset.model_validate(replay_case["asset"])
     current_frame = _to_prompt_frame(
-        replay_case["current_frame"],
+        replay_case.current_frame.model_dump(mode="json"),
         image_path=current_image_path,
     )
     baseline_frame = _to_prompt_frame(
-        replay_case["baseline_frame"],
+        replay_case.baseline_frame.model_dump(mode="json"),
         image_path=baseline_image_path,
     )
     prompt = CandidatePromptBuilder().build(
-        asset=asset,
+        asset=replay_case.asset,
         current=current_frame,
         baseline=baseline_frame,
     )
     return BlacklineCandidateEvalRecord(
         case_id=case_id,
         split=split,
-        asset=asset,
+        asset=replay_case.asset,
         current_image_path=current_image_path,
         baseline_image_path=baseline_image_path,
         prompt={
             "system": prompt.system,
             "user": prompt.user,
         },
-        model_output_text=str(replay_case["model_output_text"]),
-        expected_candidate=AlertCandidate.model_validate(replay_case["expected_candidate"]),
-        expected_action=str(replay_case["expected_action"]),
-        expected_alert=Alert.model_validate(replay_case["expected_alert"]),
-        expected_metrics=Metrics.model_validate(replay_case["expected_metrics"]),
+        model_output_text=replay_case.model_output_text,
+        expected_candidate=replay_case.expected_candidate,
+        expected_action=replay_case.expected_action,
+        expected_alert=replay_case.expected_alert,
+        expected_metrics=replay_case.expected_metrics,
         simsat=SimSatCorpusSidecar(
             current=_build_frame_sidecar(capture_case.current),
             baseline=_build_frame_sidecar(capture_case.baseline),
@@ -327,8 +332,60 @@ def _relative_capture_image(
         raise ValueError(f"capture image is outside capture root: {image_path}") from exc
 
 
-def _assign_split(asset: Asset) -> tuple[CorpusSplit, str | None]:
-    if asset.asset_id.startswith("demo_") or asset.hero:
+def _materialize_corpus_images(
+    *,
+    grounding_records: list[dict[str, object]],
+    candidate_eval_records: list[dict[str, object]],
+    capture_root: Path,
+    output_dir: Path,
+) -> tuple[list[dict[str, object]], list[dict[str, object]]]:
+    image_root = output_dir / "images"
+    copied: dict[str, str] = {}
+
+    def copy_relative_path(relative_path: str) -> str:
+        cached = copied.get(relative_path)
+        if cached is not None:
+            return cached
+
+        source = capture_root / relative_path
+        destination = image_root / relative_path
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        copy2(source, destination)
+        materialized = destination.relative_to(output_dir).as_posix()
+        copied[relative_path] = materialized
+        return materialized
+
+    for record in grounding_records:
+        image_path = record.get("image_path")
+        if not isinstance(image_path, str):
+            continue
+        materialized = copy_relative_path(image_path)
+        record["image_path"] = materialized
+        messages = record.get("messages")
+        if not isinstance(messages, list) or not messages:
+            continue
+        content = messages[0].get("content") if isinstance(messages[0], dict) else None
+        if not isinstance(content, list) or not content:
+            continue
+        first_item = content[0]
+        if isinstance(first_item, dict) and first_item.get("type") == "image":
+            first_item["image"] = materialized
+
+    for record in candidate_eval_records:
+        current_image_path = record.get("current_image_path")
+        baseline_image_path = record.get("baseline_image_path")
+        if isinstance(current_image_path, str):
+            record["current_image_path"] = copy_relative_path(current_image_path)
+        if isinstance(baseline_image_path, str):
+            record["baseline_image_path"] = copy_relative_path(baseline_image_path)
+
+    return grounding_records, candidate_eval_records
+
+
+def _assign_split(case: AnnotatedCaseRecord) -> tuple[CorpusSplit, str | None]:
+    if case.split is not None:
+        return case.split, case.holdout_reason
+    if case.asset.asset_id.startswith("demo_") or case.asset.hero:
         return "holdout_geo", "hero_demo"
     return "train", None
 
@@ -347,14 +404,17 @@ def _load_capture_cases(path: Path) -> dict[str, SimSatCaptureRecord]:
     }
 
 
-def _load_replay_cases(path: Path) -> dict[str, dict[str, object]]:
+def _load_replay_cases(path: Path) -> dict[str, AnnotatedCaseRecord]:
     raw = path.read_text(encoding="utf-8")
     if path.suffix == ".jsonl":
         records = [json.loads(line) for line in raw.splitlines() if line.strip()]
     else:
         payload = json.loads(raw)
         records = payload.get("cases", []) if isinstance(payload, dict) else payload
-    return {str(record["case_id"]): record for record in records}
+    return {
+        record.case_id: record
+        for record in (AnnotatedCaseRecord.model_validate(entry) for entry in records)
+    }
 
 
 if __name__ == "__main__":

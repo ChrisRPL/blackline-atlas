@@ -91,6 +91,36 @@ python3 training/scripts/eval_structured_outputs.py \
   --dataset /tmp/blackline-lfm25-vl-v1/blackline_candidate_eval.jsonl
 ```
 
+First real non-demo annotations live in:
+
+- `training/replay_pack/non_demo_eval.jsonl`
+
+Prompted Liquid eval path:
+
+```bash
+python3 -m pip install -e ".[dev,vlm]"
+cat training/replay_pack/hero_eval.jsonl training/replay_pack/non_demo_eval.jsonl > /tmp/phase3_eval.jsonl
+
+python3 training/scripts/capture_simsat_manifest.py \
+  --historical-endpoint http://localhost:9005/data/image/sentinel \
+  --cases-dataset /tmp/phase3_eval.jsonl \
+  --output-dir /tmp/phase3_simsat_capture
+
+python3 training/scripts/build_lfm25_vl_corpus.py \
+  --capture-manifest /tmp/phase3_simsat_capture/simsat_capture_manifest.json \
+  --replay-dataset /tmp/phase3_eval.jsonl \
+  --output-dir /tmp/phase3_corpus
+
+python3 training/scripts/run_lfm25_vl_prompted_eval.py \
+  --dataset /tmp/phase3_corpus/blackline_candidate_eval.jsonl \
+  --output-dir /tmp/phase3_run_full
+```
+
+Candidate selection rule:
+
+- prefer civilian grain terminals, commercial ports, aid nodes, and clearly civilian mobility chokepoints
+- avoid mixed-use military ports, fuel depots, and frontline route intel
+
 ## Core API routes
 
 - `GET /health`

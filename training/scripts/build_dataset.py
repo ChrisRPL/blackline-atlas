@@ -11,6 +11,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from app.core.config import get_settings  # noqa: E402
+from app.schemas.annotated_case import AnnotatedCaseRecord  # noqa: E402
 from app.services.scenario_fixtures import build_stub_scenarios  # noqa: E402
 from app.services.watchlist_loader import load_watchlist_assets  # noqa: E402
 
@@ -105,18 +106,21 @@ def main(argv: list[str] | None = None) -> int:
 def _build_case_record(*, asset: Any, scenario: Any) -> dict[str, Any]:
     alert = scenario.alerts[0]
     expected_candidate = json.loads(scenario.model_output_text)
-    return {
-        "case_id": scenario.scenario_id,
-        "asset": asset.model_dump(mode="json"),
-        "hero": asset.hero,
-        "current_frame": scenario.current_frame.model_dump(mode="json"),
-        "baseline_frame": scenario.baseline_frame.model_dump(mode="json"),
-        "model_output_text": scenario.model_output_text,
-        "expected_candidate": expected_candidate,
-        "expected_alert": alert.model_dump(mode="json"),
-        "expected_action": alert.action,
-        "expected_metrics": scenario.metrics.model_dump(mode="json"),
-    }
+    return AnnotatedCaseRecord(
+        case_id=scenario.scenario_id,
+        asset=asset,
+        hero=asset.hero,
+        current_frame=scenario.current_frame,
+        baseline_frame=scenario.baseline_frame,
+        model_output_text=scenario.model_output_text,
+        expected_candidate=expected_candidate,
+        expected_alert=alert,
+        expected_action=alert.action,
+        expected_metrics=scenario.metrics,
+        split="holdout_geo",
+        holdout_reason="hero_demo",
+        annotation_source="stub_replay_pack",
+    ).model_dump(mode="json")
 
 
 if __name__ == "__main__":
