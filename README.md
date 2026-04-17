@@ -95,6 +95,7 @@ First real non-demo annotations live in:
 
 - `training/replay_pack/non_demo_eval.jsonl`
 - sourced next-case backlog: `training/replay_pack/civilian_aoi_backlog.md`
+- broad 2026 conflict-location triage memo: `training/replay_pack/conflict_aoi_triage_2026-04-17.md`
 
 Prompted Liquid eval path:
 
