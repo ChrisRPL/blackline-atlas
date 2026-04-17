@@ -88,10 +88,12 @@ Reject:
   - strongest current parcel clue:
     - Nominatim resolves `Medicines Sans Frontieres Lankien` to `8.5267054, 32.0611465`
 - status:
-  - `active_exact_geocode`
+  - `hold_too_small_soft_for_sentinel`
 - next action:
-  - verify the hospital compound shape at the resolved coordinates
-  - only continue if the warehouse / hospital campus is large enough for honest Sentinel review
+  - bounded Sentinel verification found a real built cluster at the resolved coordinates
+  - but the cluster is too small and too embedded in village texture to defend as a compound-scale humanitarian warehouse node
+  - one pre/post pair around the exact clue did not show honest macro-visible warehouse or campus damage
+  - keep only as evidence unless a larger hospital-support campus or explicit warehouse polygon appears
 - sources:
   - [MSF on Lankien hospital bombardment and warehouse destruction](https://www.msf.org/msf-hospital-bombarded-government-forces-south-sudan)
   - [MSF on Lankien facility evacuation after airstrikes](https://www.msf.org/south-sudan-msf-evacuates-staff-lankien-healthcare-facility-following-airstrikes)
@@ -163,11 +165,11 @@ Reject:
 
 ## Immediate next work order
 
-1. exact compound verification on `aid_02` `MSF Lankien hospital main warehouse`
-2. keep `aid_01` `El Obeid` on hold unless the ABS complex itself becomes publicly mappable
+1. keep `aid_01` `El Obeid` on hold unless the ABS complex itself becomes publicly mappable
+2. keep `aid_02` `Lankien` as evidence only unless a larger hospital-support warehouse campus is publicly pinned
 3. keep `Tyre` only if scale permits
 4. keep `UNHCR Baghdad` as exact benchmark / control candidate
-5. keep `Al-Ghafari` as evidence only
+5. if no inland aid positive survives, reopen inland `food` before adding more aid notes
 
 ## Stop rules
 
