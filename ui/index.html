@@ -3,1608 +3,216 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Blackline Atlas Shell</title>
+    <title>Blackline Atlas</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
       href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap"
       rel="stylesheet"
     />
-    <style>
-      :root {
-        --bg: #071015;
-        --bg-deep: #04090d;
-        --panel: rgba(10, 18, 24, 0.84);
-        --panel-strong: rgba(12, 22, 29, 0.94);
-        --panel-soft: rgba(15, 27, 35, 0.66);
-        --ink: #d7e2e8;
-        --muted: #82909a;
-        --line: rgba(150, 177, 191, 0.14);
-        --accent: #84d7ce;
-        --accent-soft: rgba(132, 215, 206, 0.12);
-        --warn: #d2a360;
-        --warn-soft: rgba(210, 163, 96, 0.15);
-        --off: #72818a;
-        --off-soft: rgba(114, 129, 138, 0.12);
-        --danger: #c77768;
-        --danger-soft: rgba(199, 119, 104, 0.14);
-        --shadow: 0 28px 90px rgba(0, 0, 0, 0.38);
-      }
-
-      * {
-        box-sizing: border-box;
-      }
-
-      html,
-      body {
-        margin: 0;
-        min-height: 100%;
-      }
-
-      body {
-        position: relative;
-        overflow-x: hidden;
-        background:
-          radial-gradient(circle at top left, rgba(132, 215, 206, 0.11), transparent 22rem),
-          radial-gradient(circle at bottom right, rgba(210, 163, 96, 0.08), transparent 24rem),
-          linear-gradient(180deg, #091319 0%, var(--bg) 44%, var(--bg-deep) 100%);
-        color: var(--ink);
-        font-family: "IBM Plex Sans", "Helvetica Neue", sans-serif;
-      }
-
-      body::before {
-        content: "";
-        position: fixed;
-        inset: 0;
-        pointer-events: none;
-        background:
-          linear-gradient(rgba(132, 215, 206, 0.03) 1px, transparent 1px),
-          linear-gradient(90deg, rgba(132, 215, 206, 0.03) 1px, transparent 1px);
-        background-size: 3rem 3rem;
-        mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.75), transparent 88%);
-      }
-
-      code,
-      .eyebrow,
-      .section-label,
-      .section-note,
-      .signal-label,
-      .signal-meta,
-      .band-label,
-      .band-copy,
-      .panel-kicker,
-      .dependency-state,
-      .dependency-meta,
-      .fact-row dd,
-      .fact-row dt,
-      .microcopy,
-      .scope-list,
-      .lane-label,
-      .lane-detail {
-        font-family: "IBM Plex Mono", monospace;
-      }
-
-      .shell {
-        position: relative;
-        min-height: 100vh;
-        padding: 2.2rem;
-        animation: shell-in 420ms ease-out;
-      }
-
-      .hero {
-        display: grid;
-        gap: 0.8rem;
-        max-width: 58rem;
-        margin-bottom: 1.2rem;
-      }
-
-      .eyebrow {
-        margin: 0;
-        color: var(--accent);
-        font-size: 0.82rem;
-        letter-spacing: 0.18em;
-        text-transform: uppercase;
-      }
-
-      .hero h1 {
-        margin: 0;
-        max-width: 11ch;
-        font-size: clamp(2.8rem, 6.2vw, 5.2rem);
-        line-height: 0.94;
-        letter-spacing: -0.06em;
-      }
-
-      .deck {
-        display: none;
-      }
-
-      .masthead {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        gap: 0.75rem;
-        padding-bottom: 0.55rem;
-        margin-bottom: 0.55rem;
-        border-bottom: 1px solid var(--line);
-      }
-
-      .masthead-copy {
-        display: flex;
-        align-items: center;
-        min-width: 0;
-      }
-
-      .utility-strip {
-        display: flex;
-        align-items: center;
-        justify-content: flex-end;
-        gap: 0.5rem;
-        flex-wrap: wrap;
-      }
-
-      .state-chip {
-        display: inline-flex;
-        align-items: center;
-        padding: 0.26rem 0.62rem;
-        border: 1px solid var(--line);
-        font-family: "IBM Plex Mono", monospace;
-        font-size: 0.72rem;
-        letter-spacing: 0.08em;
-        text-transform: uppercase;
-      }
-
-      .state-chip.live,
-      .state-chip.online {
-        color: var(--accent);
-        background: var(--accent-soft);
-      }
-
-      .state-chip.fixture,
-      .state-chip.idle {
-        color: var(--off);
-        background: var(--off-soft);
-      }
-
-      .state-chip.degraded {
-        color: var(--warn);
-        background: var(--warn-soft);
-      }
-
-      .state-chip.utility {
-        color: var(--muted);
-        background: rgba(114, 129, 138, 0.08);
-      }
-
-      .eyebrow {
-        font-size: 0.9rem;
-        letter-spacing: 0.2em;
-        font-weight: 600;
-      }
-
-      .utility-copy,
-      .status-label {
-        margin: 0;
-        color: var(--muted);
-        font-family: "IBM Plex Mono", monospace;
-        font-size: 0.72rem;
-        letter-spacing: 0.12em;
-        text-transform: uppercase;
-      }
-
-      .utility-copy {
-        letter-spacing: 0.08em;
-        text-transform: none;
-      }
-
-      .section {
-        min-height: 31rem;
-        border: 1px solid var(--line);
-        background: var(--panel);
-        box-shadow: var(--shadow);
-      }
-
-      .signal-strip {
-        display: grid;
-        grid-template-columns: repeat(4, minmax(0, 1fr));
-        gap: 1rem;
-        margin-bottom: 1rem;
-      }
-
-      .signal-card {
-        border: 1px solid var(--line);
-        background: linear-gradient(180deg, rgba(18, 31, 40, 0.92), rgba(9, 16, 21, 0.88));
-        box-shadow: var(--shadow);
-        padding: 1rem 1.1rem;
-      }
-
-      .signal-card.primary {
-        grid-column: span 2;
-        background:
-          linear-gradient(135deg, rgba(132, 215, 206, 0.12), transparent 40%),
-          linear-gradient(180deg, rgba(16, 27, 34, 0.98), rgba(8, 14, 18, 0.9));
-      }
-
-      .signal-label,
-      .signal-meta {
-        margin: 0;
-      }
-
-      .signal-label {
-        color: var(--muted);
-        font-size: 0.72rem;
-        letter-spacing: 0.12em;
-        text-transform: uppercase;
-      }
-
-      .signal-value {
-        margin: 0.5rem 0 0.4rem;
-        font-size: clamp(1.15rem, 2vw, 1.75rem);
-        font-weight: 700;
-        line-height: 1.05;
-        text-transform: uppercase;
-      }
-
-      .signal-card.primary .signal-value {
-        font-size: clamp(1.5rem, 2.4vw, 2.4rem);
-      }
-
-      .signal-meta {
-        color: var(--muted);
-        font-size: 0.78rem;
-        line-height: 1.5;
-      }
-
-      .console {
-        display: grid;
-        grid-template-columns: 0.78fr 1.7fr 0.9fr;
-        gap: 1rem;
-      }
-
-      .section-left,
-      .section-right,
-      .section-center {
-        padding: 1.2rem;
-      }
-
-      .section-center {
-        background:
-          linear-gradient(180deg, rgba(19, 34, 44, 0.8), rgba(10, 18, 24, 0.95)),
-          var(--panel-strong);
-      }
-
-      .compact-rail {
-        display: grid;
-        gap: 1rem;
-        align-content: start;
-      }
-
-      .compact-stack {
-        padding: 1rem;
-        border: 1px solid var(--line);
-        background: rgba(9, 17, 22, 0.42);
-      }
-
-      .priority-stack {
-        border-color: rgba(132, 215, 206, 0.18);
-        background: rgba(12, 21, 28, 0.62);
-      }
-
-      .support-stack {
-        border-color: rgba(150, 177, 191, 0.1);
-        background: rgba(9, 17, 22, 0.28);
-      }
-
-      .primary-stage {
-        display: grid;
-        gap: 1rem;
-      }
-
-      .stage-compare {
-        padding-top: 0;
-      }
-
-      .section-quiet-note {
-        margin: -0.2rem 0 0;
-        color: var(--muted);
-        font-family: "IBM Plex Mono", monospace;
-        font-size: 0.74rem;
-        line-height: 1.5;
-      }
-
-      .section-head {
-        display: flex;
-        justify-content: space-between;
-        align-items: baseline;
-        gap: 1rem;
-        padding-bottom: 0.85rem;
-        margin-bottom: 1rem;
-        border-bottom: 1px solid var(--line);
-      }
-
-      .section-label,
-      .section-note {
-        margin: 0;
-        font-size: 0.76rem;
-        letter-spacing: 0.1em;
-        text-transform: uppercase;
-      }
-
-      .section-note {
-        color: var(--muted);
-        text-align: right;
-      }
-
-      .fact-list {
-        margin: 0;
-      }
-
-      .fact-row {
-        display: flex;
-        justify-content: space-between;
-        gap: 1rem;
-        padding: 0.9rem 0;
-        border-bottom: 1px solid var(--line);
-      }
-
-      .fact-row dt,
-      .fact-row dd {
-        margin: 0;
-      }
-
-      .fact-row dt {
-        color: var(--muted);
-      }
-
-      .fact-row dd {
-        color: var(--ink);
-        text-transform: uppercase;
-      }
-
-      .scope-list {
-        list-style: none;
-        margin: 1.1rem 0 0;
-        padding: 0;
-        color: var(--muted);
-        font-size: 0.82rem;
-        line-height: 1.7;
-      }
-
-      .scope-list li {
-        padding: 0.65rem 0;
-        border-bottom: 1px solid var(--line);
-      }
-
-      .subsection-head {
-        display: flex;
-        justify-content: space-between;
-        align-items: baseline;
-        gap: 1rem;
-        margin-top: 1.1rem;
-        padding-top: 1rem;
-        border-top: 1px solid var(--line);
-      }
-
-      .subsection-head .section-label,
-      .subsection-head .section-note {
-        font-size: 0.72rem;
-      }
-
-      .replay-list {
-        margin: 0.5rem 0 0;
-      }
-
-      .replay-list .fact-row:first-child {
-        padding-top: 0.65rem;
-      }
-
-      .microcopy {
-        margin: 1rem 0 0;
-        color: var(--muted);
-        font-size: 0.8rem;
-        line-height: 1.6;
-      }
-
-      .center-hero {
-        display: flex;
-        justify-content: space-between;
-        gap: 1rem;
-        padding: 1rem 0 1.15rem;
-        border-bottom: 1px solid var(--line);
-      }
-
-      .center-hero h2 {
-        margin: 0.35rem 0 0;
-        max-width: 14ch;
-        font-size: clamp(1.8rem, 3.2vw, 2.55rem);
-        line-height: 0.98;
-        letter-spacing: -0.05em;
-      }
-
-      .panel-kicker {
-        margin: 0;
-        color: var(--accent);
-        font-size: 0.74rem;
-        letter-spacing: 0.12em;
-        text-transform: uppercase;
-      }
-
-      .center-copy {
-        max-width: 18rem;
-        margin: 0;
-        color: var(--muted);
-        line-height: 1.65;
-      }
-
-      .decision-band {
-        display: grid;
-        grid-template-columns: minmax(0, 1.45fr) repeat(2, minmax(0, 0.8fr));
-        gap: 1rem;
-        padding: 0;
-        border-bottom: 1px solid var(--line);
-        align-items: start;
-        border: 1px solid var(--line);
-        background:
-          linear-gradient(180deg, rgba(132, 215, 206, 0.07), transparent 56%),
-          var(--panel-soft);
-      }
-
-      .decision-core,
-      .decision-meta {
-        min-height: 6.6rem;
-        padding: 0.95rem 1rem;
-      }
-
-      .lane-label,
-      .lane-detail {
-        margin: 0;
-      }
-
-      .lane-label {
-        color: var(--muted);
-        font-size: 0.72rem;
-        letter-spacing: 0.12em;
-        text-transform: uppercase;
-      }
-
-      .lane-value {
-        display: block;
-        margin-top: 0.65rem;
-        font-size: 1.15rem;
-        font-weight: 700;
-        line-height: 1.1;
-        text-transform: uppercase;
-      }
-
-      .lane-detail {
-        margin-top: 0.7rem;
-        color: var(--muted);
-        font-size: 0.76rem;
-        line-height: 1.55;
-        overflow-wrap: anywhere;
-      }
-
-      .decision-core {
-        padding-right: 1.2rem;
-      }
-
-      .decision-row {
-        display: flex;
-        align-items: baseline;
-        gap: 0.8rem;
-        margin-top: 0.6rem;
-      }
-
-      .decision-value {
-        margin: 0;
-        font-size: 1.46rem;
-        line-height: 1;
-        font-weight: 800;
-        letter-spacing: 0.02em;
-        text-transform: uppercase;
-      }
-
-      .decision-meta-value {
-        display: block;
-        margin-top: 0.58rem;
-        font-size: 1rem;
-        line-height: 1.05;
-        font-weight: 700;
-        text-transform: uppercase;
-      }
-
-      .decision-meta {
-        border-left: 1px solid var(--line);
-      }
-
-      .aperture-grid {
-        display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 0.9rem;
-        padding-top: 1rem;
-      }
-
-      .aperture {
-        min-height: 11rem;
-        padding: 0.95rem;
-        border-top: 1px solid var(--accent-soft);
-        background:
-          linear-gradient(180deg, rgba(132, 215, 206, 0.05), transparent 36%),
-          rgba(9, 17, 22, 0.6);
-      }
-
-      .aperture-wide {
-        grid-column: 1 / -1;
-      }
-
-      .aperture h3 {
-        margin: 0.4rem 0 0;
-        font-size: 1.18rem;
-        line-height: 1.08;
-      }
-
-      .snapshot-card h3 {
-        font-size: 1rem;
-        line-height: 1.18;
-        word-break: break-word;
-      }
-
-      .snapshot-note {
-        margin: 0.45rem 0 0;
-        color: var(--muted);
-        font-size: 0.76rem;
-        line-height: 1.55;
-      }
-
-      .aperture p {
-        margin: 0.7rem 0 0;
-        color: var(--muted);
-        line-height: 1.6;
-      }
-
-      .snapshot-top {
-        display: flex;
-        justify-content: space-between;
-        align-items: flex-start;
-        gap: 0.8rem;
-      }
-
-      .snapshot-compare {
-        display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 1rem;
-      }
-
-      .snapshot-card {
-        padding: 0.95rem;
-        border: 1px solid var(--line);
-        background: rgba(9, 17, 22, 0.58);
-      }
-
-      .snapshot-card .snapshot-list {
-        grid-template-columns: 1fr;
-      }
-
-      .snapshot-status {
-        margin: 0;
-        padding: 0.22rem 0.5rem;
-        border: 1px solid var(--line);
-        font-size: 0.7rem;
-        letter-spacing: 0.08em;
-        text-transform: uppercase;
-      }
-
-      .snapshot-status.accepted {
-        color: var(--accent);
-        background: var(--accent-soft);
-      }
-
-      .snapshot-status.suppressed {
-        color: var(--warn);
-        background: var(--warn-soft);
-      }
-
-      .snapshot-status.degraded,
-      .snapshot-status.loading {
-        color: var(--off);
-        background: var(--off-soft);
-      }
-
-      .snapshot-list {
-        display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        column-gap: 1rem;
-        margin: 0.9rem 0 0;
-      }
-
-      .snapshot-row {
-        display: flex;
-        justify-content: space-between;
-        gap: 1rem;
-        padding: 0.48rem 0;
-        border-bottom: 1px solid var(--line);
-      }
-
-      .snapshot-row dt,
-      .snapshot-row dd {
-        margin: 0;
-      }
-
-      .snapshot-row dt {
-        color: var(--muted);
-        font-size: 0.74rem;
-        letter-spacing: 0.08em;
-        text-transform: uppercase;
-      }
-
-      .snapshot-row dd {
-        max-width: 54%;
-        color: var(--ink);
-        font-size: 0.8rem;
-        line-height: 1.45;
-        text-align: right;
-        overflow-wrap: anywhere;
-      }
-
-      .dependency-compact {
-        list-style: none;
-        margin: 0;
-        padding: 0;
-      }
-
-      .dependency-row {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        gap: 0.8rem;
-        padding: 0.68rem 0;
-        border-bottom: 1px solid var(--line);
-      }
-
-      .dependency-row:last-child {
-        border-bottom: 0;
-      }
-
-      .dependency-name {
-        margin: 0;
-        color: var(--ink);
-        font-size: 0.9rem;
-        font-weight: 600;
-      }
-
-      .dependency-list {
-        list-style: none;
-        margin: 0;
-        padding: 0;
-      }
-
-      .alert-card {
-        margin-bottom: 0;
-        padding: 0.95rem;
-        border: 1px solid var(--line);
-        background:
-          linear-gradient(180deg, rgba(132, 215, 206, 0.08), transparent 42%),
-          rgba(10, 19, 24, 0.72);
-      }
-
-      .priority-stack .alert-card {
-        border-color: rgba(132, 215, 206, 0.14);
-        background:
-          linear-gradient(180deg, rgba(132, 215, 206, 0.11), transparent 42%),
-          rgba(11, 22, 28, 0.82);
-      }
-
-      .alert-card.quiet {
-        background:
-          linear-gradient(180deg, rgba(114, 129, 138, 0.08), transparent 42%),
-          rgba(10, 19, 24, 0.58);
-      }
-
-      .alert-card.degraded {
-        background:
-          linear-gradient(180deg, rgba(199, 119, 104, 0.1), transparent 42%),
-          rgba(15, 18, 20, 0.62);
-      }
-
-      .alert-top {
-        display: flex;
-        justify-content: space-between;
-        align-items: flex-start;
-        gap: 1rem;
-      }
-
-      .alert-title,
-      .alert-meta,
-      .alert-summary {
-        margin: 0;
-      }
-
-      .alert-title {
-        margin-top: 0.4rem;
-        font-size: 1.16rem;
-        line-height: 1.12;
-      }
-
-      .alert-meta {
-        margin-top: 0.55rem;
-        color: var(--muted);
-        font-size: 0.76rem;
-        line-height: 1.6;
-        overflow-wrap: anywhere;
-      }
-
-      .alert-summary {
-        margin-top: 0.8rem;
-        color: var(--ink);
-        line-height: 1.55;
-        overflow-wrap: anywhere;
-      }
-
-      .alert-pill {
-        padding: 0.24rem 0.55rem;
-        border: 1px solid var(--line);
-        font-size: 0.72rem;
-        letter-spacing: 0.08em;
-        text-transform: uppercase;
-        white-space: nowrap;
-      }
-
-      .alert-pill.high {
-        color: var(--warn);
-        background: var(--warn-soft);
-        border-color: rgba(210, 163, 96, 0.28);
-      }
-
-      .alert-pill.medium {
-        color: var(--accent);
-        background: var(--accent-soft);
-      }
-
-      .alert-pill.low {
-        color: var(--off);
-        background: var(--off-soft);
-      }
-
-      .alert-pill.quiet {
-        color: var(--off);
-        background: var(--off-soft);
-      }
-
-      .alert-pill.degraded {
-        color: var(--warn);
-        background: var(--warn-soft);
-      }
-
-      .alert-empty {
-        color: var(--muted);
-        line-height: 1.6;
-      }
-
-      .dependency-item {
-        padding: 0.95rem 0;
-        border-bottom: 1px solid var(--line);
-      }
-
-      .dependency-top {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        gap: 1rem;
-      }
-
-      .dependency-name,
-      .dependency-state {
-        margin: 0;
-      }
-
-      .dependency-name {
-        font-size: 1rem;
-        font-weight: 600;
-      }
-
-      .dependency-state {
-        padding: 0.26rem 0.55rem;
-        border: 1px solid var(--line);
-        font-size: 0.72rem;
-        letter-spacing: 0.08em;
-        text-transform: uppercase;
-      }
-
-      .dependency-state.ready {
-        color: var(--accent);
-        background: var(--accent-soft);
-      }
-
-      .dependency-state.degraded {
-        color: var(--warn);
-        background: var(--warn-soft);
-        animation: pulse 1.8s ease-in-out infinite;
-      }
-
-      .dependency-state.not_configured {
-        color: var(--off);
-        background: var(--off-soft);
-      }
-
-      .dependency-meta {
-        margin: 0.65rem 0 0;
-        color: var(--muted);
-        font-size: 0.8rem;
-        line-height: 1.6;
-        overflow-wrap: anywhere;
-      }
-
-      .loading {
-        color: var(--muted);
-      }
-
-      @keyframes shell-in {
-        from {
-          opacity: 0;
-          transform: translateY(10px);
-        }
-        to {
-          opacity: 1;
-          transform: translateY(0);
-        }
-      }
-
-      @keyframes pulse {
-        0%,
-        100% {
-          transform: scale(1);
-        }
-        50% {
-          transform: scale(1.02);
-        }
-      }
-
-      @media (max-width: 1080px) {
-        .snapshot-list,
-        .snapshot-compare {
-          grid-template-columns: 1fr;
-        }
-
-        .console {
-          display: flex;
-          flex-direction: column;
-        }
-
-        .section {
-          min-height: auto;
-        }
-
-        .section-center {
-          order: 1;
-        }
-
-        .section-left {
-          order: 2;
-        }
-
-        .section-right {
-          order: 3;
-        }
-
-        .masthead,
-        .masthead-copy,
-        .center-hero {
-          flex-direction: column;
-          align-items: flex-start;
-        }
-
-        .center-copy {
-          max-width: none;
-        }
-      }
-
-      @media (max-width: 680px) {
-        .shell {
-          padding: 0.95rem;
-        }
-
-        .decision-band {
-          grid-template-columns: 1fr;
-          gap: 0;
-        }
-
-        .decision-meta {
-          border-left: 0;
-          border-top: 1px solid var(--line);
-        }
-
-        .masthead {
-          gap: 0.75rem;
-          margin-bottom: 0.8rem;
-          padding-bottom: 0.65rem;
-        }
-
-        .eyebrow {
-          font-size: 0.72rem;
-          letter-spacing: 0.14em;
-        }
-
-        .compact-stack,
-        .compact-stack,
-        .snapshot-card,
-        .alert-card {
-          padding: 0.82rem;
-        }
-
-        .console {
-          gap: 0.7rem;
-        }
-
-        .section-left,
-        .section-right,
-        .section-center {
-          padding: 0.9rem;
-        }
-
-        .section-right {
-          order: 2;
-        }
-
-        .section-left {
-          order: 3;
-        }
-
-        .section-head {
-          padding-bottom: 0.65rem;
-          margin-bottom: 0.75rem;
-        }
-
-        .section-note {
-          display: none;
-        }
-
-        .subsection-head {
-          margin-top: 0.8rem;
-          padding-top: 0.75rem;
-        }
-
-        .fact-row {
-          gap: 0.7rem;
-          padding: 0.72rem 0;
-        }
-
-        .fact-row dt,
-        .fact-row dd {
-          font-size: 0.76rem;
-        }
-
-        .panel-kicker,
-        .status-label,
-        .section-quiet-note {
-          font-size: 0.68rem;
-        }
-
-        .utility-copy,
-        .lane-detail,
-        .dependency-meta,
-        .alert-meta,
-        .snapshot-note {
-          font-size: 0.72rem;
-          line-height: 1.45;
-        }
-
-        .snapshot-row {
-          gap: 0.75rem;
-          padding: 0.4rem 0;
-        }
-
-        .snapshot-row dt {
-          font-size: 0.7rem;
-        }
-
-        .snapshot-row dd {
-          max-width: 56%;
-          font-size: 0.75rem;
-        }
-
-        .alert-card {
-          margin-bottom: 0.8rem;
-          padding: 0.82rem;
-        }
-
-        .alert-title {
-          font-size: 1rem;
-        }
-
-        .alert-summary {
-          font-size: 0.88rem;
-          line-height: 1.48;
-        }
-
-        .dependency-item {
-          padding: 0.8rem 0;
-        }
-
-        .dependency-top {
-          align-items: flex-start;
-        }
-      }
-    </style>
+    <link rel="stylesheet" href="/ui-static/shell.css" />
+    <script type="module" src="/ui-static/shell.js"></script>
   </head>
   <body>
     <div class="shell">
-      <header class="masthead">
-        <div class="masthead-copy">
-          <p class="eyebrow">Blackline Atlas</p>
+      <header class="topbar">
+        <div class="brandbar">
+          <p class="badge">Blackline Atlas</p>
+          <p class="top-copy" id="top-copy">civilian lifeline watch</p>
         </div>
 
-        <div class="utility-strip">
-          <span class="state-chip idle" id="health-status">connecting</span>
-          <span class="state-chip utility" id="system-headline">replay-safe</span>
-          <span class="state-chip utility" id="app-env">-</span>
+        <div class="topchips">
+          <span class="chip neutral" id="health-chip">connecting</span>
+          <span class="chip neutral" id="mode-chip">replay-safe</span>
+          <span class="chip neutral" id="alert-chip">0 alerts</span>
+          <span class="chip neutral" id="trust-chip">trust pending</span>
         </div>
       </header>
 
-      <main class="console">
-        <section class="section section-left compact-rail">
-          <article class="compact-stack">
-            <div class="section-head">
-              <p class="section-label">Replay identity</p>
-              <p class="section-note" id="replay-state-label">Loading...</p>
+      <main class="workspace">
+        <section class="panel channel-panel">
+          <div class="panel-head">
+            <div>
+              <p class="panel-kicker">Agentic control</p>
+              <h1>Command channel</h1>
+            </div>
+            <p class="panel-meta">operator verbs only</p>
+          </div>
+
+          <div class="transcript" id="chat-log">
+            <article class="message assistant">
+              <p class="message-role">atlas</p>
+              <p class="message-body">Booting command channel.</p>
+            </article>
+          </div>
+
+          <div class="quick-commands">
+            <button class="command-pill" data-command="focus latest alert">Focus latest alert</button>
+            <button class="command-pill" data-command="explain current decision">Explain decision</button>
+            <button class="command-pill" data-command="compare latest vs baseline">Compare latest vs baseline</button>
+            <button class="command-pill" data-command="show replay state">Show replay state</button>
+          </div>
+
+          <form class="composer" id="chat-form">
+            <label class="sr-only" for="chat-input">Command</label>
+            <input
+              id="chat-input"
+              name="chat-input"
+              type="text"
+              autocomplete="off"
+              placeholder="Ask: show biggest disruption near the watchlist"
+            />
+            <button type="submit">Run</button>
+          </form>
+
+          <p class="panel-note" id="channel-note">
+            Local command loop only for now. Real model-backed control comes after the interaction model is right.
+          </p>
+        </section>
+
+        <section class="panel map-panel">
+          <div class="panel-head">
+            <div>
+              <p class="panel-kicker">Primary canvas</p>
+              <h2>Theatre map</h2>
+            </div>
+            <p class="panel-meta" id="map-status">watchlist loading</p>
+          </div>
+
+          <div class="map-stage" id="map-stage">
+            <div class="map-wash"></div>
+            <div class="map-grid"></div>
+            <div class="map-arc map-arc-a"></div>
+            <div class="map-arc map-arc-b"></div>
+
+            <div class="map-brief">
+              <p class="map-kicker">selected site</p>
+              <h3 id="map-focus-name">Waiting for assets</h3>
+              <p id="map-focus-summary">Map will center on the highest-priority visible site first.</p>
             </div>
 
-            <dl class="fact-list">
-              <div class="fact-row">
-                <dt>Mode</dt>
-                <dd id="replay-running">-</dd>
+            <div class="map-trust">
+              <span class="map-trust-pill" id="map-trust-state">trust pending</span>
+              <span class="map-trust-copy" id="map-trust-copy">Loading system truth.</span>
+            </div>
+
+            <div class="map-markers" id="map-markers"></div>
+
+            <div class="map-footer">
+              <div class="legend">
+                <span><i class="legend-dot high"></i> alert</span>
+                <span><i class="legend-dot selected"></i> selected</span>
+                <span><i class="legend-dot quiet"></i> watch</span>
               </div>
-              <div class="fact-row">
-                <dt>Asset</dt>
-                <dd id="replay-asset">-</dd>
+              <p class="map-coords" id="map-coords">Projection waiting</p>
+            </div>
+          </div>
+        </section>
+
+        <aside class="panel drawer-panel">
+          <div class="panel-head">
+            <div>
+              <p class="panel-kicker">Context drawer</p>
+              <h2>Selected site</h2>
+            </div>
+            <p class="panel-meta" id="drawer-state">idle</p>
+          </div>
+
+          <article class="drawer-card drawer-primary">
+            <div class="drawer-topline">
+              <div>
+                <p class="drawer-label">site</p>
+                <h3 id="site-name">Waiting for selection</h3>
               </div>
-              <div class="fact-row">
-                <dt>Scenario</dt>
-                <dd id="replay-scenario">-</dd>
+              <p class="status-pill idle" id="site-impact">quiet</p>
+            </div>
+            <p class="drawer-summary" id="site-summary">
+              The site drawer will explain what changed, how sure we are, and what the operator should look at next.
+            </p>
+
+            <dl class="facts">
+              <div class="fact">
+                <dt>Region</dt>
+                <dd id="site-region">-</dd>
               </div>
-              <div class="fact-row">
-                <dt>Hero asset</dt>
-                <dd id="replay-hero-asset">-</dd>
+              <div class="fact">
+                <dt>Type</dt>
+                <dd id="site-type">-</dd>
+              </div>
+              <div class="fact">
+                <dt>Coordinates</dt>
+                <dd id="site-coords">-</dd>
               </div>
             </dl>
           </article>
 
-          <article class="compact-stack">
-            <div class="section-head">
-              <p class="section-label">Backend mode</p>
-              <p class="section-note">/health.config</p>
-            </div>
+          <div class="compare-stack">
+            <article class="drawer-card">
+              <p class="drawer-label">Current frame</p>
+              <h3 id="current-title">Waiting for /frames/current</h3>
+              <p class="drawer-summary" id="current-note">Current-site evidence pending.</p>
+              <dl class="facts compact">
+                <div class="fact">
+                  <dt>Status</dt>
+                  <dd id="current-status">-</dd>
+                </div>
+                <div class="fact">
+                  <dt>Captured</dt>
+                  <dd id="current-captured">-</dd>
+                </div>
+              </dl>
+            </article>
 
-            <dl class="fact-list">
-              <div class="fact-row">
+            <article class="drawer-card">
+              <p class="drawer-label">Baseline frame</p>
+              <h3 id="baseline-title">Waiting for /frames/baseline</h3>
+              <p class="drawer-summary" id="baseline-note">Baseline reference pending.</p>
+              <dl class="facts compact">
+                <div class="fact">
+                  <dt>Captured</dt>
+                  <dd id="baseline-captured">-</dd>
+                </div>
+                <div class="fact">
+                  <dt>Source</dt>
+                  <dd id="baseline-source">-</dd>
+                </div>
+              </dl>
+            </article>
+          </div>
+
+          <article class="drawer-card">
+            <div class="drawer-topline">
+              <p class="drawer-label">Latest alert</p>
+              <p class="status-pill idle" id="latest-severity">quiet</p>
+            </div>
+            <h3 id="latest-title">Waiting for /alerts</h3>
+            <p class="drawer-summary" id="latest-meta">Latest accepted alert will anchor the drawer when present.</p>
+            <p class="drawer-why" id="latest-why">No active alert readout yet.</p>
+          </article>
+
+          <article class="drawer-card drawer-support">
+            <p class="drawer-label">System truth</p>
+            <dl class="facts compact">
+              <div class="fact">
                 <dt>Current live fetch</dt>
-                <dd id="cfg-current-http">-</dd>
+                <dd id="cfg-current">-</dd>
               </div>
-              <div class="fact-row">
+              <div class="fact">
                 <dt>Baseline live fetch</dt>
-                <dd id="cfg-baseline-http">-</dd>
+                <dd id="cfg-baseline">-</dd>
               </div>
-              <div class="fact-row">
+              <div class="fact">
                 <dt>Mapbox context</dt>
                 <dd id="cfg-mapbox">-</dd>
               </div>
+              <div class="fact">
+                <dt>Replay state</dt>
+                <dd id="cfg-replay">-</dd>
+              </div>
             </dl>
           </article>
-        </section>
-
-        <section class="section section-center primary-stage">
-          <div class="section-head">
-            <p class="section-label">Current / baseline compare</p>
-            <p class="snapshot-status loading" id="compare-status">loading</p>
-          </div>
-
-          <p class="section-quiet-note" id="center-note">Current, baseline, then latest alert.</p>
-
-          <div class="decision-band">
-            <section class="decision-core">
-              <p class="lane-label">Decision</p>
-              <div class="decision-row">
-                <p class="decision-value" id="decision-action">-</p>
-              </div>
-              <p class="lane-detail" id="decision-action-detail">Waiting for evaluator output.</p>
-            </section>
-            <section class="decision-meta">
-              <p class="lane-label">Path</p>
-              <span class="decision-meta-value" id="decision-path">-</span>
-              <p class="lane-detail" id="decision-path-detail">Current acceptance path unresolved.</p>
-            </section>
-            <section class="decision-meta">
-              <p class="lane-label">Confidence</p>
-              <span class="decision-meta-value" id="decision-confidence-detail">-</span>
-              <p class="lane-detail" id="decision-rate-detail">Waiting for /metrics.</p>
-            </section>
-          </div>
-
-          <div class="snapshot-compare stage-compare">
-            <section class="snapshot-card">
-              <p class="panel-kicker">Current frame snapshot</p>
-              <h3 id="current-snapshot-title">Waiting for current frame</h3>
-              <p class="snapshot-note" id="current-snapshot-note">Waiting for selected current frame.</p>
-              <dl class="snapshot-list">
-                <div class="snapshot-row">
-                  <dt>Status</dt>
-                  <dd id="current-snapshot-status">-</dd>
-                </div>
-                <div class="snapshot-row">
-                  <dt>Asset</dt>
-                  <dd id="current-snapshot-asset">-</dd>
-                </div>
-                <div class="snapshot-row">
-                  <dt>Captured</dt>
-                  <dd id="current-snapshot-captured">-</dd>
-                </div>
-              </dl>
-            </section>
-
-            <section class="snapshot-card">
-              <p class="panel-kicker">Baseline frame snapshot</p>
-              <h3 id="baseline-snapshot-title">Waiting for baseline frame</h3>
-              <p class="snapshot-note" id="baseline-snapshot-note">Waiting for selected baseline frame.</p>
-              <dl class="snapshot-list">
-                <div class="snapshot-row">
-                  <dt>Asset</dt>
-                  <dd id="baseline-snapshot-asset">-</dd>
-                </div>
-                <div class="snapshot-row">
-                  <dt>Captured</dt>
-                  <dd id="baseline-snapshot-captured">-</dd>
-                </div>
-              </dl>
-            </section>
-          </div>
-        </section>
-
-        <section class="section section-right compact-rail">
-          <article class="compact-stack priority-stack">
-            <div class="section-head">
-              <p class="section-label">Latest alert</p>
-              <p class="section-note">/alerts</p>
-            </div>
-
-            <article class="alert-card" id="latest-alert-card">
-              <div class="alert-top">
-                <div>
-                  <p class="panel-kicker">Latest alert</p>
-                  <h3 class="alert-title" id="latest-alert-title">Waiting for /alerts</h3>
-                </div>
-                <p class="alert-pill low" id="latest-alert-severity">idle</p>
-              </div>
-              <p class="alert-meta" id="latest-alert-meta">Right rail will show the latest accepted alert only.</p>
-              <p class="alert-summary" id="latest-alert-summary">Waiting for alert surface.</p>
-            </article>
-          </article>
-
-          <article class="compact-stack support-stack">
-            <div class="section-head">
-              <p class="section-label">Dependency pulse</p>
-              <p class="section-note">/health</p>
-            </div>
-
-            <ul class="dependency-compact" id="dependency-list">
-              <li class="dependency-row">
-                <p class="dependency-name">Waiting for /health...</p>
-                <p class="dependency-state not_configured">idle</p>
-              </li>
-            </ul>
-            <p class="section-quiet-note" id="dependency-note">Waiting for dependency pulse.</p>
-          </article>
-        </section>
+        </aside>
       </main>
     </div>
-
-    <script>
-      const healthUrl = new URL("/health", window.location.origin);
-      const alertsUrl = new URL("/alerts", window.location.origin);
-      const replayStatusUrl = new URL("/replay/status", window.location.origin);
-      const currentFrameUrl = new URL("/frames/current", window.location.origin);
-      const baselineFrameUrl = new URL("/frames/baseline", window.location.origin);
-      const metricsUrl = new URL("/metrics", window.location.origin);
-
-      const appEnv = document.querySelector("#app-env");
-      const healthStatus = document.querySelector("#health-status");
-      const systemHeadline = document.querySelector("#system-headline");
-      const currentHttp = document.querySelector("#cfg-current-http");
-      const baselineHttp = document.querySelector("#cfg-baseline-http");
-      const mapboxContext = document.querySelector("#cfg-mapbox");
-      const replayStateLabel = document.querySelector("#replay-state-label");
-      const replayRunning = document.querySelector("#replay-running");
-      const replayAsset = document.querySelector("#replay-asset");
-      const replayScenario = document.querySelector("#replay-scenario");
-      const replayHeroAsset = document.querySelector("#replay-hero-asset");
-      const centerNote = document.querySelector("#center-note");
-      const compareStatus = document.querySelector("#compare-status");
-      const decisionAction = document.querySelector("#decision-action");
-      const decisionActionDetail = document.querySelector("#decision-action-detail");
-      const decisionPath = document.querySelector("#decision-path");
-      const decisionPathDetail = document.querySelector("#decision-path-detail");
-      const decisionConfidenceDetail = document.querySelector("#decision-confidence-detail");
-      const decisionRateDetail = document.querySelector("#decision-rate-detail");
-      const currentSnapshotTitle = document.querySelector("#current-snapshot-title");
-      const currentSnapshotStatus = document.querySelector("#current-snapshot-status");
-      const currentSnapshotAsset = document.querySelector("#current-snapshot-asset");
-      const currentSnapshotCaptured = document.querySelector("#current-snapshot-captured");
-      const currentSnapshotNote = document.querySelector("#current-snapshot-note");
-      const baselineSnapshotTitle = document.querySelector("#baseline-snapshot-title");
-      const baselineSnapshotAsset = document.querySelector("#baseline-snapshot-asset");
-      const baselineSnapshotCaptured = document.querySelector("#baseline-snapshot-captured");
-      const baselineSnapshotNote = document.querySelector("#baseline-snapshot-note");
-      const latestAlertTitle = document.querySelector("#latest-alert-title");
-      const latestAlertSeverity = document.querySelector("#latest-alert-severity");
-      const latestAlertMeta = document.querySelector("#latest-alert-meta");
-      const latestAlertSummary = document.querySelector("#latest-alert-summary");
-      const latestAlertCard = document.querySelector("#latest-alert-card");
-      const dependencyList = document.querySelector("#dependency-list");
-      const dependencyNote = document.querySelector("#dependency-note");
-
-      const boolLabel = (value) => (value ? "enabled" : "disabled");
-
-      function formatTimestamp(value) {
-        if (!value) {
-          return "unknown";
-        }
-
-        const timestamp = new Date(value);
-        if (Number.isNaN(timestamp.getTime())) {
-          return value;
-        }
-
-        return (
-          timestamp.toISOString().replace("T", " ").replace(".000Z", " UTC").replace("Z", " UTC")
-        );
-      }
-
-      function currentFrameStatus(frameEnvelope) {
-        if (frameEnvelope.accepted_for_alerting === true) {
-          return ["accepted", "accepted"];
-        }
-        if (frameEnvelope.accepted_for_alerting === false) {
-          return ["suppressed", "suppressed"];
-        }
-        return ["degraded", "unknown"];
-      }
-
-      function compactLabel(value, fallback = "none") {
-        return value === null || value === undefined || value === "" ? fallback : value;
-      }
-
-      function humanizeSlug(value) {
-        return compactLabel(value)
-          .replaceAll("_", " ")
-          .replaceAll("-", " ");
-      }
-
-      function renderDependencies(health) {
-        const items = [
-          ["Current Sentinel", health.simsat_current],
-          ["Baseline Sentinel", health.simsat_baseline],
-          ["Mapbox context", health.mapbox],
-        ];
-
-        dependencyList.innerHTML = items
-          .map(
-            ([name, dep]) => `
-              <li class="dependency-row">
-                <p class="dependency-name">${name}</p>
-                <p class="dependency-state ${dep.status}">${dep.status.replace("_", " ")}</p>
-              </li>
-            `,
-          )
-          .join("");
-
-        const degradedCount = items.filter(([, dep]) => dep.status === "degraded").length;
-        const liveCount = [
-          health.config.simsat_current_http_enabled,
-          health.config.simsat_baseline_http_enabled,
-        ].filter(Boolean).length;
-
-        if (degradedCount > 0) {
-          dependencyNote.textContent = "Live path failed; fixture fallback active.";
-          return;
-        }
-
-        if (liveCount > 0) {
-          dependencyNote.textContent = "Live lanes armed where configured.";
-          return;
-        }
-
-        dependencyNote.textContent = "Fixture-first posture.";
-      }
-
-      function renderHeadline(health) {
-        const dependencies = [health.simsat_current, health.simsat_baseline, health.mapbox];
-        const degradedCount = dependencies.filter((dep) => dep.status === "degraded").length;
-        const liveCount = [
-          health.config.simsat_current_http_enabled,
-          health.config.simsat_baseline_http_enabled,
-        ].filter(Boolean).length;
-
-        if (degradedCount > 0) {
-          healthStatus.textContent = "degraded";
-          healthStatus.className = "state-chip degraded";
-          systemHeadline.textContent = "fallback active";
-          systemHeadline.className = "state-chip utility";
-          return;
-        }
-
-        if (liveCount > 0) {
-          healthStatus.textContent = "live";
-          healthStatus.className = "state-chip live";
-          systemHeadline.textContent = liveCount === 1 ? "1 live lane" : `${liveCount} live lanes`;
-          systemHeadline.className = "state-chip utility";
-          return;
-        }
-
-        healthStatus.textContent = "fixture";
-        healthStatus.className = "state-chip fixture";
-        systemHeadline.textContent = "replay-safe";
-        systemHeadline.className = "state-chip utility";
-      }
-
-      function renderHealth(health) {
-        appEnv.textContent = health.app_env;
-        appEnv.className = "state-chip utility";
-        currentHttp.textContent = boolLabel(health.config.simsat_current_http_enabled);
-        baselineHttp.textContent = boolLabel(health.config.simsat_baseline_http_enabled);
-        mapboxContext.textContent = boolLabel(health.config.mapbox_context_enabled);
-
-        renderHeadline(health);
-        renderDependencies(health);
-      }
-
-      function renderReplayIdentity(replayState) {
-        replayStateLabel.textContent = replayState.running ? "Replay active" : "Replay idle";
-        replayRunning.textContent = replayState.running ? "running" : "idle";
-        replayAsset.textContent = compactLabel(replayState.asset_id);
-        replayScenario.textContent = compactLabel(replayState.scenario_id);
-        replayHeroAsset.textContent = compactLabel(replayState.hero_asset_id, "unknown");
-      }
-
-      function renderLatestAlert(alerts) {
-        if (!alerts.length) {
-          latestAlertCard.className = "alert-card quiet";
-          latestAlertTitle.textContent = "No accepted alert";
-          latestAlertSeverity.textContent = "quiet";
-          latestAlertSeverity.className = "alert-pill quiet";
-          latestAlertMeta.textContent = "Filter path is holding low-value frames local.";
-          latestAlertSummary.textContent = "No operator escalation is active.";
-          latestAlertSummary.className = "alert-summary alert-empty";
-          return;
-        }
-
-        const [alert] = alerts;
-        latestAlertCard.className = "alert-card";
-        latestAlertTitle.textContent = alert.asset_name;
-        latestAlertSeverity.textContent = alert.severity;
-        latestAlertSeverity.className = `alert-pill ${alert.severity}`;
-        latestAlertMeta.textContent =
-          `${formatTimestamp(alert.timestamp)} / ${humanizeSlug(alert.civilian_impact)}`;
-        latestAlertSummary.textContent = alert.why;
-        latestAlertSummary.className = "alert-summary";
-      }
-
-      function renderCurrentFrame(frameEnvelope) {
-        const [statusClass, statusLabel] = currentFrameStatus(frameEnvelope);
-
-        currentSnapshotTitle.textContent = frameEnvelope.frame.frame_id;
-        currentSnapshotStatus.textContent = statusLabel;
-        currentSnapshotAsset.textContent = frameEnvelope.frame.asset_id;
-        currentSnapshotCaptured.textContent = formatTimestamp(frameEnvelope.frame.captured_at);
-        currentSnapshotNote.textContent =
-          frameEnvelope.accepted_for_alerting === false
-            ? "Suppressed locally before alerting."
-            : "Accepted lane cleared for operator review.";
-        compareStatus.textContent =
-          frameEnvelope.accepted_for_alerting === false
-            ? "overlay held"
-            : frameEnvelope.overlay_ref
-              ? "overlay ready"
-              : "compare ready";
-        compareStatus.className = "snapshot-status loading";
-      }
-
-      function renderDecisionStrip(frameEnvelope, alerts, metrics) {
-        const alert = alerts.length ? alerts[0] : null;
-        const rateLabel = `${metrics.downlink_rate} rate`;
-
-        if (frameEnvelope.accepted_for_alerting === true && alert) {
-          decisionAction.textContent = humanizeSlug(alert.action);
-          decisionActionDetail.textContent =
-            `${humanizeSlug(alert.event_type)} / ${alert.severity}`;
-          decisionPath.textContent = "accepted";
-          decisionPathDetail.textContent = `evaluator clear / ${rateLabel}`;
-          decisionConfidenceDetail.textContent = `${Math.round(alert.confidence * 100)}%`;
-          decisionRateDetail.textContent = `${metrics.alerts_emitted} alerts / ${metrics.frames_scanned} frames`;
-        } else {
-          decisionAction.textContent = "suppressed";
-          decisionActionDetail.textContent = "held local";
-          decisionPath.textContent = humanizeSlug(frameEnvelope.filter_reason || "unknown");
-          decisionPathDetail.textContent = `pre-alert filter / ${rateLabel}`;
-          decisionConfidenceDetail.textContent = "none";
-          decisionRateDetail.textContent = `${metrics.raw_frames_suppressed} suppressed total`;
-        }
-      }
-
-      function renderBaselineFrame(frameEnvelope) {
-        baselineSnapshotTitle.textContent = frameEnvelope.frame.frame_id;
-        baselineSnapshotAsset.textContent = frameEnvelope.frame.asset_id;
-        baselineSnapshotCaptured.textContent = formatTimestamp(frameEnvelope.frame.captured_at);
-        baselineSnapshotNote.textContent = "Reference frame held for same asset and replay scope.";
-      }
-
-      function renderCompareCue(currentFrame, baselineFrame) {
-        if (currentFrame.accepted_for_alerting === true && currentFrame.overlay_ref) {
-          centerNote.textContent = "Overlay ready against baseline.";
-          return;
-        }
-
-        if (currentFrame.accepted_for_alerting === false) {
-          centerNote.textContent = "Overlay held before compare.";
-          return;
-        }
-
-        centerNote.textContent = "Baseline staged for compare.";
-      }
-
-      function renderFailure(error) {
-        healthStatus.textContent = "degraded";
-        healthStatus.className = "state-chip degraded";
-        systemHeadline.textContent = "health unreachable";
-        systemHeadline.className = "state-chip utility";
-        centerNote.textContent = "Operator truth unavailable.";
-        appEnv.textContent = "unknown";
-        appEnv.className = "state-chip utility";
-        currentHttp.textContent = "unknown";
-        baselineHttp.textContent = "unknown";
-        mapboxContext.textContent = "unknown";
-        decisionAction.textContent = "degraded";
-        decisionActionDetail.textContent = "health unreachable";
-        decisionPath.textContent = "unknown";
-        decisionPathDetail.textContent = "Evaluator truth unavailable.";
-        decisionConfidenceDetail.textContent = "none";
-        decisionRateDetail.textContent = "metrics unavailable";
-        dependencyList.innerHTML = `
-          <li class="dependency-row">
-            <p class="dependency-name">Backend health</p>
-            <p class="dependency-state degraded">degraded</p>
-          </li>
-        `;
-        dependencyNote.textContent = "Shell could not reach /health. Verify backend and refresh.";
-      }
-
-      function renderCurrentFrameFailure(error) {
-        currentSnapshotTitle.textContent = "Current frame unavailable";
-        currentSnapshotStatus.textContent = "degraded";
-        currentSnapshotAsset.textContent = "unknown";
-        currentSnapshotCaptured.textContent = "surface unavailable";
-        currentSnapshotNote.textContent = "Current frame surface unreachable.";
-        compareStatus.textContent = "compare degraded";
-        compareStatus.className = "snapshot-status degraded";
-        centerNote.textContent = "Current compare surface unavailable.";
-      }
-
-      function renderReplayFailure(error) {
-        replayStateLabel.textContent = "Replay degraded";
-        replayRunning.textContent = "unknown";
-        replayAsset.textContent = "unknown";
-        replayScenario.textContent = "unknown";
-        replayHeroAsset.textContent = "unknown";
-      }
-
-      function renderAlertFailure(error) {
-        latestAlertCard.className = "alert-card degraded";
-        latestAlertTitle.textContent = "Alert surface degraded";
-        latestAlertSeverity.textContent = "degraded";
-        latestAlertSeverity.className = "alert-pill degraded";
-        latestAlertMeta.textContent = "Latest accepted alert is temporarily unavailable.";
-        latestAlertSummary.textContent = "Alert surface unreachable; retry once backend recovers.";
-        latestAlertSummary.className = "alert-summary alert-empty";
-      }
-
-      function renderMetricsFailure(error) {
-        decisionPathDetail.textContent = "Metrics surface unreachable.";
-        decisionRateDetail.textContent = "metrics unavailable";
-      }
-
-      function renderBaselineFrameFailure(error) {
-        baselineSnapshotTitle.textContent = "Baseline frame unavailable";
-        baselineSnapshotAsset.textContent = "unknown";
-        baselineSnapshotCaptured.textContent = "surface unavailable";
-        baselineSnapshotNote.textContent = "Baseline frame surface unreachable.";
-        centerNote.textContent = "Baseline compare surface unavailable.";
-      }
-
-      async function loadJson(url) {
-        const response = await fetch(url);
-        if (!response.ok) {
-          throw new Error(`${url.pathname} returned ${response.status}`);
-        }
-
-        return response.json();
-      }
-
-      async function boot() {
-        const [healthResult, replayResult, currentFrameResult, baselineFrameResult, alertsResult, metricsResult] = await Promise.allSettled([
-          loadJson(healthUrl),
-          loadJson(replayStatusUrl),
-          loadJson(currentFrameUrl),
-          loadJson(baselineFrameUrl),
-          loadJson(alertsUrl),
-          loadJson(metricsUrl),
-        ]);
-
-        if (healthResult.status === "fulfilled") {
-          renderHealth(healthResult.value);
-        } else {
-          renderFailure(
-            healthResult.reason instanceof Error ? healthResult.reason : new Error("Unknown shell error"),
-          );
-        }
-
-        if (replayResult.status === "fulfilled") {
-          renderReplayIdentity(replayResult.value);
-        } else {
-          renderReplayFailure(
-            replayResult.reason instanceof Error
-              ? replayResult.reason
-              : new Error("Unknown replay state error"),
-          );
-        }
-
-        if (currentFrameResult.status === "fulfilled") {
-          renderCurrentFrame(currentFrameResult.value);
-        } else {
-          renderCurrentFrameFailure(
-            currentFrameResult.reason instanceof Error
-              ? currentFrameResult.reason
-              : new Error("Unknown current frame error"),
-          );
-        }
-
-        if (baselineFrameResult.status === "fulfilled") {
-          renderBaselineFrame(baselineFrameResult.value);
-        } else {
-          renderBaselineFrameFailure(
-            baselineFrameResult.reason instanceof Error
-              ? baselineFrameResult.reason
-              : new Error("Unknown baseline frame error"),
-          );
-        }
-
-        if (alertsResult.status === "fulfilled") {
-          renderLatestAlert(alertsResult.value);
-        } else {
-          renderAlertFailure(
-            alertsResult.reason instanceof Error ? alertsResult.reason : new Error("Unknown alerts error"),
-          );
-        }
-
-        if (metricsResult.status !== "fulfilled") {
-          renderMetricsFailure(
-            metricsResult.reason instanceof Error
-              ? metricsResult.reason
-              : new Error("Unknown metrics error"),
-          );
-        }
-
-        if (
-          currentFrameResult.status === "fulfilled" &&
-          baselineFrameResult.status === "fulfilled" &&
-          alertsResult.status === "fulfilled" &&
-          metricsResult.status === "fulfilled"
-        ) {
-          renderDecisionStrip(
-            currentFrameResult.value,
-            alertsResult.value,
-            metricsResult.value,
-          );
-          renderCompareCue(currentFrameResult.value, baselineFrameResult.value);
-        }
-      }
-
-      boot();
-    </script>
   </body>
 </html>

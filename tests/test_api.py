@@ -102,11 +102,15 @@ def test_health_endpoint() -> None:
 
 def test_ui_shell_is_served_same_origin() -> None:
     response = client.get("/ui")
+    static_response = client.get("/ui-static/shell.js")
 
     assert response.status_code == 200
+    assert static_response.status_code == 200
     assert "text/html" in response.headers["content-type"]
     assert "Blackline Atlas" in response.text
-    assert "/health.config" in response.text
+    assert "/health" in static_response.text
+    assert "/replay/status" in static_response.text
+    assert "/assets" in static_response.text
 
 
 def test_health_endpoint_reflects_current_only_sentinel_config(monkeypatch) -> None:

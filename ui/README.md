@@ -1,21 +1,23 @@
 # UI
 
-Read-only shell for the future single-page dashboard.
+Read-only shell for the future single-page operator surface.
 
-Planned layout:
-- left: replay controls, watchlist, metrics
-- center: current frame, baseline, anomaly overlay
-- right: latest alert, queue, optional Mapbox context
+Current layout:
+- left: command channel
+- center: theatre map
+- right: selected-site drawer
 
 Current scope:
 - same-origin shell at `/ui`
+- same-origin assets at `/ui-static/*`
 - reads `/health`
+- reads `/assets`
 - reads `/replay/status`
 - reads `/frames/current`
 - reads `/frames/baseline`
 - reads `/alerts`
-- renders backend mode truth from `/health.config`
-- renders compact replay identity in the left rail
-- renders read-only current and baseline snapshots in the center pane
-- renders a compact latest-alert card in the right rail
-- no replay controls or multi-pane live dashboard yet
+- reads `/metrics`
+- renders real projected watchlist points on a map-first stage
+- renders a tiny local command loop for operator-style verbs
+- renders selected-site evidence in a compact drawer
+- no real globe, no live chat backend, no replay controls yet
