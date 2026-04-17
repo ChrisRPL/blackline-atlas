@@ -94,6 +94,7 @@ python3 training/scripts/eval_structured_outputs.py \
 First real non-demo annotations live in:
 
 - `training/replay_pack/non_demo_eval.jsonl`
+- sourced next-case backlog: `training/replay_pack/civilian_aoi_backlog.md`
 
 Prompted Liquid eval path:
 
