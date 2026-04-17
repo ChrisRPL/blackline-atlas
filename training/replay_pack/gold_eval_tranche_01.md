@@ -50,7 +50,7 @@ It is the first acquisition batch with the best chance of moving coverage, not j
 - target type:
   - pure treatment plant
 - current lead quality:
-  - no promoted candidate yet
+  - first concrete lead now tracked in `training/replay_pack/water_tranche_01.md`
 - next action:
   - source `3` exact-site candidates with clear civilian service role
   - reject mixed power+water unless water-first and macro-visible
@@ -59,7 +59,7 @@ It is the first acquisition batch with the best chance of moving coverage, not j
 - target type:
   - pumping station or reservoir compound
 - current lead quality:
-  - no promoted candidate yet
+  - first concrete lead now tracked in `training/replay_pack/water_tranche_01.md`
 - next action:
   - prioritize assets with obvious basins / tanks / service compounds visible in Sentinel
 
@@ -68,6 +68,7 @@ It is the first acquisition batch with the best chance of moving coverage, not j
   - desalination plant only if clearly water-first
 - current lead quality:
   - category seed exists, but exact promoted row does not
+  - working memo: `training/replay_pack/water_tranche_01.md`
 - next action:
   - use only if plant identity is exact and visual disruption is honest
 

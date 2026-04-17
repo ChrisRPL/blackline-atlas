@@ -98,6 +98,7 @@ First real non-demo annotations live in:
 - broad 2026 conflict-location triage memo: `training/replay_pack/conflict_aoi_triage_2026-04-17.md`
 - gold-set acquisition matrix: `training/replay_pack/gold_eval_acquisition_matrix.md`
 - first acquisition batch plan: `training/replay_pack/gold_eval_tranche_01.md`
+- first water acquisition memo: `training/replay_pack/water_tranche_01.md`
 
 Prompted Liquid eval path:
 
