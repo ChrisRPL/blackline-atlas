@@ -34,6 +34,7 @@ This repo now contains:
 - routes for the core product loop
 - a tiny replay-pack exporter and offline eval harness
 - a SimSat Sentinel capture-manifest exporter for freezing real current/baseline pairs
+- a Liquid-compatible corpus freezer that joins SimSat captures with replay labels
 - tests for API and service behavior
 
 ## Repo layout

@@ -1,1 +1,1 @@
-"""Script entrypoints for replay pack build and eval."""
+"""Script entrypoints for replay, corpus, and eval helpers."""
