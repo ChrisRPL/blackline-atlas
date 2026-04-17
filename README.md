@@ -57,6 +57,40 @@ make dev
 Then open `http://127.0.0.1:8000/docs`.
 The read-only UI shell lives at `http://127.0.0.1:8000/ui`.
 
+## Local SimSat lane
+
+Verified local bring-up for the official hackathon data source:
+
+- dashboard: `http://localhost:8000`
+- historical Sentinel: `http://localhost:9005/data/image/sentinel`
+- current Sentinel: `http://localhost:9005/data/current/image/sentinel`
+
+```bash
+git clone https://github.com/DPhi-Space/SimSat.git ~/Projects/oss/SimSat
+cd ~/Projects/oss/SimSat
+export MAPBOX_ACCESS_TOKEN=...
+docker compose up -d
+curl http://localhost:9005/
+```
+
+Note:
+- the current SimSat stack requires a non-empty `MAPBOX_ACCESS_TOKEN` at boot, even for Sentinel-only smoke tests
+
+Freeze one real capture pack, then build and score the held-out corpus:
+
+```bash
+python3 training/scripts/capture_simsat_manifest.py \
+  --historical-endpoint http://localhost:9005/data/image/sentinel \
+  --output-dir /tmp/blackline-simsat-capture
+
+python3 training/scripts/build_lfm25_vl_corpus.py \
+  --capture-manifest /tmp/blackline-simsat-capture/simsat_capture_manifest.json \
+  --output-dir /tmp/blackline-lfm25-vl-v1
+
+python3 training/scripts/eval_structured_outputs.py \
+  --dataset /tmp/blackline-lfm25-vl-v1/blackline_candidate_eval.jsonl
+```
+
 ## Core API routes
 
 - `GET /health`
