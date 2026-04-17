@@ -136,6 +136,11 @@ Primary buckets:
     - request `2026-04-13T08:47:00Z` -> returned `2026-04-12T08:47:04Z` with `77.931386` cloud
     - request `2026-04-16T08:47:00Z` -> returned `2026-04-15T08:46:42Z` with `46.458131` cloud
     - spill request `2026-04-19T08:47:00Z` -> `image_available=false`
+  - final bounded daily pass on the exact parcel for `2026-04-08` through `2026-04-17` at both `1.0 km` and `0.5 km` found no cleaner post-hit frame:
+    - `2026-04-08/09` -> still pre-strike `2026-04-05T08:46:43Z` with `0.652506` cloud
+    - `2026-04-10/11/12` -> `2026-04-10T08:46:42Z` with `99.947125` cloud
+    - `2026-04-13/14` -> `2026-04-12T08:47:04Z` with `77.931386` cloud
+    - `2026-04-15/16/17` -> `2026-04-15T08:46:42Z` with `46.458131` cloud
   - result: exact parcel is solved, but weather still blocks an honest post-strike frame as of `2026-04-17`
   - if we ever get a clear post-strike frame, this becomes one of the better “something is wrong near my region” food cases
 - sources:
@@ -174,6 +179,32 @@ Primary buckets:
   - [Kharkiv ODA EIA notice, Promyslova 12](https://kharkivoda.gov.ua/oblasna-derzhavna-administratsiya/struktura-administratsiyi/strukturni-pidrozdili/486/2841/2842/3281/105012)
   - [ATB tender, RC Kharkiv-24, Promyslova 12](https://www.atbmarket.com/tender/2447)
   - [Bezliudivka KTEB note, Promyslova 12](https://khbsr.gov.ua/wp-content/uploads/2025/06/misczeva-kteb-i-ns-%E2%84%96-4-vid-02.06.2025.pdf)
+
+#### al-Khayrat Mill
+- asset type: `flour_mill`
+- why:
+  - tighter food semantics than generic warehousing
+  - explicit bread-chain impact: flour sacks prepared for bakeries in Hasakah and its countryside
+  - one named civilian facility, one named owner, one named strike event
+- status: `hold_exact_parcel_needs_geocode`
+- notes:
+  - source trail is good enough to keep alive:
+    - facility name `al-Khayrat Mill`
+    - near `Sanjak Saadoun` in the Amuda countryside
+    - struck by Turkish drone on `2024-01-14`
+    - mill knocked out of service, workers injured
+  - immediate January pair is not honest enough:
+    - request `2024-01-05T10:00:00Z` -> returned `2024-01-04T08:09:53Z` with `96.378195` cloud
+    - request `2024-01-20T10:00:00Z` -> returned `2024-01-19T08:09:44Z` with `75.847393` cloud
+  - but the broader village seed stays alive because later windows clear:
+    - baseline request `2023-12-28T10:00:00Z` -> returned `2023-12-25T08:09:54Z` with `12.489839` cloud
+    - post request `2024-02-05T10:00:00Z` -> returned `2024-02-03T08:09:50Z` with `7.132044` cloud
+    - later post request `2024-03-05T10:00:00Z` -> returned `2024-03-04T08:09:48Z` with `0.008427` cloud
+  - result: category is alive, weather is not the blocker anymore, but the exact mill parcel is still unresolved
+  - only promote if one mill-scale footprint near the reported village can be tied defensibly to the named facility and shows a real pre/post disruption
+- sources:
+  - [North Press, 2024-01-17](https://npasyria.com/en/110223/)
+  - [ASO Network, 2023-01-15](https://aso-network.com/en/archives/33270)
 
 #### Qasmiyeh Bridge
 - asset type: `bridge`
