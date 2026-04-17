@@ -133,12 +133,14 @@ Rule:
   - current `2026` reporting is mostly about pumping stoppage and restoration
   - still not a clean structural-damage case
 - status:
-  - `active_exact_geocode`
+  - `hold_river_corridor_still_soft`
 - next action:
   - first `1.5 km` locator sweep around the village seed on `2025-01-30T08:00:00Z` did not isolate the station parcel
-  - next bounded pass:
-    - exact riverfront geocode using `Babiri + Qafsa / Khafsa + Maskana / Meskene + Euphrates` clues
-    - only probe pre/post after one defendable station parcel appears
+  - follow-up `0.8 km` `3x3` river-corridor sweep around the nearest dark riverbank utility band also failed to show defendable `intake + basins + reservoir` morphology
+  - result:
+    - Babiri stays a strong civilian service story
+    - but not yet a parcel-tight Sentinel story
+  - keep only as evidence unless a better parcel anchor appears
 - sources:
   - [SANA on Babiri cutoff affecting Aleppo](https://sana.sy/en/syria/2289847/)
   - [Anadolu on Babiri serving Aleppo city and countryside](https://www.aa.com.tr/en/middle-east/sdf-cuts-water-supply-to-syria-s-aleppo/3796034)
@@ -157,18 +159,27 @@ Rule:
   - useful for user-facing crisis framing
 - parcel state:
   - named facility is clear
-  - exact site is known at Deir al-Balah level
+  - facility clue is stronger than most remaining water leads:
+    - on the coastal road
+    - south / southwest of Deir al-Balah
+    - within the southwestern Deir al-Balah evacuation zone in later reporting
 - blocker:
   - current public evidence is mainly electricity-line / cable damage and output collapse
   - not yet an honest plant-structure damage story
 - status:
-  - `hold_structural_visibility`
+  - `active_exact_geocode`
 - next action:
-  - keep only if damage at the plant or immediately associated service compound becomes macro-visible
+  - exact parcel pass next:
+    - coastal road
+    - south of Deir al-Balah
+    - plant / service compound, not generic city desalination points
+  - only keep active if one defendable plant parcel appears before imagery work
 - sources:
   - [AP on electricity cutoff affecting Gaza desalination plant](https://apnews.com/article/ba90f0de3d4f64a1762d1a39f787817f)
   - [UNICEF on March 2026 cable damage and 80 per cent output drop](https://www.unicef.org/sop/stories/unicef-restores-water-access-tens-thousands-children-gaza)
   - [UN/UNICEF on Southern Gaza Seawater Desalination Plant identity](https://www.un.org/unispal/document/eu-and-unicef-mark-completion-of-expansion-of-the-southern-gaza-seawater-desalination-plant-press-release/)
+  - [Sawa on the plant site being on the coastal road south of Deir al-Balah](https://palsawa.com/post/99981/%D8%A7%D9%84%D8%A7%D8%AD%D8%AA%D9%81%D8%A7%D9%84-%D8%A8%D8%A7%D9%81%D8%AA%D8%AA%D8%A7%D8%AD-%D9%85%D8%AD%D8%B7%D8%A9-%D8%AA%D8%AD%D9%84%D9%8A%D8%A9-%D9%85%D9%8A%D8%A7%D9%87-%D8%A7%D9%84%D8%A8%D8%AD%D8%B1)
+  - [ieCRES 2023 on the plant being at the coastal road in front of Deir el-Balah](https://eftaa.iugaza.edu.ps/wp-content/uploads/sites/20/2023/07/ieCRES-2023_paper_4560.pdf)
 
 ## Control candidates
 
@@ -229,8 +240,8 @@ Rule:
 
 ## Immediate next work order
 
-1. do one exact riverfront geocode pass on `Babiri`
-2. keep `Kosti JICA` as evidence only unless a cleaner parcel / baseline appears
-3. keep `Bahri` on hold unless a stronger parcel anchor appears
-4. keep `Ras Abu Jarjur` and `Doha West` as the first real water controls
-5. keep `Maisat / Wazzani` as evidence only for now
+1. do one exact coastal-road geocode pass on `Southern Gaza Seawater Desalination Plant`
+2. keep `Babiri` as evidence only unless a better parcel anchor appears
+3. keep `Kosti JICA` as evidence only unless a cleaner parcel / baseline appears
+4. keep `Bahri` on hold unless a stronger parcel anchor appears
+5. keep `Ras Abu Jarjur` and `Doha West` as the first real water controls

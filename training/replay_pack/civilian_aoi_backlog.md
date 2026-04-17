@@ -386,7 +386,7 @@ Primary buckets:
   - publicly described as a main water source for Aleppo city and surrounding rural areas
   - strong user-value shape: city-scale civilian water interruption
   - better product fit than another port retry
-- status: `active_exact_geocode`
+- status: `hold_river_corridor_still_soft`
 - coordinates:
   - Babiri village seed: `36.1254475, 38.0005080`
 - dates probed:
@@ -398,16 +398,45 @@ Primary buckets:
   - do not label from outage claims alone
   - first current-side probe was heavily clouded (`80.994809`)
   - first `1.5 km` locator sweep around the Babiri village seed on `2025-01-30T08:00:00Z` did not isolate the station parcel
+  - one bounded follow-up `0.8 km` `3x3` river-corridor sweep around the nearest dark riverbank utility band also failed to show a defendable `intake + basins + reservoir` footprint
   - likely risk:
     - service interruption matters to users
     - but the site may still lack a clean structural before/after signal at Sentinel scale
-  - next step:
-    - exact riverfront geocode using `Babiri + Qafsa / Khafsa + Maskana / Meskene + Euphrates` clues
+  - result:
+    - strong service story
+    - weak parcel story
+  - next step only if a stronger parcel clue appears from independent mapping
 - sources:
   - [SANA, 2026-01-10](https://sana.sy/en/syria/2289847/)
   - [A News, 2026-01-11](https://www.anews.com.tr/middle-east/2026/01/11/syria-restores-water-supply-to-aleppo-after-sdf-disruption)
   - [Levant24, 2026-01-24](https://levant24.com/news/2026/01/syria-boosts-water-security-through-major-infrastructure-projects/)
   - [Türkiye Today, 2026-01-11](https://www.turkiyetoday.com/region/sdf-uses-water-control-as-leverage-as-syrian-armys-operations-could-expand-north-3212792)
+
+#### Southern Gaza Seawater Desalination Plant
+- asset type: `water_infrastructure`
+- why:
+  - one of the strongest remaining user-value water leads
+  - city-serving civilian desalination plant for central and southern Gaza
+  - later reporting ties it directly to major water loss for hundreds of thousands of civilians
+- status: `active_exact_geocode`
+- notes:
+  - facility identity is stronger than most remaining water leads
+  - current strongest geography clues:
+    - on the coastal road
+    - south / southwest of Deir al-Balah
+    - within the southwestern Deir al-Balah evacuation zone in July 2025 reporting
+  - current blocker is still honesty, not relevance:
+    - public evidence centers on power-line / cable damage and output collapse
+    - not yet a proven plant-structure damage row
+  - next step:
+    - exact parcel pass on the coastal road south of Deir al-Balah
+    - only continue to imagery if one defendable plant / service compound is isolated
+- sources:
+  - [AP on the March 2025 electricity cutoff](https://apnews.com/article/ba90f0de3d4f64a1762d1a39f787817f)
+  - [UNICEF on March 2026 cable damage and 80 per cent output drop](https://www.unicef.org/sop/stories/unicef-restores-water-access-tens-thousands-children-gaza)
+  - [Sawa on the site being on the coastal road south of Deir al-Balah](https://palsawa.com/post/99981/%D8%A7%D9%84%D8%A7%D8%AD%D8%AA%D9%81%D8%A7%D9%84-%D8%A8%D8%A7%D9%81%D8%AA%D8%AA%D8%A7%D8%AD-%D9%85%D8%AD%D8%B7%D8%A9-%D8%AA%D8%AD%D9%84%D9%8A%D8%A9-%D9%85%D9%8A%D8%A7%D9%87-%D8%A7%D9%84%D8%A8%D8%AD%D8%B1)
+  - [ieCRES 2023 on the plant being at the coastal road in front of Deir El-Balah](https://eftaa.iugaza.edu.ps/wp-content/uploads/sites/20/2023/07/ieCRES-2023_paper_4560.pdf)
+  - [Al Mezan on the plant falling inside the southwestern Deir al-Balah evacuation zone](https://www.mezan.org/public/en/post/46743/Israel%E2%80%99s-New-Displacement-Order-Targets-Gaza%E2%80%99s-Largest-Desalination-Plant%2C-Escalating-Genocide-Through-Mass-Dehydration)
 
 ### Rejected after probe
 
