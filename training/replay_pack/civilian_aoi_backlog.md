@@ -10,6 +10,12 @@ Rule:
 - no fuel depots
 - no crossing-gate route intel
 
+Primary buckets:
+- food
+- water
+- mobility
+- aid
+
 ## Current shortlist
 
 ### Go now
@@ -34,11 +40,12 @@ Rule:
 - why:
   - civilian grain/export artery
   - good category fit
-  - first local probe returned near-total cloud on both dates
+  - clear pre/post pair now exists
+  - still no honest macro label yet from the visible pair
 - dates probed:
-  - baseline probe: `2025-12-14T08:57:36Z`
-  - current probe: `2026-01-08T09:07:47Z`
-- status: `hold_cloud`
+  - initial cloudy pair: baseline `2025-12-14T08:57:36Z`, current `2026-01-08T09:07:47Z`
+  - clearer pair: baseline `2025-10-15T08:57:39Z`, current `2026-03-04T08:57:28Z`
+- status: `hold_visual_review`
 - sources:
   - [Reuters via Investing.com, 2026-01-07](https://www.investing.com/news/world-news/russia-attacks-two-ukrainian-ports-kyiv-says-4435521)
   - [Reuters syndication, 2026-03-05](https://wsau.com/2026/03/05/russian-drone-strikes-foreign-cargo-ship-near-ukraine-black-sea-port/)
@@ -47,13 +54,39 @@ Rule:
 - asset type: `container_port`
 - why:
   - major civilian export artery
-  - first local probe returned near-total cloud on both dates
+  - clear pre/post pair now exists
+  - still no honest macro label yet from the visible pair
 - dates probed:
-  - baseline probe: `2025-12-14T08:57:36Z`
-  - current probe: `2026-01-08T09:07:47Z`
-- status: `hold_cloud`
+  - initial cloudy pair: baseline `2025-12-14T08:57:36Z`, current `2026-01-08T09:07:47Z`
+  - clearer pair: baseline `2025-10-15T08:57:39Z`, current `2026-03-04T08:57:28Z`
+- status: `hold_visual_review`
 - sources:
   - [Reuters via Investing.com, 2026-01-07](https://www.investing.com/news/world-news/russia-attacks-two-ukrainian-ports-kyiv-says-4435521)
+
+#### Qasmiyeh Bridge
+- asset type: `bridge`
+- why:
+  - direct civilian mobility lifeline
+  - publicly reported as the last bridge linking southern Lebanon to the rest of the country
+  - right product shape for a civilian user
+- dates probed:
+  - promising baseline: `2026-03-10T08:31:00Z`
+  - promising current: `2026-04-16T08:31:18Z`
+- status: `hold_precise_geolocation`
+- sources:
+  - [Reuters syndication, 2026-04-16](https://wsau.com/2026/04/16/israeli-strike-severs-last-bridge-linking-southern-lebanon-to-rest-of-country-lebanese-security-official-says/)
+  - [Le Monde, 2026-03-24](https://www.lemonde.fr/en/international/article/2026/03/24/in-southern-lebanon-civilians-are-trapped-after-israel-destroys-bridges_6751768_4.html)
+
+#### Gulf desalination plants
+- asset type: `water_infrastructure`
+- why:
+  - extremely people-facing
+  - good long-term category for Blackline
+  - current conflict relevance in 2026
+- status: `hold_category_seed`
+- sources:
+  - [AP, 2026-03-08](https://www.kktv.com/2026/03/08/bahrain-says-iran-hit-desalination-plant-stoking-fears-attacks-civilian-sites/)
+  - [AP, 2026-03-30](https://apnews.com/article/f624bed66bee79f68454d581ae1d624a)
 
 ### Keep out for now
 
@@ -67,6 +100,16 @@ Rule:
   - [Human Rights Watch, 2025-06-04](https://www.hrw.org/news/2025/06/04/yemen-us-strikes-port-apparent-war-crime)
   - [Reuters via Yahoo, 2025-01-21](https://www.yahoo.com/news/yemen-red-sea-port-capacity-202915714.html)
 
+#### Bandar Abbas / Hormuz lane
+- why:
+  - visible, yes
+  - too strategically loaded for first Blackline lane
+  - drifts from civilian lifeline monitoring into maritime/energy conflict intelligence
+- status: `avoid_strategic_sensitivity`
+- sources:
+  - [AP, 2025-04-28](https://apnews.com/article/fd31972422ae1612006b1c8005f58440)
+  - [AP, 2026-04-17](https://apnews.com/article/10518e69aecbb986c9118ff42ab0ca02)
+
 #### Gaza Crossing Gates
 - why:
   - humanitarian importance, yes
@@ -79,10 +122,11 @@ Rule:
 ## Next search pattern
 
 Prefer:
-- civilian commercial ports
-- grain terminals
+- food hubs
+- water infrastructure
+- clearly civilian bridges
 - aid warehouse clusters
-- clearly civilian bridge failures
+- large logistics yards
 
 Avoid:
 - airports
@@ -90,3 +134,79 @@ Avoid:
 - fuel/oil terminals
 - convoy timing
 - camp interiors
+
+## Country scan notes
+
+Use these as search constraints, not as automatic watchlist adds.
+
+### Venezuela
+- keep:
+  - school-meal supply chains
+  - municipal water systems
+  - disaster-relief warehouses
+- avoid:
+  - oil terminals
+  - border crossings
+  - national power hubs
+
+### Sudan
+- keep:
+  - aid warehouses
+  - grain storage
+  - water points and treatment assets
+  - humanitarian logistics hubs
+- avoid:
+  - bridges and river crossings
+  - convoy corridors
+  - frontline access roads
+
+### Pakistan
+- keep:
+  - flood-hit grain storage
+  - irrigation and water-distribution assets
+  - relief warehouses
+  - washed-out civilian roads at district scale
+- avoid:
+  - border logistics
+  - security-sensitive bridges
+  - airports
+
+### Iraq
+- keep:
+  - municipal water treatment and pumping
+  - grain silos and flour mills
+  - IDP and returnee service hubs
+- avoid:
+  - oil terminals and pipelines
+  - contested-corridor bridges
+  - mixed-use airports
+
+### Syria
+- keep:
+  - water stations
+  - wastewater plants
+  - public bakeries and flour-supply hubs
+  - humanitarian warehouse clusters
+- avoid:
+  - border crossings
+  - ports and airports
+  - fuel depots
+
+### Russia
+- keep:
+  - only non-war disaster-response classes far from the war context
+  - flood or water infrastructure if clearly civilian
+- avoid:
+  - ports
+  - bridges
+  - rail hubs
+  - grain export terminals
+  - logistics parks
+
+### Sources for country scan
+- [WFP Venezuela CSP](https://www.wfp.org/operations/ve02-bolivarian-republic-venezuela-interim-country-strategic-plan-2023-2025)
+- [WFP Sudan emergency](https://www.wfp.org/emergencies/sudan-emergency)
+- [WFP Pakistan floods](https://www.wfp.org/stories/we-just-ran-families-struggle-pakistan-floods-destroy-homes-fields-and-food-supplies)
+- [WFP Iraq CSP](https://www.wfp.org/operations/iq03-iraq-country-strategic-plan-2026-2029)
+- [UNICEF Syria WASH](https://www.unicef.org/syria/press-releases/unicef-and-germany-strengthen-access-safe-water-and-sanitation-children-and-families)
+- [WFP Syria bread programme](https://www.wfp.org/news/wfp-expands-and-extends-its-subsidized-bread-programme-across-syria)
