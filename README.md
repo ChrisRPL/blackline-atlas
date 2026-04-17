@@ -33,6 +33,7 @@ This repo now contains:
 - a same-origin UI shell at `/ui`
 - routes for the core product loop
 - a tiny replay-pack exporter and offline eval harness
+- a SimSat Sentinel capture-manifest exporter for freezing real current/baseline pairs
 - tests for API and service behavior
 
 ## Repo layout

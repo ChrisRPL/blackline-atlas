@@ -1,0 +1,305 @@
+from __future__ import annotations
+
+import argparse
+import json
+import sys
+from pathlib import Path
+from urllib.parse import urlencode
+from urllib.request import urlopen
+
+ROOT = Path(__file__).resolve().parents[2]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from app.core.config import get_settings  # noqa: E402
+from app.schemas.simsat_capture import (  # noqa: E402
+    SimSatCaptureFrame,
+    SimSatCaptureRecord,
+    SimSatSentinelMetadata,
+)
+from app.services.scenario_fixtures import build_stub_scenarios  # noqa: E402
+from app.services.watchlist_loader import load_watchlist_assets  # noqa: E402
+from training.scripts.build_dataset import SCENARIO_ORDER  # noqa: E402
+
+PACK_VERSION = "simsat-capture-v1"
+DEFAULT_OUTPUT_DIR = ROOT / "training" / "replay_pack" / "simsat_capture"
+DEFAULT_MANIFEST_NAME = "simsat_capture_manifest.json"
+DEFAULT_DATASET_NAME = "simsat_capture_manifest.jsonl"
+DEFAULT_SPECTRAL_BANDS = ("red", "green", "blue")
+DEFAULT_SIZE_KM = 5.0
+DEFAULT_WINDOW_SECONDS = 10 * 24 * 60 * 60
+DEFAULT_TIMEOUT_SECONDS = 20.0
+
+
+def build_simsat_capture_manifest(
+    *,
+    historical_endpoint: str,
+    output_dir: Path = DEFAULT_OUTPUT_DIR,
+    spectral_bands: tuple[str, ...] = DEFAULT_SPECTRAL_BANDS,
+    size_km: float = DEFAULT_SIZE_KM,
+    window_seconds: float = DEFAULT_WINDOW_SECONDS,
+    timeout_seconds: float = DEFAULT_TIMEOUT_SECONDS,
+    scenario_ids: tuple[str, ...] = SCENARIO_ORDER,
+) -> list[dict[str, object]]:
+    settings = get_settings()
+    assets = {asset.asset_id: asset for asset in load_watchlist_assets(settings.watchlist_path)}
+    scenarios = build_stub_scenarios(
+        settings=settings,
+        hero_asset=assets["demo_port_01"],
+        bridge_asset=assets["demo_bridge_01"],
+    )
+
+    records: list[dict[str, object]] = []
+    for scenario_id in scenario_ids:
+        scenario = scenarios[scenario_id]
+        asset = assets[scenario.asset_id]
+        case_dir = output_dir / scenario_id
+
+        current = _capture_frame(
+            endpoint=historical_endpoint,
+            output_dir=case_dir,
+            variant="current",
+            frame_id=scenario.current_frame.frame.frame_id,
+            lon=asset.longitude,
+            lat=asset.latitude,
+            requested_timestamp=scenario.current_frame.frame.captured_at,
+            spectral_bands=spectral_bands,
+            size_km=size_km,
+            window_seconds=window_seconds,
+            timeout_seconds=timeout_seconds,
+        )
+        baseline = _capture_frame(
+            endpoint=historical_endpoint,
+            output_dir=case_dir,
+            variant="baseline",
+            frame_id=scenario.baseline_frame.frame.frame_id,
+            lon=asset.longitude,
+            lat=asset.latitude,
+            requested_timestamp=scenario.baseline_frame.frame.captured_at,
+            spectral_bands=spectral_bands,
+            size_km=size_km,
+            window_seconds=window_seconds,
+            timeout_seconds=timeout_seconds,
+        )
+
+        record = SimSatCaptureRecord(
+            case_id=scenario_id,
+            pack_version=PACK_VERSION,
+            asset=asset,
+            current=current,
+            baseline=baseline,
+        )
+        records.append(record.model_dump(mode="json"))
+
+    return records
+
+
+def write_simsat_capture_manifest(
+    historical_endpoint: str,
+    output_dir: Path = DEFAULT_OUTPUT_DIR,
+    *,
+    manifest_name: str = DEFAULT_MANIFEST_NAME,
+    dataset_name: str = DEFAULT_DATASET_NAME,
+    spectral_bands: tuple[str, ...] = DEFAULT_SPECTRAL_BANDS,
+    size_km: float = DEFAULT_SIZE_KM,
+    window_seconds: float = DEFAULT_WINDOW_SECONDS,
+    timeout_seconds: float = DEFAULT_TIMEOUT_SECONDS,
+    scenario_ids: tuple[str, ...] = SCENARIO_ORDER,
+) -> tuple[Path, Path]:
+    output_dir.mkdir(parents=True, exist_ok=True)
+    records = build_simsat_capture_manifest(
+        historical_endpoint=historical_endpoint,
+        output_dir=output_dir,
+        spectral_bands=spectral_bands,
+        size_km=size_km,
+        window_seconds=window_seconds,
+        timeout_seconds=timeout_seconds,
+        scenario_ids=scenario_ids,
+    )
+    manifest = {
+        "pack_version": PACK_VERSION,
+        "case_count": len(records),
+        "cases": records,
+    }
+
+    manifest_path = output_dir / manifest_name
+    dataset_path = output_dir / dataset_name
+    manifest_path.write_text(
+        json.dumps(manifest, indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
+    dataset_path.write_text(
+        "".join(json.dumps(record, sort_keys=True) + "\n" for record in records),
+        encoding="utf-8",
+    )
+    return manifest_path, dataset_path
+
+
+def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
+    settings = get_settings()
+    parser = argparse.ArgumentParser(
+        description="Freeze one current/baseline SimSat Sentinel pair per replay case.",
+    )
+    parser.add_argument(
+        "--historical-endpoint",
+        default=settings.simsat_baseline_endpoint,
+        help=(
+            "SimSat Sentinel historical endpoint, typically /data/image/sentinel. "
+            "Defaults to SIMSAT_BASELINE_ENDPOINT if set."
+        ),
+    )
+    parser.add_argument(
+        "--output-dir",
+        type=Path,
+        default=DEFAULT_OUTPUT_DIR,
+        help=f"Directory for captured pairs. Default: {DEFAULT_OUTPUT_DIR}",
+    )
+    parser.add_argument(
+        "--manifest-name",
+        default=DEFAULT_MANIFEST_NAME,
+        help=f"Manifest filename. Default: {DEFAULT_MANIFEST_NAME}",
+    )
+    parser.add_argument(
+        "--dataset-name",
+        default=DEFAULT_DATASET_NAME,
+        help=f"JSONL filename. Default: {DEFAULT_DATASET_NAME}",
+    )
+    parser.add_argument(
+        "--spectral-band",
+        action="append",
+        dest="spectral_bands",
+        default=list(DEFAULT_SPECTRAL_BANDS),
+        help="Sentinel spectral band to request. Repeat for multiple bands.",
+    )
+    parser.add_argument(
+        "--size-km",
+        type=float,
+        default=DEFAULT_SIZE_KM,
+        help=f"Requested image size in km. Default: {DEFAULT_SIZE_KM}",
+    )
+    parser.add_argument(
+        "--window-seconds",
+        type=float,
+        default=DEFAULT_WINDOW_SECONDS,
+        help=f"Historical search window in seconds. Default: {DEFAULT_WINDOW_SECONDS}",
+    )
+    parser.add_argument(
+        "--timeout-seconds",
+        type=float,
+        default=DEFAULT_TIMEOUT_SECONDS,
+        help=f"HTTP timeout in seconds. Default: {DEFAULT_TIMEOUT_SECONDS}",
+    )
+    parser.add_argument(
+        "--scenario-id",
+        action="append",
+        dest="scenario_ids",
+        default=None,
+        help="Replay scenario id to capture. Repeat to limit export.",
+    )
+    return parser.parse_args(argv)
+
+
+def main(argv: list[str] | None = None) -> int:
+    args = parse_args(argv)
+    if not args.historical_endpoint:
+        raise SystemExit(
+            "Missing SimSat Sentinel historical endpoint. "
+            "Pass --historical-endpoint or set SIMSAT_BASELINE_ENDPOINT."
+        )
+    scenario_ids = tuple(args.scenario_ids) if args.scenario_ids else SCENARIO_ORDER
+    manifest_path, dataset_path = write_simsat_capture_manifest(
+        args.historical_endpoint,
+        args.output_dir,
+        manifest_name=args.manifest_name,
+        dataset_name=args.dataset_name,
+        spectral_bands=tuple(args.spectral_bands),
+        size_km=args.size_km,
+        window_seconds=args.window_seconds,
+        timeout_seconds=args.timeout_seconds,
+        scenario_ids=scenario_ids,
+    )
+    print(f"wrote {manifest_path}")
+    print(f"wrote {dataset_path}")
+    return 0
+
+
+def _capture_frame(
+    *,
+    endpoint: str,
+    output_dir: Path,
+    variant: str,
+    frame_id: str,
+    lon: float,
+    lat: float,
+    requested_timestamp: str,
+    spectral_bands: tuple[str, ...],
+    size_km: float,
+    window_seconds: float,
+    timeout_seconds: float,
+) -> SimSatCaptureFrame:
+    output_dir.mkdir(parents=True, exist_ok=True)
+    request_url = _build_request_url(
+        endpoint=endpoint,
+        lon=lon,
+        lat=lat,
+        requested_timestamp=requested_timestamp,
+        spectral_bands=spectral_bands,
+        size_km=size_km,
+        window_seconds=window_seconds,
+    )
+    with urlopen(request_url, timeout=timeout_seconds) as response:
+        status = getattr(response, "status", response.getcode())
+        if status != 200:
+            raise ValueError(f"SimSat request failed with status {status}: {request_url}")
+        metadata_header = response.headers.get("sentinel_metadata")
+        if not metadata_header:
+            raise ValueError(f"SimSat response missing sentinel_metadata header: {request_url}")
+        metadata = SimSatSentinelMetadata.model_validate(json.loads(metadata_header))
+        body = response.read()
+
+    metadata_path = output_dir / f"{variant}-metadata.json"
+    metadata_path.write_text(metadata.model_dump_json(indent=2), encoding="utf-8")
+
+    image_path = None
+    if metadata.image_available and body:
+        image_file = output_dir / f"{variant}.png"
+        image_file.write_bytes(body)
+        image_path = str(image_file)
+
+    return SimSatCaptureFrame(
+        frame_id=frame_id,
+        requested_timestamp=requested_timestamp,
+        request_url=request_url,
+        image_path=image_path,
+        metadata_path=str(metadata_path),
+        response_metadata=metadata,
+    )
+
+
+def _build_request_url(
+    *,
+    endpoint: str,
+    lon: float,
+    lat: float,
+    requested_timestamp: str,
+    spectral_bands: tuple[str, ...],
+    size_km: float,
+    window_seconds: float,
+) -> str:
+    params = urlencode(
+        {
+            "lon": f"{lon:.6f}",
+            "lat": f"{lat:.6f}",
+            "timestamp": requested_timestamp,
+            "spectral_bands": list(spectral_bands),
+            "size_km": size_km,
+            "window_seconds": window_seconds,
+            "return_type": "png",
+        },
+        doseq=True,
+    )
+    return f"{endpoint}?{params}"
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
