@@ -124,16 +124,19 @@ Primary buckets:
   - regional warehouse for grocery goods, flour, pasta, cereals, and finished food products
   - stronger household-facing story than another export-only node
   - inland, city-edge distribution case is closer to how civilians actually feel disruption
-- status: `hold_cloud_blocked_exact_site`
+- status: `hold_post_strike_weather_blocked`
 - notes:
   - strongest public parcel clue so far is `3 Mykoly Shutia St, Pavlohrad`
   - exact parcel seed used: `48.542772, 35.883719`
   - keep only if the struck footprint is predominantly food storage, not mixed FMCG/logistics
-  - baseline probe is clean:
-    - request `2026-03-16T08:00:00Z` -> returned `2026-03-13T08:47:05Z`
-  - post-strike side is cloud-blocked:
-    - request `2026-04-20T08:00:00Z` -> returned `2026-04-15T08:46:42Z` with `46.458131` cloud and parcel obscured
-    - later 30-day-window requests through `2026-08-01T08:00:00Z` returned either the same cloudy frame or `image_available=false`
+  - best pre-strike baseline now pinned:
+    - request `2026-04-07T08:47:00Z` -> returned `2026-04-05T08:46:43Z` with `0.652506` cloud
+  - bounded post-strike sweep failed:
+    - request `2026-04-10T08:47:00Z` -> returned `2026-04-10T08:46:42Z` with `99.947125` cloud
+    - request `2026-04-13T08:47:00Z` -> returned `2026-04-12T08:47:04Z` with `77.931386` cloud
+    - request `2026-04-16T08:47:00Z` -> returned `2026-04-15T08:46:42Z` with `46.458131` cloud
+    - spill request `2026-04-19T08:47:00Z` -> `image_available=false`
+  - result: exact parcel is solved, but weather still blocks an honest post-strike frame as of `2026-04-17`
   - if we ever get a clear post-strike frame, this becomes one of the better “something is wrong near my region” food cases
 - sources:
   - [Kyiv Post, 2026-04-08](https://www.kyivpost.com/post/73498)
