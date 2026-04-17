@@ -92,7 +92,8 @@ It is the first acquisition batch with the best chance of moving coverage, not j
   - may be too small for honest Sentinel labeling
 - next action:
   - probe only if compound scale looks real enough
-  - otherwise replace with a larger WFP / UN / NGO warehouse asset
+  - otherwise replace with a larger inland WFP / UN / NGO warehouse asset
+  - priority is now higher because current water-positive hunting remains soft
 
 ### Mobility
 
@@ -138,8 +139,8 @@ Do in parallel with positive cases:
 
 ## Immediate next work order
 
-1. exact-site `water` longlist
-2. exact-site `aid` longlist
+1. exact-site `aid` longlist
+2. one public-polygon-safe `water` lead only; stop if it stays soft
 3. control rows from already-known ambiguous / weather-blocked cases
 4. only then reopen blocked `food` leads
 

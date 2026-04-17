@@ -167,13 +167,13 @@ Rule:
   - current public evidence is mainly electricity-line / cable damage and output collapse
   - not yet an honest plant-structure damage story
 - status:
-  - `active_exact_geocode`
+  - `hold_sensitive_outage_story`
 - next action:
-  - exact parcel pass next:
-    - coastal road
-    - south of Deir al-Balah
-    - plant / service compound, not generic city desalination points
-  - only keep active if one defendable plant parcel appears before imagery work
+  - keep as backlog evidence only
+  - do not keep exact-parcel hunting this site as the active next move
+  - only reopen if:
+    - the plant compound is already publicly pinned in humanitarian / utility docs
+    - and visible plant / service-compound damage is separable from cable / outage reporting
 - sources:
   - [AP on electricity cutoff affecting Gaza desalination plant](https://apnews.com/article/ba90f0de3d4f64a1762d1a39f787817f)
   - [UNICEF on March 2026 cable damage and 80 per cent output drop](https://www.unicef.org/sop/stories/unicef-restores-water-access-tens-thousands-children-gaza)
@@ -240,8 +240,8 @@ Rule:
 
 ## Immediate next work order
 
-1. do one exact coastal-road geocode pass on `Southern Gaza Seawater Desalination Plant`
-2. keep `Babiri` as evidence only unless a better parcel anchor appears
-3. keep `Kosti JICA` as evidence only unless a cleaner parcel / baseline appears
+1. stop soft-water churn after `South Gaza`, `Babiri`, and `Kosti`
+2. keep `South Gaza` as evidence only unless a public exact parcel appears
+3. keep `Babiri` and `Kosti JICA` as evidence only unless stronger parcel anchors appear
 4. keep `Bahri` on hold unless a stronger parcel anchor appears
-5. keep `Ras Abu Jarjur` and `Doha West` as the first real water controls
+5. shift the next tranche slot to `aid_02` exact-site acquisition

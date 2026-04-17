@@ -418,7 +418,7 @@ Primary buckets:
   - one of the strongest remaining user-value water leads
   - city-serving civilian desalination plant for central and southern Gaza
   - later reporting ties it directly to major water loss for hundreds of thousands of civilians
-- status: `active_exact_geocode`
+- status: `hold_sensitive_outage_story`
 - notes:
   - facility identity is stronger than most remaining water leads
   - current strongest geography clues:
@@ -428,9 +428,11 @@ Primary buckets:
   - current blocker is still honesty, not relevance:
     - public evidence centers on power-line / cable damage and output collapse
     - not yet a proven plant-structure damage row
-  - next step:
-    - exact parcel pass on the coastal road south of Deir al-Balah
-    - only continue to imagery if one defendable plant / service compound is isolated
+  - bounded coastal sweeps were enough to keep the corridor alive, but not enough to defend one exact plant parcel
+  - exact-parcel hunting here risks turning an outage-led humanitarian story into utility-network / siege analysis
+  - keep only as backlog evidence unless:
+    - one exact public parcel or facility polygon is already disclosed in humanitarian / utility documentation
+    - and visible plant / service-compound damage can be separated from cable / outage reporting
 - sources:
   - [AP on the March 2025 electricity cutoff](https://apnews.com/article/ba90f0de3d4f64a1762d1a39f787817f)
   - [UNICEF on March 2026 cable damage and 80 per cent output drop](https://www.unicef.org/sop/stories/unicef-restores-water-access-tens-thousands-children-gaza)
