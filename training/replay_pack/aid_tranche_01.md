@@ -62,9 +62,10 @@ Reject:
     - `5 km` outside town
     - `10 km` from airport
 - status:
-  - `active_exact_geocode`
+  - `hold_exact_complex_not_yet_pinned`
 - next action:
-  - exact map pass on the `Agricultural Bank of Sudan Warehouse Complex`
+  - first public-map pass pinned `El Obeid Airport` at `13.1500332, 30.2317358`, but did not isolate the ABS warehouse complex itself
+  - do not probe until one public map clue or polygon names the warehouse complex directly
   - keep only if the compound can be isolated as a humanitarian warehouse campus, not a corridor/logistics-routing story
 - sources:
   - [WFP on looting of warehouses in El Obeid](https://www.wfp.org/news/statement-looting-humanitarian-warehouses-sudan)
@@ -162,8 +163,8 @@ Reject:
 
 ## Immediate next work order
 
-1. exact map/geocode pass on `aid_01` `El Obeid`
-2. if `El Obeid` stays corridor-shaped, switch to `aid_02` `Lankien`
+1. exact compound verification on `aid_02` `MSF Lankien hospital main warehouse`
+2. keep `aid_01` `El Obeid` on hold unless the ABS complex itself becomes publicly mappable
 3. keep `Tyre` only if scale permits
 4. keep `UNHCR Baghdad` as exact benchmark / control candidate
 5. keep `Al-Ghafari` as evidence only
