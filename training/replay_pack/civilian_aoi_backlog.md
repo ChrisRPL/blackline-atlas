@@ -104,13 +104,19 @@ Primary buckets:
   - reported strike is tied to a named civilian agricultural enterprise, not a vague city hit
 - status: `hold_exact_parcel_and_visibility`
 - notes:
-  - verify the exact parcel in or near Avdiivka village, Chernihiv Oblast
-  - only promote if the storage-yard footprint is large enough for honest Sentinel labeling
+  - public reporting points to the damaged facility in `Avdiivka` village, Chernihiv Oblast, while the company registry address in `Andriivka, Mykhailivska 131` looks more like a legal/admin clue than the actual hit parcel
+  - village-seed SimSat probe was readable:
+    - baseline request `2025-04-25T08:00:00Z` -> returned `2025-04-23T09:06:11Z`
+    - current request `2025-06-04T08:00:00Z` -> returned `2025-06-02T09:06:14Z`
+  - result: no honest macro storage disruption was visible at village scale
+  - only promote if the exact storage parcel becomes identifiable and shows a clearer Sentinel-scale footprint than the village-seed pair
   - useful because it tests whether Blackline can see food-chain disruption away from export ports
 - sources:
   - [Ukrainska Pravda, 2025-05-26](https://www.pravda.com.ua/eng/news/2025/05/26/7514098/)
   - [EastFruit, 2025-05-27](https://east-fruit.com/en/news/russian-strike-on-agrico-ukraine-an-attack-on-food-security-and-the-resilience-of-ukrainian-farmers/)
   - [Agrico Ukraine demo centers](https://www.agrico.com.ua/en/agrico-demo-centers)
+  - [Liga, 2025-05-26](https://biz.liga.net/en/all/prodovolstvie/novosti/russian-attack-destroys-dutch-agrico-potato-storage-facility-in-chernihiv-region)
+  - [Opendatabot company record](https://opendatabot.ua/c/39174244)
 
 #### Star Brands Pavlohrad food warehouse
 - asset type: `logistics_hub`
@@ -118,14 +124,22 @@ Primary buckets:
   - regional warehouse for grocery goods, flour, pasta, cereals, and finished food products
   - stronger household-facing story than another export-only node
   - inland, city-edge distribution case is closer to how civilians actually feel disruption
-- status: `hold_food_only_crop_and_exact_site`
+- status: `hold_cloud_blocked_exact_site`
 - notes:
+  - strongest public parcel clue so far is `3 Mykoly Shutia St, Pavlohrad`
+  - exact parcel seed used: `48.542772, 35.883719`
   - keep only if the struck footprint is predominantly food storage, not mixed FMCG/logistics
-  - exact warehouse parcel still needs verification before SimSat probe
-  - if verified, this is one of the better “something is wrong near my region” food cases
+  - baseline probe is clean:
+    - request `2026-03-16T08:00:00Z` -> returned `2026-03-13T08:47:05Z`
+  - post-strike side is cloud-blocked:
+    - request `2026-04-20T08:00:00Z` -> returned `2026-04-15T08:46:42Z` with `46.458131` cloud and parcel obscured
+    - later 30-day-window requests through `2026-08-01T08:00:00Z` returned either the same cloudy frame or `image_available=false`
+  - if we ever get a clear post-strike frame, this becomes one of the better “something is wrong near my region” food cases
 - sources:
   - [Kyiv Post, 2026-04-08](https://www.kyivpost.com/post/73498)
   - [Star Grocery official site](https://stargrocery.com.ua/en/)
+  - [Ukrinform, 2026-04-07](https://www.ukrinform.net/rubric-ato/4110088-russian-drones-strike-snack-manufacturers-warehouse-in-pavlohrad-overnight.html)
+  - [Work.ua address clue](https://www.work.ua/jobs/7221388/)
 
 #### Qasmiyeh Bridge
 - asset type: `bridge`
