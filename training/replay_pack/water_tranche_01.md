@@ -62,12 +62,19 @@ Rule:
   - cleaner humanitarian story than mixed utility sites
 - parcel state:
   - named facility is clear
-  - exact parcel still needs one hard geocode / map pass
+  - strongest current parcel clue is a riverfront utility compound around `13.1601864, 32.6865113`
+  - JICA brochure confirms the real site should read as a rectilinear intake / basin / filtration campus, but the current clue is still weaker than that expected morphology
 - status:
-  - `active_exact_geocode`
+  - `hold_plausible_parcel_no_structural_signal`
 - next action:
-  - lock exact parcel from JICA + local-source naming
-  - only then run the first SimSat probe
+  - do not promote from the current clue
+  - tight pair on the parcel clue:
+    - baseline request `2025-01-20T08:00:00Z` -> returned `2025-01-16T08:26:31Z` with `40.911147` cloud
+    - current request `2025-03-29T08:00:00Z` -> returned `2025-03-27T08:26:54Z` with `0.280961` cloud
+  - result:
+    - good civilian story, but no defendable plant-compound damage signature
+    - pair reads as weak parcel match plus weather / land-cover shift, not a positive eval row
+  - keep only as evidence unless a better parcel lock or cleaner baseline appears
 - sources:
   - [AP on Kosti water-supply facility outage and cholera surge](https://apnews.com/article/47ac3f39c10eb549785c7fc24608551a)
   - [JICA project page for the Kosti water-treatment plant](https://www.jica.go.jp/english/our_work/social_environmental/id/africa/sudan/c8h0vm00009u5bwh.html)
@@ -119,18 +126,24 @@ Rule:
 - parcel state:
   - named site is clear
   - exact parcel still soft
-  - location clue: eastern Aleppo countryside, near Deir Hafer / Maskana axis
+  - best current geography clue:
+    - Babiri village seed `36.1254475, 38.0005080`
+    - on the Euphrates between `Qafsa / Khafsa` and `Maskana / Meskene`, east of Aleppo
 - blocker:
   - current `2026` reporting is mostly about pumping stoppage and restoration
   - still not a clean structural-damage case
 - status:
-  - `hold_service_outage_until_structural_signal`
+  - `active_exact_geocode`
 - next action:
-  - only continue if one exact parcel clue appears or imagery shows clear compound damage
+  - first `1.5 km` locator sweep around the village seed on `2025-01-30T08:00:00Z` did not isolate the station parcel
+  - next bounded pass:
+    - exact riverfront geocode using `Babiri + Qafsa / Khafsa + Maskana / Meskene + Euphrates` clues
+    - only probe pre/post after one defendable station parcel appears
 - sources:
   - [SANA on Babiri cutoff affecting Aleppo](https://sana.sy/en/syria/2289847/)
   - [Anadolu on Babiri serving Aleppo city and countryside](https://www.aa.com.tr/en/middle-east/sdf-cuts-water-supply-to-syria-s-aleppo/3796034)
   - [Levant24 on Babiri restoration and field inspection](https://levant24.com/news/2026/01/syria-boosts-water-security-through-major-infrastructure-projects/)
+  - [Türkiye Today on Babiri lying between Qafsa and Meskene on the Euphrates](https://www.turkiyetoday.com/region/sdf-uses-water-control-as-leverage-as-syrian-armys-operations-could-expand-north-3212792)
 
 ### `water_05` Southern Gaza Seawater Desalination Plant
 
@@ -216,8 +229,8 @@ Rule:
 
 ## Immediate next work order
 
-1. do one exact geocode pass on `Kosti JICA`
-2. keep `Bahri` on hold unless a stronger parcel anchor appears
-3. keep `Ras Abu Jarjur` and `Doha West` as the first real water controls
-4. keep `Maisat / Wazzani` as evidence only for now
-5. only then reopen `Babiri` or `Southern Gaza`
+1. do one exact riverfront geocode pass on `Babiri`
+2. keep `Kosti JICA` as evidence only unless a cleaner parcel / baseline appears
+3. keep `Bahri` on hold unless a stronger parcel anchor appears
+4. keep `Ras Abu Jarjur` and `Doha West` as the first real water controls
+5. keep `Maisat / Wazzani` as evidence only for now

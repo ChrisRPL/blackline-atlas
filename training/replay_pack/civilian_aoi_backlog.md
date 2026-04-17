@@ -320,11 +320,21 @@ Primary buckets:
   - strong civilian-useful case
   - named pure drinking-water plant
   - attack-linked outage tied to cholera spread
-- status: `active_exact_geocode`
+- status: `hold_plausible_parcel_no_structural_signal`
+- coordinates:
+  - strongest current parcel clue: `13.1601864, 32.6865113`
 - notes:
-  - best current next water-positive lead after `Bahri` failed the hard parcel-tight pass
+  - still one of the best water leads after `Bahri`, but no longer the active next pass
   - named locally as `محطة مياه كوستي الجديدة` / `محطة جايكا الجديدة`
-  - do not probe until one exact parcel anchor is locked
+  - JICA brochure confirms the real facility should read as a riverfront treatment campus with intake, sedimentation, filtration, and reservoir blocks
+  - strongest current clue is a plausible riverfront utility compound, but the morphology still does not match that brochure cleanly enough
+  - tight parcel pair on the clue:
+    - baseline request `2025-01-20T08:00:00Z` -> returned `2025-01-16T08:26:31Z` with `40.911147` cloud
+    - current request `2025-03-29T08:00:00Z` -> returned `2025-03-27T08:26:54Z` with `0.280961` cloud
+  - result:
+    - no defendable roof loss, basin breach, burn scar, or compound-wide debris field
+    - change reads as weak parcel match plus weather / land-cover shift, not structural plant damage
+  - keep as evidence only unless a better parcel lock or cleaner baseline appears
 - sources:
   - [AP on the Kosti outage and cholera surge](https://apnews.com/article/47ac3f39c10eb549785c7fc24608551a)
   - [JICA project page for the Kosti treatment plant](https://www.jica.go.jp/english/our_work/social_environmental/id/africa/sudan/c8h0vm00009u5bwh.html)
@@ -376,20 +386,28 @@ Primary buckets:
   - publicly described as a main water source for Aleppo city and surrounding rural areas
   - strong user-value shape: city-scale civilian water interruption
   - better product fit than another port retry
-- status: `hold_independent_sourcing_and_geolocation`
+- status: `active_exact_geocode`
 - coordinates:
-  - approximate village seed: `36.1254475, 38.0005080`
+  - Babiri village seed: `36.1254475, 38.0005080`
 - dates probed:
   - baseline request `2025-12-20T08:00:00Z` -> returned `2025-12-17T08:30:11Z`
   - current request `2026-01-10T08:00:00Z` -> returned `2026-01-06T08:20:12Z`
 - notes:
-  - keep as a search seed only until exact site identity, coordinates, and honest Sentinel-scale change are verified
+  - current source trail now says the station lies on the Euphrates between `Qafsa / Khafsa` and `Maskana / Meskene`, east of Aleppo
+  - keep as a geocode lane only until exact site identity, coordinates, and honest Sentinel-scale change are verified
   - do not label from outage claims alone
   - first current-side probe was heavily clouded (`80.994809`)
-  - likely risk: service interruption matters to users, but the site may still lack a clean structural before/after signal at Sentinel scale
+  - first `1.5 km` locator sweep around the Babiri village seed on `2025-01-30T08:00:00Z` did not isolate the station parcel
+  - likely risk:
+    - service interruption matters to users
+    - but the site may still lack a clean structural before/after signal at Sentinel scale
+  - next step:
+    - exact riverfront geocode using `Babiri + Qafsa / Khafsa + Maskana / Meskene + Euphrates` clues
 - sources:
   - [SANA, 2026-01-10](https://sana.sy/en/syria/2289847/)
   - [A News, 2026-01-11](https://www.anews.com.tr/middle-east/2026/01/11/syria-restores-water-supply-to-aleppo-after-sdf-disruption)
+  - [Levant24, 2026-01-24](https://levant24.com/news/2026/01/syria-boosts-water-security-through-major-infrastructure-projects/)
+  - [Türkiye Today, 2026-01-11](https://www.turkiyetoday.com/region/sdf-uses-water-control-as-leverage-as-syrian-armys-operations-could-expand-north-3212792)
 
 ### Rejected after probe
 
