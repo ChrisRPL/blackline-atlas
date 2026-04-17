@@ -2,7 +2,7 @@
 
 Blackline Atlas is an onboard civilian lifeline monitoring system.
 
-It watches a small, curated set of public civilian lifelines such as food hubs, bridges, water infrastructure, logistics hubs, and aid-corridor bottlenecks, compares current satellite imagery against historical baselines, suppresses low-value frames locally, and emits compact structured alerts only when there is evidence of macro-scale visible disruption.
+It watches a small, curated set of public civilian lifelines such as food hubs, water infrastructure, aid access nodes, and a narrow set of clearly civilian mobility chokepoints, compares current satellite imagery against historical baselines, suppresses low-value frames locally, and emits compact structured alerts only when there is evidence of macro-scale visible disruption.
 
 ## Why this exists
 
@@ -119,8 +119,12 @@ python3 training/scripts/run_lfm25_vl_prompted_eval.py \
 
 Candidate selection rule:
 
-- prefer food, water, mobility, and aid lifelines near population centers
+- prefer lifelines a civilian near a country or city would actually care about:
+  food first, then water, then aid, then mobility
+- prefer assets serving nearby population centers over globally famous infrastructure
 - keep ports as one lane, not the whole product
+- keep major bridges and ports on a shorter leash than food, water, and aid
+- reject cases where Sentinel cannot show an honest macro change
 - avoid mixed-use military ports, fuel depots, and frontline route intel
 
 ## Core API routes

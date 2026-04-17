@@ -10,11 +10,23 @@ Rule:
 - no fuel depots
 - no crossing-gate route intel
 
+User-value rule:
+- ask first: would a civilian near this city, region, or nearby country care if this lifeline were disrupted?
+- rank by human dependence, not by how dramatic the satellite scene looks
+- require honest macro visibility before labeling anything
+- if a case answers route-open or convoy-flow questions faster than civilian-impact questions, drop it
+
+Priority order:
+- food
+- water
+- aid
+- mobility
+
 Primary buckets:
 - food
 - water
-- mobility
 - aid
+- mobility
 
 ## Current shortlist
 
@@ -72,7 +84,11 @@ Primary buckets:
 - dates probed:
   - promising baseline: `2026-03-10T08:31:00Z`
   - promising current: `2026-04-16T08:31:18Z`
-- status: `hold_precise_geolocation`
+- status: `hold_sensitivity_and_visibility`
+- notes:
+  - local SimSat probe around the likely crossing returned a tile-edge baseline artifact
+  - safety review says major bridges drift tactical faster than food, water, and aid
+  - keep as a mobility example, not the next forced eval row
 - sources:
   - [Reuters syndication, 2026-04-16](https://wsau.com/2026/04/16/israeli-strike-severs-last-bridge-linking-southern-lebanon-to-rest-of-country-lebanese-security-official-says/)
   - [Le Monde, 2026-03-24](https://www.lemonde.fr/en/international/article/2026/03/24/in-southern-lebanon-civilians-are-trapped-after-israel-destroys-bridges_6751768_4.html)
@@ -87,6 +103,20 @@ Primary buckets:
 - sources:
   - [AP, 2026-03-08](https://www.kktv.com/2026/03/08/bahrain-says-iran-hit-desalination-plant-stoking-fears-attacks-civilian-sites/)
   - [AP, 2026-03-30](https://apnews.com/article/f624bed66bee79f68454d581ae1d624a)
+
+#### Babiri Water Station
+- asset type: `water_infrastructure`
+- why:
+  - publicly described as a main water source for Aleppo city and surrounding rural areas
+  - strong user-value shape: city-scale civilian water interruption
+  - better product fit than another port retry
+- status: `hold_independent_sourcing_and_geolocation`
+- notes:
+  - keep as a search seed only until exact site identity, coordinates, and honest Sentinel-scale change are verified
+  - do not label from outage claims alone
+- sources:
+  - [SANA, 2026-01-10](https://sana.sy/en/syria/2289847/)
+  - [A News, 2026-01-11](https://www.anews.com.tr/middle-east/2026/01/11/syria-restores-water-supply-to-aleppo-after-sdf-disruption)
 
 ### Keep out for now
 
@@ -124,9 +154,9 @@ Primary buckets:
 Prefer:
 - food hubs
 - water infrastructure
-- clearly civilian bridges
 - aid warehouse clusters
-- large logistics yards
+- only then clearly civilian bridges
+- large logistics yards only when the civilian function is obvious
 
 Avoid:
 - airports
