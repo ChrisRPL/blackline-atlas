@@ -24,5 +24,7 @@ def test_non_demo_eval_pack_rows_parse() -> None:
         "baltimore_bridge_collapse",
         "port_sudan_aid_hub_strikes",
     ]
+    assert rows[0].split == "holdout_geo"
+    assert rows[0].holdout_reason == "retrospective_food_security_anchor"
     assert rows[-1].split == "holdout_geo"
     assert rows[-1].holdout_reason == "current_conflict_aid_hub"

@@ -45,6 +45,24 @@ Primary buckets:
   - [UN Geneva, 2025-05-19](https://www.ungeneva.org/en/news-media/news/2025/05/106496/drone-strikes-civilian-infrastructure-port-sudan-must-end-un-expert)
   - [AP, 2025-05-06](https://apnews.com/article/396f67d3fada66707094858086b2ee53)
 
+#### Beirut Grain Silos
+- asset type: `grain_port`
+- why:
+  - clear food-security benchmark, not just a generic port scene
+  - exact site identity and coordinates are stable
+  - local SimSat probe returned an honest pre/post pair with obvious macro disruption
+- coordinates:
+  - `33.901111, 35.517778`
+- dates:
+  - baseline request `2020-07-25T08:00:00Z` -> returned `2020-07-24T08:30:50Z`
+  - current request `2020-08-10T08:00:00Z` -> returned `2020-08-08T08:30:48Z`
+- status:
+  - added to `non_demo_eval.jsonl`
+  - treat as `retrospective_food_security_anchor`, not a train row
+- sources:
+  - [Reuters via Al Arabiya, 2020-08-05](https://english.alarabiya.net/News/middle-east/2020/08/05/Beirut-grain-silo-destroyed-Lebanon-s-needs-still-covered-Minister)
+  - [AP, 2025-08-04](https://apnews.com/article/d558e3fde568ab1d5a952d898f18fab2)
+
 ### Hold; retry with different timestamps
 
 #### Chornomorsk Grain Port
@@ -54,6 +72,9 @@ Primary buckets:
   - good category fit
   - clear pre/post pair now exists
   - still no honest macro label yet from the visible pair
+- notes:
+  - only keep this alive as a tightly cropped grain-handling / storage sub-AOI
+  - do not promote the whole port footprint
 - dates probed:
   - initial cloudy pair: baseline `2025-12-14T08:57:36Z`, current `2026-01-08T09:07:47Z`
   - clearer pair: baseline `2025-10-15T08:57:39Z`, current `2026-03-04T08:57:28Z`
@@ -74,6 +95,37 @@ Primary buckets:
 - status: `hold_visual_review`
 - sources:
   - [Reuters via Investing.com, 2026-01-07](https://www.investing.com/news/world-news/russia-attacks-two-ukrainian-ports-kyiv-says-4435521)
+
+#### Agrico Ukraine / AF Andriivske potato storage
+- asset type: `logistics_hub`
+- why:
+  - inland food-storage case, closer to civilian food resilience than another seaport
+  - seed-potato storage and packaging is a real upstream food-chain lifeline
+  - reported strike is tied to a named civilian agricultural enterprise, not a vague city hit
+- status: `hold_exact_parcel_and_visibility`
+- notes:
+  - verify the exact parcel in or near Avdiivka village, Chernihiv Oblast
+  - only promote if the storage-yard footprint is large enough for honest Sentinel labeling
+  - useful because it tests whether Blackline can see food-chain disruption away from export ports
+- sources:
+  - [Ukrainska Pravda, 2025-05-26](https://www.pravda.com.ua/eng/news/2025/05/26/7514098/)
+  - [EastFruit, 2025-05-27](https://east-fruit.com/en/news/russian-strike-on-agrico-ukraine-an-attack-on-food-security-and-the-resilience-of-ukrainian-farmers/)
+  - [Agrico Ukraine demo centers](https://www.agrico.com.ua/en/agrico-demo-centers)
+
+#### Star Brands Pavlohrad food warehouse
+- asset type: `logistics_hub`
+- why:
+  - regional warehouse for grocery goods, flour, pasta, cereals, and finished food products
+  - stronger household-facing story than another export-only node
+  - inland, city-edge distribution case is closer to how civilians actually feel disruption
+- status: `hold_food_only_crop_and_exact_site`
+- notes:
+  - keep only if the struck footprint is predominantly food storage, not mixed FMCG/logistics
+  - exact warehouse parcel still needs verification before SimSat probe
+  - if verified, this is one of the better “something is wrong near my region” food cases
+- sources:
+  - [Kyiv Post, 2026-04-08](https://www.kyivpost.com/post/73498)
+  - [Star Grocery official site](https://stargrocery.com.ua/en/)
 
 #### Qasmiyeh Bridge
 - asset type: `bridge`
@@ -164,6 +216,20 @@ Primary buckets:
 - sources:
   - [SANA, 2026-01-10](https://sana.sy/en/syria/2289847/)
   - [A News, 2026-01-11](https://www.anews.com.tr/middle-east/2026/01/11/syria-restores-water-supply-to-aleppo-after-sdf-disruption)
+
+### Rejected after probe
+
+#### Sarrin grain-silo seed
+- why rejected:
+  - usable pair, but no honest macro food-disruption signal showed up
+  - source trail never became strong enough to justify a real eval row
+- dates probed:
+  - baseline request `2026-01-05T08:00:00Z` -> returned `2026-01-03T08:20:18Z`
+  - current request `2026-01-24T08:00:00Z` -> returned `2026-01-21T08:19:56Z`
+- notes:
+  - cloud was acceptable enough to decide (`1.083115` / `28.538302`)
+  - visual diff looked like ordinary town/agricultural variation, not a civilian food-lifeline disruption
+- status: `reject_no_honest_signal`
 
 ### Keep out for now
 
