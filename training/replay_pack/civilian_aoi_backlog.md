@@ -144,6 +144,37 @@ Primary buckets:
   - [Ukrinform, 2026-04-07](https://www.ukrinform.net/rubric-ato/4110088-russian-drones-strike-snack-manufacturers-warehouse-in-pavlohrad-overnight.html)
   - [Work.ua address clue](https://www.work.ua/jobs/7221388/)
 
+#### Vasyshcheve ATB distribution center / Promyslova corridor
+- asset type: `logistics_hub`
+- why:
+  - stronger civilian-user story than another seaport: grocery distribution near Kharkiv population
+  - source trail is food-specific, not a vague industrial hit
+  - one of the better candidates for “something is wrong near my region” if the parcel match becomes exact
+- status: `hold_exact_address_vs_visible_scar`
+- notes:
+  - strongest exact parcel clue is now `АТБ-Маркет` distribution center, `Васищеве, вул. Промислова, 12`
+  - source-backed function is clean: packaged food products, dry and cold warehouses, total footprint `30,946 m²`
+  - clean exact-address pair now exists on the `Promyslova 12` seed:
+    - baseline request `2025-07-10T08:00:00Z` -> returned `2025-07-09T08:46:17Z` with `0.560781` cloud
+    - post request `2025-08-12T08:00:00Z` -> returned `2025-08-08T08:46:17Z` with `0.516654` cloud
+  - result on the exact-address crop: still too soft for promotion; no single warehouse scar reads strongly enough at `1.0 km` or `0.5 km`
+  - a nearby corridor crop around `49.849286, 36.326572` shows clearer roof darkening on a warehouse block:
+    - baseline request `2025-07-10T08:00:00Z` -> returned `2025-07-09T08:46:17Z` with `0.560781` cloud
+    - post request `2025-08-08T08:00:00Z` -> returned `2025-08-05T08:46:32Z` with `8.039406` cloud
+  - but that clearer scar is not yet tied tightly enough to `Promyslova 12`, `Promyslova 11`, or another named food parcel in the strike cluster
+  - promotion rule stays strict:
+    - exact named parcel
+    - food-specific function
+    - clean pre/post pair
+    - one defendable macro-visible scar on that same parcel
+  - until that address-to-scar mapping is defensible, keep this as evidence only, not a real eval row
+- sources:
+  - [RBC-Ukraine, 2025-07-30](https://newsukraine.rbc.ua/news/deadly-russian-missile-strike-destroys-food-1753896187.html)
+  - [Novynarnia, 2025-07-30](https://novynarnia.com/2025/07/30/rosiyany-zavdaly-raketnogo-udaru-po-skladah-troh-korporaczij-u-vasyshhevomu-pid-harkovom-zagynuv-ohoronecz-sered-8-poranenyh-ryatuvalnyky/)
+  - [Kharkiv ODA EIA notice, Promyslova 12](https://kharkivoda.gov.ua/oblasna-derzhavna-administratsiya/struktura-administratsiyi/strukturni-pidrozdili/486/2841/2842/3281/105012)
+  - [ATB tender, RC Kharkiv-24, Promyslova 12](https://www.atbmarket.com/tender/2447)
+  - [Bezliudivka KTEB note, Promyslova 12](https://khbsr.gov.ua/wp-content/uploads/2025/06/misczeva-kteb-i-ns-%E2%84%96-4-vid-02.06.2025.pdf)
+
 #### Qasmiyeh Bridge
 - asset type: `bridge`
 - why:
