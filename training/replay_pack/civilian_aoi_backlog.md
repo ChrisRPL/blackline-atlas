@@ -104,6 +104,46 @@ Primary buckets:
   - [AP, 2026-03-08](https://www.kktv.com/2026/03/08/bahrain-says-iran-hit-desalination-plant-stoking-fears-attacks-civilian-sites/)
   - [AP, 2026-03-30](https://apnews.com/article/f624bed66bee79f68454d581ae1d624a)
 
+#### Doha West Power And Desalination Plant
+- asset type: `water_infrastructure`
+- why:
+  - major drinking-water infrastructure for Kuwait
+  - exact plant identity and coordinates are easy to verify
+  - useful civilian framing if a clean macro-visible disruption exists
+- coordinates:
+  - `29.368333, 47.788333`
+- dates probed:
+  - baseline request `2026-03-01T08:00:00Z` -> returned `2026-02-28T07:41:39Z`
+  - current request `2026-03-31T08:00:00Z` -> returned `2026-03-30T07:41:39Z`
+- status: `hold_clouded_and_mixed_use`
+- notes:
+  - current-side probe was heavily clouded (`86.009896`)
+  - facility is integrated power + water, which raises mixed-use sensitivity versus pure water infrastructure
+  - do not promote unless a cleaner current pair appears and the civilian water story remains primary
+- sources:
+  - [AP, 2026-03-08](https://apnews.com/article/12b23f2fa26ed5c4a10f80c4077e61ce)
+  - [Al Jazeera, 2026-03-30](https://www.aljazeera.com/news/2026/3/30/iranian-attack-damages-kuwait-power-and-desalination-plant-kills-worker)
+  - [Wikimapia coordinates](https://wikimapia.org/9034607/DOHA-WEST-POWER-PLANT)
+
+#### Ras Abu Jarjur Desalination Plant
+- asset type: `water_infrastructure`
+- why:
+  - pure water-infrastructure shape
+  - exact plant identity and coordinates are easy to verify
+  - strong civilian dependence framing
+- coordinates:
+  - `26.073889, 50.621944`
+- dates probed:
+  - baseline request `2026-03-01T08:00:00Z` -> returned `2026-02-27T07:22:33Z`
+  - current request `2026-03-09T08:00:00Z` -> returned `2026-03-09T07:22:33Z`
+- status: `hold_no_honest_macro_change`
+- notes:
+  - pair is usable (`1.555283` / `16.679116` cloud), but local visual review did not show a clear macro disruption honest enough for a bbox label
+  - keep as a search seed, not an eval row
+- sources:
+  - [AP, 2026-03-08](https://apnews.com/article/12b23f2fa26ed5c4a10f80c4077e61ce)
+  - [Wikimapia coordinates](https://wikimapia.org/447048/Ras-Abu-Jarjur-Desalination-plant)
+
 #### Babiri Water Station
 - asset type: `water_infrastructure`
 - why:
@@ -111,9 +151,16 @@ Primary buckets:
   - strong user-value shape: city-scale civilian water interruption
   - better product fit than another port retry
 - status: `hold_independent_sourcing_and_geolocation`
+- coordinates:
+  - approximate village seed: `36.1254475, 38.0005080`
+- dates probed:
+  - baseline request `2025-12-20T08:00:00Z` -> returned `2025-12-17T08:30:11Z`
+  - current request `2026-01-10T08:00:00Z` -> returned `2026-01-06T08:20:12Z`
 - notes:
   - keep as a search seed only until exact site identity, coordinates, and honest Sentinel-scale change are verified
   - do not label from outage claims alone
+  - first current-side probe was heavily clouded (`80.994809`)
+  - likely risk: service interruption matters to users, but the site may still lack a clean structural before/after signal at Sentinel scale
 - sources:
   - [SANA, 2026-01-10](https://sana.sy/en/syria/2289847/)
   - [A News, 2026-01-11](https://www.anews.com.tr/middle-east/2026/01/11/syria-restores-water-supply-to-aleppo-after-sdf-disruption)
@@ -157,6 +204,12 @@ Prefer:
 - aid warehouse clusters
 - only then clearly civilian bridges
 - large logistics yards only when the civilian function is obvious
+
+Active next search:
+- inland grain silo clusters
+- flour mills with large storage yards
+- wholesale food depots near major cities
+- pure water-treatment assets with visible ponds, tanks, or plant-footprint damage
 
 Avoid:
 - airports
