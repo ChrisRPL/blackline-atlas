@@ -25,12 +25,15 @@ def test_non_demo_eval_pack_rows_parse() -> None:
         "port_sudan_aid_hub_strikes",
         "ras_abu_jarjur_no_material_change",
         "doha_west_weather_limited",
+        "vasyshcheve_atb_address_scar_ambiguity",
     ]
     assert rows[0].split == "holdout_geo"
     assert rows[0].holdout_reason == "retrospective_food_security_anchor"
     assert rows[2].split == "holdout_geo"
     assert rows[2].holdout_reason == "current_conflict_aid_hub"
-    assert rows[-2].split == "holdout_stress"
-    assert rows[-2].holdout_reason == "exact_water_control_no_macro_change"
+    assert rows[-3].split == "holdout_stress"
+    assert rows[-3].holdout_reason == "exact_water_control_no_macro_change"
     assert rows[-1].split == "holdout_stress"
-    assert rows[-1].holdout_reason == "weather_mixed_use_water_control"
+    assert rows[-1].holdout_reason == "food_address_to_scar_ambiguity_control"
+    assert rows[-2].split == "holdout_stress"
+    assert rows[-2].holdout_reason == "weather_mixed_use_water_control"

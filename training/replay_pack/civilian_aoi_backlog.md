@@ -155,9 +155,12 @@ Primary buckets:
   - stronger civilian-user story than another seaport: grocery distribution near Kharkiv population
   - source trail is food-specific, not a vague industrial hit
   - one of the better candidates for “something is wrong near my region” if the parcel match becomes exact
-- status: `hold_exact_address_vs_visible_scar`
+- status: `added_to_non_demo_eval_as_ambiguity_control`
 - notes:
   - strongest exact parcel clue is now `АТБ-Маркет` distribution center, `Васищеве, вул. Промислова, 12`
+  - exact parcel is now source-locked, not guessed:
+    - official project / build records for the ATB distribution center at `Промислова, 12`
+    - cadastral number `6325156400:02:001:0045`
   - source-backed function is clean: packaged food products, dry and cold warehouses, total footprint `30,946 m²`
   - clean exact-address pair now exists on the `Promyslova 12` seed:
     - baseline request `2025-07-10T08:00:00Z` -> returned `2025-07-09T08:46:17Z` with `0.560781` cloud
@@ -167,16 +170,15 @@ Primary buckets:
     - baseline request `2025-07-10T08:00:00Z` -> returned `2025-07-09T08:46:17Z` with `0.560781` cloud
     - post request `2025-08-08T08:00:00Z` -> returned `2025-08-05T08:46:32Z` with `8.039406` cloud
   - but that clearer scar is not yet tied tightly enough to `Promyslova 12`, `Promyslova 11`, or another named food parcel in the strike cluster
-  - promotion rule stays strict:
-    - exact named parcel
-    - food-specific function
-    - clean pre/post pair
-    - one defendable macro-visible scar on that same parcel
-  - until that address-to-scar mapping is defensible, keep this as evidence only, not a real eval row
+  - result:
+    - not honest enough for a positive row
+    - honest enough for `non_demo_eval.jsonl` as a `food` ambiguity control
+    - use it to teach the model and reviewers that nearby warehouse darkening is not enough when the named parcel itself does not resolve cleanly
 - sources:
   - [RBC-Ukraine, 2025-07-30](https://newsukraine.rbc.ua/news/deadly-russian-missile-strike-destroys-food-1753896187.html)
   - [Novynarnia, 2025-07-30](https://novynarnia.com/2025/07/30/rosiyany-zavdaly-raketnogo-udaru-po-skladah-troh-korporaczij-u-vasyshhevomu-pid-harkovom-zagynuv-ohoronecz-sered-8-poranenyh-ryatuvalnyky/)
   - [Kharkiv ODA EIA notice, Promyslova 12](https://kharkivoda.gov.ua/oblasna-derzhavna-administratsiya/struktura-administratsiyi/strukturni-pidrozdili/486/2841/2842/3281/105012)
+  - [E-construction record, cadastral parcel `6325156400:02:001:0045`](https://e-construction.gov.ua/document_detail/doc_id=2596737942282045406/optype=100)
   - [ATB tender, RC Kharkiv-24, Promyslova 12](https://www.atbmarket.com/tender/2447)
   - [Bezliudivka KTEB note, Promyslova 12](https://khbsr.gov.ua/wp-content/uploads/2025/06/misczeva-kteb-i-ns-%E2%84%96-4-vid-02.06.2025.pdf)
 

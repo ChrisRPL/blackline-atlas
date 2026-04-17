@@ -7,7 +7,7 @@ Use this to grow `training/replay_pack/non_demo_eval.jsonl` from a tiny demo-adj
 - demo/smoke rows:
   - `hero_eval.jsonl`: `2`
 - real/manual non-demo rows:
-  - `non_demo_eval.jsonl`: `5`
+  - `non_demo_eval.jsonl`: `6`
 - current real positive non-demo mix:
   - `food`: `1` (`Beirut Grain Silos`)
   - `aid`: `1` (`Port Sudan Aid Hub`)
@@ -17,12 +17,14 @@ Use this to grow `training/replay_pack/non_demo_eval.jsonl` from a tiny demo-adj
   - `water`: `2`
     - `Ras Abu Jarjur`
     - `Doha West`
+  - `food`: `1`
+    - `Vasyshcheve ATB Distribution Center`
 - overall annotated rows:
-  - `7`
+  - `8`
 - current split shape:
   - `holdout_geo`: `4`
   - `dev`: `1`
-  - `holdout_stress`: `2`
+  - `holdout_stress`: `3`
   - `train`: `0`
 - train rows:
   - `0`
@@ -214,4 +216,5 @@ Better order now:
 1. fill `water`
 2. fill `aid`
 3. keep `food` alive only where exact parcel + honest visibility already exist
-4. keep `mobility` narrow
+4. use already-scouted ambiguity and weather cases to widen control coverage while positive rows remain blocked
+5. keep `mobility` narrow

@@ -132,7 +132,8 @@ Do in parallel with positive cases:
 
 ### `control_ambig_01` to `control_ambig_02`
 - nearby disruption, but target parcel not honestly labelable
-- `Vasyshcheve` is a good shape for this class
+- `Vasyshcheve` now fills `control_ambig_01`
+- keep `control_ambig_02` open for the next exact parcel / nearby-scar mismatch
 
 ### `control_stale_01` to `control_stale_02`
 - visible non-conflict drift
@@ -140,10 +141,10 @@ Do in parallel with positive cases:
 
 ## Immediate next work order
 
-1. exact-site `aid` longlist
-2. one public-polygon-safe `water` lead only; stop if it stays soft
-3. control rows from already-known ambiguous / weather-blocked cases
-4. only then reopen blocked `food` leads
+1. one public-polygon-safe `water` lead only; stop if it stays soft
+2. one exact named `aid` depot only if the compound is visibly large enough in Sentinel
+3. convert one more already-known blocked case into a control row
+4. only then reopen blocked `food` positives
 
 ## Stop rules
 
