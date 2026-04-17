@@ -186,11 +186,11 @@ Primary buckets:
   - tighter food semantics than generic warehousing
   - explicit bread-chain impact: flour sacks prepared for bakeries in Hasakah and its countryside
   - one named civilian facility, one named owner, one named strike event
-- status: `hold_exact_parcel_needs_geocode`
+- status: `reject_exact_geocode_conflict`
 - notes:
   - source trail is good enough to keep alive:
     - facility name `al-Khayrat Mill`
-    - near `Sanjak Saadoun` in the Amuda countryside
+    - near `Sanjak Saadoun` / `Sanjak Khalil` in the Amuda countryside
     - struck by Turkish drone on `2024-01-14`
     - mill knocked out of service, workers injured
   - immediate January pair is not honest enough:
@@ -200,10 +200,18 @@ Primary buckets:
     - baseline request `2023-12-28T10:00:00Z` -> returned `2023-12-25T08:09:54Z` with `12.489839` cloud
     - post request `2024-02-05T10:00:00Z` -> returned `2024-02-03T08:09:50Z` with `7.132044` cloud
     - later post request `2024-03-05T10:00:00Z` -> returned `2024-03-04T08:09:48Z` with `0.008427` cloud
-  - result: category is alive, weather is not the blocker anymore, but the exact mill parcel is still unresolved
-  - only promote if one mill-scale footprint near the reported village can be tied defensibly to the named facility and shows a real pre/post disruption
+  - hard alias pass failed:
+    - North Press says near `Sanjak Saadoun`
+    - Rojava TV and another North Press report say `Sanjak Khalil`
+    - OSM only resolves `Sanjak Saadoun` to a village node at `37.0186198, 40.9357151`, currently labeled `راية غربي`
+    - no defendable exact mill parcel emerged from public map/geocode clues
+  - article photos confirm a real flour mill interior and roof damage, but do not anchor the parcel tightly enough for satellite labeling
+  - result: food semantics are good and weather is no longer the blocker, but exact geocoding failed after one hard map pass
+  - drop as an active eval candidate unless a direct map/address/parcel clue appears later
 - sources:
   - [North Press, 2024-01-17](https://npasyria.com/en/110223/)
+  - [North Press Arabic, 2024-01-17](https://npasyria.com/178716/)
+  - [Rojava TV, 2024-01-21](https://rojavatv.net/ar/archives/23693)
   - [ASO Network, 2023-01-15](https://aso-network.com/en/archives/33270)
 
 #### Qasmiyeh Bridge
