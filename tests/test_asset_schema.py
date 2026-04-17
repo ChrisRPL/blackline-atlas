@@ -21,3 +21,16 @@ def test_asset_allows_water_infrastructure_type() -> None:
     )
 
     assert asset.asset_type == "water_infrastructure"
+
+
+def test_asset_allows_aid_warehouse_cluster_type() -> None:
+    asset = Asset(
+        asset_id="aid_wh_01",
+        asset_name="Demo Aid Warehouse",
+        asset_type="aid_warehouse_cluster",
+        region="Baghdad",
+        latitude=33.34,
+        longitude=44.36,
+    )
+
+    assert asset.asset_type == "aid_warehouse_cluster"

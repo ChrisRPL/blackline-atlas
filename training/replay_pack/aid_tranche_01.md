@@ -135,10 +135,18 @@ Reject:
     - `UNHCR Warehouse in Al Shaljia, Iraqi Railway complex area, Baghdad, Iraq`
     - GPS `33.34150243963263, 44.36504131109288`
 - status:
-  - `benchmark_exact_control_candidate`
+  - `promoted_to_non_demo_eval_as_benchmark_control`
 - next action:
-  - use as an exact humanitarian warehouse benchmark if we need one non-conflict aid anchor or control
-  - not the first positive-row target
+  - exact official GPS was usable:
+    - `33.34150243963263, 44.36504131109288`
+  - bounded SimSat pass returned a clean stable pair on the exact parcel:
+    - baseline request `2024-08-05T08:00:00Z` -> returned `2024-08-05T07:50:48Z` with `0.024484` cloud
+    - current request `2024-10-01T08:00:00Z` -> returned `2024-09-29T07:50:48Z` with `0.015073` cloud
+  - result:
+    - no defendable roof loss
+    - no burn scar
+    - no yard disruption
+    - honest exact aid benchmark / control row
 - sources:
   - [UNHCR Iraq corrigendum for Baghdad warehouse works](https://www.unhcr.org/iq/wp-content/uploads/sites/165/2024/07/Corrigendum-No.1-RFQ-076-s-1.pdf)
 
@@ -168,7 +176,7 @@ Reject:
 1. keep `aid_01` `El Obeid` on hold unless the ABS complex itself becomes publicly mappable
 2. keep `aid_02` `Lankien` as evidence only unless a larger hospital-support warehouse campus is publicly pinned
 3. keep `Tyre` only if scale permits
-4. keep `UNHCR Baghdad` as exact benchmark / control candidate
+4. `UNHCR Baghdad` is now the exact aid benchmark / control anchor
 5. if no inland aid positive survives, reopen inland `food` before adding more aid notes
 
 ## Stop rules
