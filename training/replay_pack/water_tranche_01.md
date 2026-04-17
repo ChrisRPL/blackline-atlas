@@ -12,6 +12,7 @@ Purpose:
 - strongest existing evidence:
   - `Doha West` -> exact site, but clouded + mixed-use
   - `Ras Abu Jarjur` -> exact site, but no honest macro-visible change
+  - `Al-Arshani` -> exact public coords, but no defendable plant-scale structural change in bounded SimSat pass
   - `Babiri` -> strong civilian story, but service-outage framing and parcel still soft
   - `Maisat / Wazzani` -> strong source trail, but border-sensitive and still too soft for a first positive row
   - `Bahri` -> exact coords + clean windows, but dense urban fabric blocked the hard parcel-tight pass
@@ -181,6 +182,43 @@ Rule:
   - [Sawa on the plant site being on the coastal road south of Deir al-Balah](https://palsawa.com/post/99981/%D8%A7%D9%84%D8%A7%D8%AD%D8%AA%D9%81%D8%A7%D9%84-%D8%A8%D8%A7%D9%81%D8%AA%D8%AA%D8%A7%D8%AD-%D9%85%D8%AD%D8%B7%D8%A9-%D8%AA%D8%AD%D9%84%D9%8A%D8%A9-%D9%85%D9%8A%D8%A7%D9%87-%D8%A7%D9%84%D8%A8%D8%AD%D8%B1)
   - [ieCRES 2023 on the plant being at the coastal road in front of Deir el-Balah](https://eftaa.iugaza.edu.ps/wp-content/uploads/sites/20/2023/07/ieCRES-2023_paper_4560.pdf)
 
+### `water_06` Al-Arshani Water Station
+
+- country:
+  - `Syria`
+- type:
+  - water station
+- why:
+  - exact public coordinates now exist
+  - explicit civilian-service role for Idlib city
+  - one of the cleanest exact-site humanitarian water clues tried so far
+- parcel state:
+  - exact public coordinate clue:
+    - `35.948861, 36.556375`
+  - source trail says the station was struck on `2022-01-02`
+- probe truth:
+  - clean pre frame exists:
+    - request `2021-12-10T08:00:00Z` -> returned `2021-12-06T08:30:13Z` with `0.097488` cloud
+  - near-event post windows were mostly cloud-blocked:
+    - request `2022-01-10T08:00:00Z` -> returned `2022-01-05T08:30:15Z` with `60.027914` cloud
+    - request `2022-01-20T08:00:00Z` -> returned `2022-01-15T08:30:15Z` with `34.647347` cloud
+  - one later clean post frame exists:
+    - request `2022-03-20T08:00:00Z` -> returned `2022-03-16T08:30:18Z` with `0.785722` cloud
+  - tight `0.8 km` parcel pass still failed:
+    - no defendable roof loss
+    - no basin breach
+    - no compound burn scar
+    - only tonal / seasonal drift
+- status:
+  - `hold_exact_public_coords_no_structural_signal`
+- next action:
+  - do not promote
+  - keep as evidence only unless a cleaner near-event post frame or stronger plant-scale damage clue appears
+- sources:
+  - [Airwars on the `2022-01-02` strike and exact coordinates](https://airwars.org/civilian-casualties/r4433-january-2-2022/)
+  - [SNHR on partial structural damage and pumping-line damage](https://news.snhr.org/2022/01/02/russian-air-attack-targeted-a-water-station-in-idlib-city-on-january-2/)
+  - [UNICEF whole-of-Syria sitrep on Arshani water-station disruption](https://www.unicef.org/media/120251/file/Whole-of-Syria-Humanitarian-SitRep-March-2022.pdf)
+
 ## Control candidates
 
 ### `control_ambig_water_01` Ras Abu Jarjur Desalination Plant
@@ -240,8 +278,10 @@ Rule:
 
 ## Immediate next work order
 
-1. stop soft-water churn after `South Gaza`, `Babiri`, and `Kosti`
-2. keep `South Gaza` as evidence only unless a public exact parcel appears
-3. keep `Babiri` and `Kosti JICA` as evidence only unless stronger parcel anchors appear
-4. keep `Bahri` on hold unless a stronger parcel anchor appears
-5. shift the next tranche slot to `aid_02` exact-site acquisition
+1. freeze `water` positive hunting for now
+2. keep `Al-Arshani`, `South Gaza`, `Babiri`, `Kosti JICA`, and `Bahri` as evidence only unless stronger public parcel anchors or cleaner structural post frames appear
+3. do not spend another tranche move on `water` until a candidate clears:
+   - exact named public parcel or polygon
+   - clean pre/post pair
+   - defendable plant-scale structural change
+4. shift the next tranche slot to `aid_02` exact-site acquisition or another non-water control

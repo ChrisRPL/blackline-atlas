@@ -141,7 +141,7 @@ Do in parallel with positive cases:
 
 ## Immediate next work order
 
-1. one public-polygon-safe `water` lead only; stop if it stays soft
+1. `water` positive hunt is paused after the bounded exact-site pass stayed soft
 2. one exact named `aid` depot only if the compound is visibly large enough in Sentinel
 3. convert one more already-known blocked case into a control row
 4. only then reopen blocked `food` positives
