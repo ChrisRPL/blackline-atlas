@@ -23,8 +23,14 @@ def test_non_demo_eval_pack_rows_parse() -> None:
         "beirut_port_blast",
         "baltimore_bridge_collapse",
         "port_sudan_aid_hub_strikes",
+        "ras_abu_jarjur_no_material_change",
+        "doha_west_weather_limited",
     ]
     assert rows[0].split == "holdout_geo"
     assert rows[0].holdout_reason == "retrospective_food_security_anchor"
-    assert rows[-1].split == "holdout_geo"
-    assert rows[-1].holdout_reason == "current_conflict_aid_hub"
+    assert rows[2].split == "holdout_geo"
+    assert rows[2].holdout_reason == "current_conflict_aid_hub"
+    assert rows[-2].split == "holdout_stress"
+    assert rows[-2].holdout_reason == "exact_water_control_no_macro_change"
+    assert rows[-1].split == "holdout_stress"
+    assert rows[-1].holdout_reason == "weather_mixed_use_water_control"

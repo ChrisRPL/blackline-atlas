@@ -34,15 +34,21 @@ Rule:
   - UNICEF and ICRC both describe Al-Khafsa as a main water source for Aleppo
 - parcel state:
   - named facility is clear
-  - exact plant parcel still needs one hard map pass
-  - generic town seed exists around `36.23333, 38.01667`
+  - hard map pass found a treatment-like compound south of Al-Khafsa town around `36.1839511, 38.0086273`
+  - clue quality is still imperfect because the public map tag is only `man_made=wastewater_plant`
 - why this is the best next positive hunt:
   - pure water semantics
   - big enough footprint
   - stronger structural-damage story than outage-only water cases
 - next action:
-  - do one hard map/geocode pass
-  - if parcel locks, run one honest pre/post SimSat probe
+  - bounded probe was run and should not be promoted as a positive row
+  - clean `2.0 km` pair:
+    - baseline request `2025-01-30T08:00:00Z` -> returned `2025-01-26T08:20:27Z` with `0.009107` cloud
+    - current request `2025-03-15T08:00:00Z` -> returned `2025-03-12T08:20:01Z` with `0.006421` cloud
+  - result:
+    - no honest macro-visible disruption on the compound in the clean pair
+    - wider `5.0 km` crop also suffered tile-edge / no-data artifacts
+  - keep as ambiguity evidence only unless a stronger parcel lock or clearer structural change appears
 - sources:
   - [UNICEF on Al-Khafsa treatment plant serving Aleppo](https://www.unicef.org/syria/stories/unicef-rehabilitates-conflict-damaged-sedimentation-tanks-enhance-production-treated-water)
   - [ICRC on Al-Khafsa water station role](https://www.icrcnewsroom.org/story/en/2058/syria-urgent-action-needed-to-address-humanitarian-needs)
@@ -113,6 +119,8 @@ Rule:
 - use:
   - ambiguity control
   - prove that public claims do not force a positive label
+- status:
+  - promoted to `training/replay_pack/non_demo_eval.jsonl`
 - linked source:
   - [AP on Gulf desalination risk and Bahrain damage claim](https://apnews.com/article/12b23f2fa26ed5c4a10f80c4077e61ce)
 
@@ -129,6 +137,8 @@ Rule:
 - use:
   - weather control
   - mixed-use rejection example
+- status:
+  - promoted to `training/replay_pack/non_demo_eval.jsonl`
 - linked source:
   - [AP on Doha West damage report](https://apnews.com/article/12b23f2fa26ed5c4a10f80c4077e61ce)
 
@@ -143,7 +153,7 @@ Rule:
 
 ## Immediate next work order
 
-1. hard map/geocode pass on `Al-Khafsa`
-2. if parcel locks, run one honest SimSat pair
-3. turn `Ras Abu Jarjur` and `Doha West` into control rows
+1. keep `Al-Khafsa` out of the positive queue unless a stronger parcel lock appears
+2. treat `Ras Abu Jarjur` and `Doha West` as the first real water controls
+3. reopen the next positive hunt on a new pure-water site
 4. only then reopen `Babiri` or `Southern Gaza`

@@ -243,6 +243,28 @@ Primary buckets:
   - [AP, 2026-03-08](https://www.kktv.com/2026/03/08/bahrain-says-iran-hit-desalination-plant-stoking-fears-attacks-civilian-sites/)
   - [AP, 2026-03-30](https://apnews.com/article/f624bed66bee79f68454d581ae1d624a)
 
+#### Al-Khafsa Water Treatment Plant
+- asset type: `water_infrastructure`
+- why:
+  - one of Aleppo's main drinking-water sources
+  - strongest city-serving pure-water lead tried so far
+  - exact positive hunt mattered because this is the kind of user-value case Blackline should catch if Sentinel can honestly show it
+- status: `hold_no_honest_macro_change`
+- notes:
+  - hard map pass found a large treatment-like compound south of Al-Khafsa town around `36.1839511, 38.0086273`
+  - clue quality remains imperfect because the public map tag is only `man_made=wastewater_plant`, not a named plant polygon
+  - clean `2.0 km` SimSat pair exists on that clue:
+    - baseline request `2025-01-30T08:00:00Z` -> returned `2025-01-26T08:20:27Z` with `0.009107` cloud
+    - current request `2025-03-15T08:00:00Z` -> returned `2025-03-12T08:20:01Z` with `0.006421` cloud
+  - result:
+    - no honest macro-visible damage on the compound in the clean pair
+    - wider `5.0 km` crop suffered tile-edge / no-data artifacts
+  - keep as ambiguity evidence, not a positive row
+- sources:
+  - [UNICEF on Al-Khafsa serving Aleppo](https://www.unicef.org/syria/stories/unicef-rehabilitates-conflict-damaged-sedimentation-tanks-enhance-production-treated-water)
+  - [ICRC on Al-Khafsa water station role](https://www.icrcnewsroom.org/story/en/2058/syria-urgent-action-needed-to-address-humanitarian-needs)
+  - [SNHR on `2025-02-23` damage to the station main building](https://news.snhr.org/2025/02/24/sdf-bomb-a-water-station-in-e-aleppo-february-23-2025/)
+
 #### Doha West Power And Desalination Plant
 - asset type: `water_infrastructure`
 - why:
