@@ -87,12 +87,13 @@ It is the first acquisition batch with the best chance of moving coverage, not j
 - target:
   - exact named humanitarian depot / warehouse cluster
 - current lead:
-  - `Tyre Red Cross center`
+  - working board:
+    - `training/replay_pack/aid_tranche_01.md`
 - blocker:
-  - may be too small for honest Sentinel labeling
+  - current Lebanon lead may be too small for honest Sentinel labeling
 - next action:
-  - probe only if compound scale looks real enough
-  - otherwise replace with a larger inland WFP / UN / NGO warehouse asset
+  - prefer inland WFP / UN / NGO / MSF aid compounds first
+  - probe `Tyre Red Cross center` only if compound scale looks real enough
   - priority is now higher because current water-positive hunting remains soft
 
 ### Mobility
