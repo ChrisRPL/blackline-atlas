@@ -1,8 +1,28 @@
 # Blackline Atlas
 
-Blackline Atlas is an onboard civilian lifeline monitoring system.
+Blackline Atlas is a map-first civilian lifeline disruption triage system.
+
+Built during the Liquid AI x DPhi Space hackathon.
 
 It watches a small, curated set of public civilian lifelines such as food hubs, water infrastructure, aid access nodes, and a narrow set of clearly civilian mobility chokepoints, compares current satellite imagery against historical baselines, suppresses low-value frames locally, and emits compact structured alerts only when there is evidence of macro-scale visible disruption.
+
+## At a glance
+
+- Sentinel-first current-vs-baseline disruption checks
+- structured machine-readable alerts, not chatty summaries
+- map-first operator UI with an agent command dock
+- deterministic replay and cached fallback paths
+- strict civilian, non-tactical scope
+
+## Screens
+
+Map-first shell:
+
+![Blackline Atlas app](ui/assets/blackline-atlas-app.png)
+
+Real analyzed case, Port Sudan Aid Hub before/after:
+
+![Port Sudan Aid Hub comparison](ui/assets/blackline-portsudan-comparison.png)
 
 ## Why this exists
 
@@ -24,9 +44,19 @@ Do not turn this into:
 - precise battle-damage claims
 - tiny-object surveillance
 
-## Current scaffold
+## Current status
 
-This repo now contains:
+This repo is in a strong prototype state, not a finished product:
+
+- end-to-end product loop works
+- map-first shell and deterministic agent contract are live
+- replay-safe and cached fallback paths are in place
+- real eval/data lane exists, but the gold set is still small
+- model fine-tuning is not the critical path yet
+
+## What works today
+
+This repo contains:
 - a FastAPI backend skeleton
 - typed schemas for assets, frames, replay, metrics, and alerts
 - optional Mapbox inspection context on accepted alerts when a token is present
@@ -45,6 +75,16 @@ tests/      API and service regressions
 training/   replay pack, eval harness, training helpers
 ui/         same-origin dashboard shell
 ```
+
+## Where community help matters most
+
+Useful OSS contributions now:
+
+- better civilian-lifeline eval cases with exact public evidence
+- more negative/control cases, not just hero positives
+- UI polish for map readability, mobile behavior, and operator flow
+- tighter replay/demo reliability
+- dataset tooling for freezing and reviewing real Sentinel pairs
 
 ## Fast start
 
