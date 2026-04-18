@@ -608,10 +608,12 @@ def test_stub_service_default_watchlist_includes_real_civilian_sites() -> None:
     assert "port_sudan_01" in asset_ids
     assert "ras_abu_jarjur_01" in asset_ids
     assert "bahri_water_01" in asset_ids
+    assert "silpo_kvitneve_01" in asset_ids
     assert "unhcr_baghdad_01" in asset_ids
     assert "mosul_medical_city_01" in asset_ids
     assert asset_by_id["demo_port_01"].evidence_state == "live_demo"
     assert asset_by_id["beirut_port_01"].evidence_state == "reference_event"
+    assert asset_by_id["silpo_kvitneve_01"].evidence_state == "reference_event"
     assert asset_by_id["ras_abu_jarjur_01"].evidence_state == "reference_control"
     assert asset_by_id["bahri_water_01"].evidence_state == "reference_control"
     assert asset_by_id["mosul_medical_city_01"].evidence_state == "reference_control"
@@ -1017,6 +1019,33 @@ def test_stub_service_site_compare_returns_reference_control_for_seeded_water_si
     assert response.compare.current_frame.accepted_for_alerting is False
     assert response.alerts == []
     assert "No material change" in response.summary
+
+
+def test_stub_service_site_compare_returns_reference_event_for_seeded_food_site() -> None:
+    service = StubAtlasService(
+        Settings(
+            app_env="test",
+            app_port=8000,
+            model_version="lfm2.5-vl-450m-prompted",
+            simsat_current_endpoint=None,
+            simsat_baseline_endpoint=None,
+            mapbox_token_present=False,
+            watchlist_path=None,
+        )
+    )
+
+    response = service.run_agent_query(
+        AtlasAgentQueryRequest(tool="site_compare", site_id="silpo_kvitneve_01"),
+    )
+
+    assert response.status == "ok"
+    assert response.tool == "site_compare"
+    assert response.focus_asset_id == "silpo_kvitneve_01"
+    assert response.focus_alert_id == "blk_nd_00010"
+    assert response.compare is not None
+    assert response.compare.current_frame.accepted_for_alerting is True
+    assert response.alerts[0].civilian_impact == "trade_disruption"
+    assert "reference event evidence" in response.summary
 
 
 class _FakeHTTPResponse:

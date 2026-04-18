@@ -81,6 +81,15 @@
     "hero": false
   },
   {
+    "asset_id": "silpo_kvitneve_01",
+    "asset_name": "Silpo Kvitneve Distribution Center",
+    "asset_type": "logistics_hub",
+    "region": "Kvitneve, Kyiv Oblast",
+    "latitude": 50.528965,
+    "longitude": 30.849714,
+    "hero": false
+  },
+  {
     "asset_id": "unhcr_baghdad_01",
     "asset_name": "UNHCR Baghdad Warehouse",
     "asset_type": "aid_warehouse_cluster",

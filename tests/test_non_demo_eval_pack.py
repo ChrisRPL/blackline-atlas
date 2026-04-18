@@ -30,6 +30,7 @@ def test_non_demo_eval_pack_rows_parse() -> None:
         "unhcr_baghdad_warehouse_no_material_change",
         "bahri_water_station_no_material_change",
         "mosul_medical_city_broad_damage_ambiguity",
+        "silpo_kvitneve_distribution_center_strike",
     ]
     assert rows[0].split == "holdout_geo"
     assert rows[0].holdout_reason == "retrospective_food_security_anchor"
@@ -63,4 +64,9 @@ def test_non_demo_eval_pack_rows_parse() -> None:
     assert (
         by_case_id["mosul_medical_city_broad_damage_ambiguity"].holdout_reason
         == "exact_medical_aid_broad_damage_ambiguity_control"
+    )
+    assert by_case_id["silpo_kvitneve_distribution_center_strike"].split == "holdout_geo"
+    assert (
+        by_case_id["silpo_kvitneve_distribution_center_strike"].holdout_reason
+        == "current_conflict_inland_food_distribution_anchor"
     )

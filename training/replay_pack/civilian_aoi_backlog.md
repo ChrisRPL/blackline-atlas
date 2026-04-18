@@ -63,6 +63,25 @@ Primary buckets:
   - [Reuters via Al Arabiya, 2020-08-05](https://english.alarabiya.net/News/middle-east/2020/08/05/Beirut-grain-silo-destroyed-Lebanon-s-needs-still-covered-Minister)
   - [AP, 2025-08-04](https://apnews.com/article/d558e3fde568ab1d5a952d898f18fab2)
 
+#### Silpo Kvitneve Distribution Center
+- asset type: `logistics_hub`
+- why:
+  - exact named inland food-distribution campus, not a vague city-edge warehouse guess
+  - direct grocery and frozen-food supply-chain relevance for civilians around Kyiv
+  - clean pre/post SimSat pair with a defendable warehouse-scale disruption signal
+- coordinates:
+  - source address anchor: `50.529365, 30.852823` (`Hoholivska 1-A`)
+  - warehouse-centered eval crop: `50.528965, 30.849714`
+- dates:
+  - baseline request `2022-03-01T08:00:00Z` -> returned `2022-02-26T09:06:28Z`
+  - current request `2022-03-25T08:00:00Z` -> returned `2022-03-23T09:06:23Z`
+- status:
+  - added to `non_demo_eval.jsonl`
+  - treat as `current_conflict_inland_food_distribution_anchor`
+- sources:
+  - [Silpo-Food annual report PDF, lines 2289-2294](https://content.silpo.ua/uploads/2022/10/06/633e8c17a30f8.pdf)
+  - [Ukrainska Pravda, 2022-03-12](https://www.pravda.com.ua/eng/news/2022/03/12/7330610/)
+
 ### Hold; retry with different timestamps
 
 #### Chornomorsk Grain Port

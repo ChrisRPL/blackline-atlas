@@ -33,16 +33,12 @@ It is the first acquisition batch with the best chance of moving coverage, not j
 
 #### `food_02`
 - target:
-  - exact inland food facility still needed
-- current best leads:
-  - `Star Brands Pavlohrad`
-  - `Vasyshcheve ATB distribution center`
-- blocker:
-  - weather for `Star Brands`
-  - soft address-to-scar match for `Vasyshcheve`
-- next action:
-  - do not force promotion
-  - only reopen when either weather clears or a sharper parcel clue appears
+  - `Silpo Kvitneve Distribution Center`
+- role:
+  - already landed
+  - current-conflict inland food-distribution anchor
+- status:
+  - `done`
 
 ### Water
 
@@ -144,8 +140,8 @@ Do in parallel with positive cases:
 
 1. keep `water` positive hunt paused after the bounded exact-site pass stayed soft
 2. keep `Bahri Water Station` as the exact water control row for this tranche
-3. reopen blocked `food` positives now, because the active inland-aid lead still lacks a public parcel
-4. only resume `aid_02` when a parcel-tight inland depot survives the stop rules
+3. reopen `aid_02` now that `food_02` is landed
+4. only resume new food scouting when weather or parcel quality beats the parked leads
 
 ## Stop rules
 
