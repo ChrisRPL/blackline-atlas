@@ -536,10 +536,31 @@ body::before {
   min-height: 0;
 }
 
+.signal-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.58rem;
+}
+
 .drawer-card {
   padding: 0.6rem;
   border: 1px solid var(--line);
   background: rgba(12, 20, 25, 0.42);
+}
+
+.signal-card {
+  padding: 0.58rem 0.6rem;
+  border: 1px solid var(--line);
+  background: rgba(8, 16, 21, 0.56);
+}
+
+.signal-card.alert-signal {
+  border-color: rgba(131, 212, 203, 0.16);
+  background: rgba(11, 23, 28, 0.68);
+}
+
+.signal-card.metrics-signal {
+  background: rgba(8, 16, 21, 0.42);
 }
 
 .drawer-label {
@@ -559,6 +580,32 @@ body::before {
 
 .drawer-why {
   color: var(--ink);
+}
+
+.signal-value,
+.signal-meta {
+  margin: 0;
+}
+
+.signal-value {
+  margin-top: 0.26rem;
+  color: var(--ink);
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.82rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.signal-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.65rem;
+  margin-top: 0.22rem;
+  color: var(--muted);
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.6rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
 }
 
 @keyframes marker-pulse {
@@ -723,6 +770,14 @@ body::before {
   }
 
   .drawer-card {
+    padding: 0.54rem;
+  }
+
+  .signal-row {
+    grid-template-columns: 1fr;
+  }
+
+  .signal-card {
     padding: 0.54rem;
   }
 

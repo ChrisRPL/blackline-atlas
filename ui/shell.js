@@ -50,6 +50,12 @@ const dom = {
   baselineNote: document.querySelector("#baseline-note"),
   baselineCaptured: document.querySelector("#baseline-captured"),
   baselineSource: document.querySelector("#baseline-source"),
+  signalAction: document.querySelector("#signal-action"),
+  signalSeverity: document.querySelector("#signal-severity"),
+  signalConfidence: document.querySelector("#signal-confidence"),
+  metricsAlerts: document.querySelector("#metrics-alerts"),
+  metricsSuppressed: document.querySelector("#metrics-suppressed"),
+  metricsDownlink: document.querySelector("#metrics-downlink"),
   chatLog: document.querySelector("#chat-log"),
   chatForm: document.querySelector("#chat-form"),
   chatInput: document.querySelector("#chat-input"),
@@ -762,6 +768,7 @@ function renderDrawer() {
   const compare = selectedCompare();
   const alert = selectedSiteAlerts()[0] || null;
   const evidenceState = siteEvidenceState(selected);
+  const metrics = state.metrics;
 
   if (!selected) {
     dom.siteName.textContent = "Select a site";
@@ -771,6 +778,12 @@ function renderDrawer() {
     dom.siteRegion.textContent = "-";
     dom.siteType.textContent = "-";
     dom.siteCoords.textContent = "-";
+    dom.signalAction.textContent = "watch";
+    dom.signalSeverity.textContent = "-";
+    dom.signalConfidence.textContent = "-";
+    dom.metricsAlerts.textContent = "metrics pending";
+    dom.metricsSuppressed.textContent = "-";
+    dom.metricsDownlink.textContent = "-";
     return;
   }
 
@@ -829,6 +842,38 @@ function renderDrawer() {
     dom.baselineNote.textContent = "Waiting for compare.";
     dom.baselineCaptured.textContent = "n/a";
     dom.baselineSource.textContent = "n/a";
+  }
+
+  dom.signalAction.textContent = alert
+    ? humanizeSlug(alert.action)
+    : compare?.asset_id === selected.asset_id
+      ? compare.current_frame.accepted_for_alerting === false
+        ? "discard"
+        : compare.current_frame.accepted_for_alerting === true
+          ? "downlink"
+          : "watch"
+      : "watch";
+  dom.signalSeverity.textContent = alert
+    ? humanizeSlug(alert.severity)
+    : evidenceState === "reference_control"
+      ? "control"
+      : evidenceState === "reference_event"
+        ? "archive"
+        : "pending";
+  dom.signalConfidence.textContent = alert
+    ? `${Math.round(alert.confidence * 100)}% confidence`
+    : compare?.asset_id === selected.asset_id
+      ? compactLabel(humanizeSlug(compare.current_frame.filter_reason), "no confidence")
+      : "no evidence";
+
+  if (metrics) {
+    dom.metricsAlerts.textContent = `${metrics.alerts_emitted} alerts emitted`;
+    dom.metricsSuppressed.textContent = `${metrics.raw_frames_suppressed} suppressed`;
+    dom.metricsDownlink.textContent = `${Math.round(metrics.downlink_rate * 100)}% downlink`;
+  } else {
+    dom.metricsAlerts.textContent = "metrics pending";
+    dom.metricsSuppressed.textContent = "-";
+    dom.metricsDownlink.textContent = "-";
   }
 }
 

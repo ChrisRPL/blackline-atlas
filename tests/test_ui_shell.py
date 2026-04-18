@@ -27,6 +27,8 @@ def test_ui_shell_serves_same_origin_dashboard() -> None:
     assert 'id="chat-form"' in response.text
     assert 'id="map-stage"' in response.text
     assert 'id="site-name"' in response.text
+    assert 'id="signal-action"' in response.text
+    assert 'id="metrics-alerts"' in response.text
     assert 'id="planner-chip"' in response.text
     assert "planner fallback" in response.text
     assert "renderPlannerChip" in static_response.text

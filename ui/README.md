@@ -24,4 +24,5 @@ Current scope:
 - upgrades to a live MapLibre canvas when the browser loads the external map library
 - renders a deterministic backend agent/query loop for operator-style verbs
 - renders selected-site evidence in a compact tray
+- keeps current, baseline, alert, and metrics visible in the same focus tray
 - no real globe, no text-model control plane yet, no replay controls yet
