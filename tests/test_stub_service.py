@@ -693,6 +693,62 @@ def test_stub_service_can_opt_in_openai_chat_agent_planner(tmp_path: Path, monke
     assert response.compare.asset_id == "demo_bridge_01"
 
 
+def test_stub_service_resolves_missing_live_planner_site_id_from_query(
+    tmp_path: Path, monkeypatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+
+    def fake_urlopen(request, timeout: float):
+        _ = request
+        _ = timeout
+        return _FakeHTTPResponse(
+            body=json.dumps(
+                {
+                    "choices": [
+                        {
+                            "message": {
+                                "content": json.dumps(
+                                    {
+                                        "tool": "site_compare",
+                                        "area": "Lower Danube",
+                                        "category": "bridge",
+                                        "site_id": None,
+                                        "alert_id": None,
+                                    }
+                                )
+                            }
+                        }
+                    ]
+                }
+            ).encode("utf-8")
+        )
+
+    monkeypatch.setattr("app.services.agent_planner.urlopen", fake_urlopen)
+    service = StubAtlasService(
+        Settings(
+            app_env="test",
+            app_port=8000,
+            model_version="lfm2.5-vl-450m-prompted",
+            simsat_current_endpoint=None,
+            simsat_baseline_endpoint=None,
+            mapbox_token_present=False,
+            watchlist_path=None,
+            agent_model_version="hf.co/LiquidAI/LFM2.5-1.2B-Instruct-GGUF",
+            agent_endpoint="http://127.0.0.1:11434/v1/chat/completions",
+            agent_http_enabled=True,
+            agent_provider="openai_chat_completions_http",
+        )
+    )
+
+    response = service.run_agent_query(
+        AtlasAgentQueryRequest(query="compare the bridge"),
+    )
+
+    assert response.tool == "site_compare"
+    assert response.planner.mode == "live"
+    assert response.focus_asset_id == "demo_bridge_01"
+
+
 def test_stub_service_reports_agent_planner_http_fallback(tmp_path: Path, monkeypatch) -> None:
     monkeypatch.chdir(tmp_path)
 

@@ -121,6 +121,7 @@ class OpenAIChatCompletionsAgentPlannerProvider:
                     ],
                     "temperature": 0,
                     "max_tokens": 64,
+                    "response_format": {"type": "json_object"},
                 }
             ).encode("utf-8"),
             headers=_headers(api_key),

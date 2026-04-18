@@ -194,6 +194,21 @@ AGENT_HTTP_ENABLED=true
 AGENT_PROVIDER=openai_chat_completions_http
 ```
 
+For a local endpoint, Liquid’s Ollama docs work with the same provider contract:
+
+```bash
+ollama serve
+ollama pull hf.co/LiquidAI/LFM2.5-1.2B-Instruct-GGUF
+
+AGENT_MODEL_VERSION=hf.co/LiquidAI/LFM2.5-1.2B-Instruct-GGUF
+AGENT_ENDPOINT=http://127.0.0.1:11434/v1/chat/completions
+AGENT_HTTP_ENABLED=true
+AGENT_PROVIDER=openai_chat_completions_http
+```
+
+This app now sends `response_format={"type":"json_object"}` on the planner
+chat-completions path to improve strict JSON routing.
+
 `/health` now exposes both `model_backend` and `agent_backend`, plus machine-readable
 planner config flags, so the UI can tell fixture planner vs live planner without
 parsing prose.

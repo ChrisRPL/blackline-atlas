@@ -800,7 +800,7 @@ class StubAtlasService:
                     "tool": decision.plan.tool,
                     "area": request.area or decision.plan.area,
                     "category": request.category or decision.plan.category,
-                    "site_id": request.site_id or decision.plan.site_id,
+                    "site_id": self._resolved_planner_site_id(request, decision.plan),
                     "alert_id": request.alert_id or decision.plan.alert_id,
                 }
             ),
@@ -826,6 +826,67 @@ class StubAtlasService:
             ),
             reason=decision.reason,
         )
+
+    def _resolved_planner_site_id(
+        self,
+        request: AtlasAgentQueryRequest,
+        plan: AtlasAgentPlan,
+    ) -> str | None:
+        if request.site_id or plan.site_id:
+            return request.site_id or plan.site_id
+        if request.selected_asset_id:
+            return request.selected_asset_id
+        if plan.tool not in {"site_compare", "explain_alert"}:
+            return None
+
+        candidates = self._site_candidates(
+            query=request.query or "",
+            area=request.area or plan.area,
+            category=request.category or plan.category,
+        )
+        if len(candidates) == 1:
+            return candidates[0].asset_id
+        return None
+
+    def _site_candidates(
+        self,
+        *,
+        query: str,
+        area: str | None,
+        category: str | None,
+    ) -> list[Asset]:
+        area_lower = area.lower() if area else None
+        query_lower = query.lower()
+
+        candidates = self.assets
+        if area_lower:
+            matched = [
+                asset
+                for asset in candidates
+                if area_lower in asset.asset_name.lower() or area_lower in asset.region.lower()
+            ]
+            if matched:
+                candidates = matched
+
+        if category:
+            matched = [asset for asset in candidates if asset.asset_type == category]
+            if matched:
+                candidates = matched
+
+        if len(candidates) == 1:
+            return candidates
+
+        query_matches = [
+            asset
+            for asset in candidates
+            if asset.asset_name.lower() in query_lower
+            or asset.region.lower() in query_lower
+            or asset.asset_type in query_lower
+            or asset.asset_type.replace("_", " ") in query_lower
+        ]
+        if query_matches:
+            return query_matches
+        return candidates
 
     def _infer_agent_tool(self, query: str) -> AtlasAgentTool:
         lowered = query.lower()

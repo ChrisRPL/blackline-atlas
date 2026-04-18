@@ -30,6 +30,9 @@ def test_agent_prompt_builder_targets_tool_plan_only() -> None:
     assert "Return JSON only" in prompt.system
     assert "latest_alerts" in prompt.system
     assert "biggest_disruptions" in prompt.system
+    assert "Allowed category values: bridge, grain_port." in prompt.system
+    assert "site_id must be exactly one watchlist asset_id or null." in prompt.system
+    assert "For site_compare, set site_id" in prompt.system
     assert "selected_asset: demo_port_01" in prompt.user
     assert "user_query: show biggest disruptions near Black Sea" in prompt.user
 
@@ -192,6 +195,7 @@ def test_openai_chat_completions_agent_planner_provider_builds_request() -> None
     assert body["messages"][1]["role"] == "user"
     assert body["temperature"] == 0
     assert body["max_tokens"] == 64
+    assert body["response_format"] == {"type": "json_object"}
 
 
 def test_openai_chat_completions_agent_planner_provider_parses_response() -> None:
