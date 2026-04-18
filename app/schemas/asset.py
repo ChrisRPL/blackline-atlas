@@ -14,6 +14,12 @@ AssetType = Literal[
     "aid_corridor_node",
     "aid_warehouse_cluster",
 ]
+AssetEvidenceState = Literal[
+    "watch_only",
+    "live_demo",
+    "reference_event",
+    "reference_control",
+]
 
 
 class Asset(BaseModel):
@@ -24,3 +30,5 @@ class Asset(BaseModel):
     latitude: float
     longitude: float
     hero: bool = False
+    evidence_available: bool = False
+    evidence_state: AssetEvidenceState | None = None

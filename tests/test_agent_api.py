@@ -81,6 +81,45 @@ def test_agent_query_site_compare_returns_selected_site_frames() -> None:
     assert payload["resolved"]["tool"] == "site_compare"
 
 
+def test_agent_query_site_compare_returns_reference_event_evidence() -> None:
+    client = TestClient(create_app())
+
+    response = client.post(
+        "/agent/query",
+        json={"tool": "site_compare", "site_id": "beirut_port_01"},
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["tool"] == "site_compare"
+    assert payload["status"] == "ok"
+    assert payload["focus_asset_id"] == "beirut_port_01"
+    assert payload["focus_alert_id"] == "blk_nd_00001"
+    assert payload["compare"]["asset_id"] == "beirut_port_01"
+    assert payload["compare"]["current_frame"]["accepted_for_alerting"] is True
+    assert "reference event evidence" in payload["summary"]
+
+
+def test_agent_query_site_compare_returns_reference_control_evidence() -> None:
+    client = TestClient(create_app())
+
+    response = client.post(
+        "/agent/query",
+        json={"tool": "site_compare", "site_id": "ras_abu_jarjur_01"},
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["tool"] == "site_compare"
+    assert payload["status"] == "ok"
+    assert payload["focus_asset_id"] == "ras_abu_jarjur_01"
+    assert payload["focus_alert_id"] is None
+    assert payload["alerts"] == []
+    assert payload["compare"]["asset_id"] == "ras_abu_jarjur_01"
+    assert payload["compare"]["current_frame"]["accepted_for_alerting"] is False
+    assert "No material change" in payload["summary"]
+
+
 def test_agent_query_explain_alert_uses_selected_asset_context() -> None:
     client = TestClient(create_app())
 
@@ -99,6 +138,22 @@ def test_agent_query_explain_alert_uses_selected_asset_context() -> None:
     assert "Large terminal footprint change" in payload["summary"]
     assert payload["resolved"]["site_id"] == "demo_port_01"
     assert payload["resolved"]["selected_asset_id"] == "demo_port_01"
+
+
+def test_agent_query_explain_alert_returns_no_result_for_reference_control_site() -> None:
+    client = TestClient(create_app())
+
+    response = client.post(
+        "/agent/query",
+        json={"query": "why is this flagged", "selected_asset_id": "ras_abu_jarjur_01"},
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["tool"] == "explain_alert"
+    assert payload["status"] == "no_result"
+    assert payload["focus_asset_id"] is None
+    assert "No accepted alert" in payload["summary"]
 
 
 def test_agent_query_latest_alerts_can_return_no_result_for_real_watchlist_area() -> None:

@@ -33,6 +33,7 @@ from app.services.agent_planner import (
 from app.services.agent_prompt_builder import AgentPlannerPromptBuilder
 from app.services.agent_provider import resolve_http_agent_planner_provider
 from app.services.alert_pipeline import StructuredAlertPipeline
+from app.services.annotated_case_loader import load_reference_cases
 from app.services.baseline_compare import FixtureBaselineComparator
 from app.services.frame_cache import FrameCacheLayout
 from app.services.frame_client import CachedFrameClient, FixtureFrameClient
@@ -88,6 +89,7 @@ class StubAtlasService:
     def __init__(self, settings: Settings) -> None:
         self.settings = settings
         self.assets = load_watchlist_assets(settings.watchlist_path)
+        self.reference_cases = load_reference_cases()
         self.scenarios = build_stub_scenarios(
             settings=self.settings,
             hero_asset=self.hero_asset,
@@ -164,7 +166,15 @@ class StubAtlasService:
         )
 
     def list_assets(self) -> list[Asset]:
-        return self.assets
+        return [
+            asset.model_copy(
+                update={
+                    "evidence_available": self._asset_has_evidence(asset.asset_id),
+                    "evidence_state": self._asset_evidence_state(asset.asset_id),
+                }
+            )
+            for asset in self.assets
+        ]
 
     def list_agent_tools(self) -> list[AtlasAgentToolSpec]:
         return [
@@ -409,12 +419,29 @@ class StubAtlasService:
                 trust=trust,
                 replay=self.get_replay_state(),
             )
+        evidence_state = self._asset_evidence_state(asset.asset_id)
         current = compare.current_frame
-        summary = (
-            f"{asset.asset_name}: current {format_agent_timestamp(current.frame.captured_at)} "
-            f"versus baseline {format_agent_timestamp(compare.baseline_frame.frame.captured_at)}. "
-            f"{'Overlay ready.' if current.overlay_ref else 'Overlay held.'}"
-        )
+        if evidence_state == "reference_event":
+            summary = (
+                f"{asset.asset_name}: reference event evidence from "
+                f"{format_agent_timestamp(current.frame.captured_at)} versus baseline "
+                f"{format_agent_timestamp(compare.baseline_frame.frame.captured_at)}."
+            )
+        elif evidence_state == "reference_control":
+            summary = (
+                f"{asset.asset_name}: reference control from "
+                f"{format_agent_timestamp(current.frame.captured_at)} versus baseline "
+                f"{format_agent_timestamp(compare.baseline_frame.frame.captured_at)}. "
+                f"No material change."
+            )
+        else:
+            baseline_timestamp = format_agent_timestamp(compare.baseline_frame.frame.captured_at)
+            overlay_state = "Overlay ready." if current.overlay_ref else "Overlay held."
+            summary = (
+                f"{asset.asset_name}: current {format_agent_timestamp(current.frame.captured_at)} "
+                f"versus baseline {baseline_timestamp}. "
+                f"{overlay_state}"
+            )
         return AtlasAgentQueryResponse(
             status="ok",
             tool="site_compare",
@@ -667,7 +694,15 @@ class StubAtlasService:
             None,
         )
         if evaluation is None:
-            return None
+            reference_case = self._reference_case_for_asset(asset_id)
+            if reference_case is None:
+                return None
+            return AtlasAgentCompare(
+                asset_id=reference_case.asset.asset_id,
+                asset_name=reference_case.asset.asset_name,
+                current_frame=self._reference_current_frame(reference_case),
+                baseline_frame=reference_case.baseline_frame,
+            )
         return AtlasAgentCompare(
             asset_id=evaluation.asset.asset_id,
             asset_name=evaluation.asset.asset_name,
@@ -704,7 +739,39 @@ class StubAtlasService:
         for evaluation in watchlist or self._watchlist_evaluations():
             if evaluation.asset.asset_id == asset_id:
                 return evaluation.alerts
+        reference_case = self._reference_case_for_asset(asset_id)
+        if reference_case and reference_case.expected_action != "discard":
+            return [reference_case.expected_alert]
         return []
+
+    def _asset_has_evidence(self, asset_id: str) -> bool:
+        return (
+            asset_id in {scenario.asset_id for scenario in self.scenarios.values()}
+            or asset_id in self.reference_cases
+        )
+
+    def _asset_evidence_state(self, asset_id: str) -> str:
+        if asset_id in {scenario.asset_id for scenario in self.scenarios.values()}:
+            return "live_demo"
+        reference_case = self._reference_case_for_asset(asset_id)
+        if reference_case is None:
+            return "watch_only"
+        if reference_case.expected_action == "discard":
+            return "reference_control"
+        return "reference_event"
+
+    def _reference_case_for_asset(self, asset_id: str):
+        return self.reference_cases.get(asset_id)
+
+    def _reference_current_frame(self, case) -> FrameEnvelope:
+        accepted_for_alerting = case.expected_action != "discard"
+        filter_reason = "reference_event" if accepted_for_alerting else "reference_control"
+        return case.current_frame.model_copy(
+            update={
+                "accepted_for_alerting": accepted_for_alerting,
+                "filter_reason": filter_reason,
+            }
+        )
 
     def _filter_agent_alerts(
         self,
@@ -748,6 +815,8 @@ class StubAtlasService:
             selected_alerts = self._alerts_for_asset(selected_asset_id, watchlist=watchlist)
             if selected_alerts:
                 return selected_alerts[0]
+            if self._find_asset(selected_asset_id) is not None:
+                return None
 
         if filtered_alerts:
             return filtered_alerts[0]

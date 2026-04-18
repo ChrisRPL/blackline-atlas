@@ -601,12 +601,16 @@ def test_stub_service_default_watchlist_includes_real_civilian_sites() -> None:
     )
 
     asset_ids = [asset.asset_id for asset in service.list_assets()]
+    asset_by_id = {asset.asset_id: asset for asset in service.list_assets()}
 
     assert asset_ids[:2] == ["demo_port_01", "demo_bridge_01"]
     assert "beirut_port_01" in asset_ids
     assert "port_sudan_01" in asset_ids
     assert "ras_abu_jarjur_01" in asset_ids
     assert "unhcr_baghdad_01" in asset_ids
+    assert asset_by_id["demo_port_01"].evidence_state == "live_demo"
+    assert asset_by_id["beirut_port_01"].evidence_state == "reference_event"
+    assert asset_by_id["ras_abu_jarjur_01"].evidence_state == "reference_control"
 
 
 def test_stub_service_can_opt_in_http_agent_planner(tmp_path: Path, monkeypatch) -> None:
@@ -957,7 +961,7 @@ def test_stub_service_reports_agent_planner_invalid_json_fallback(
     assert response.planner.reason == "planner_invalid_json"
 
 
-def test_stub_service_site_compare_returns_no_result_for_metadata_only_watchlist_site() -> None:
+def test_stub_service_site_compare_returns_reference_event_for_seeded_real_site() -> None:
     service = StubAtlasService(
         Settings(
             app_env="test",
@@ -974,12 +978,41 @@ def test_stub_service_site_compare_returns_no_result_for_metadata_only_watchlist
         AtlasAgentQueryRequest(tool="site_compare", site_id="beirut_port_01"),
     )
 
-    assert response.status == "no_result"
+    assert response.status == "ok"
     assert response.tool == "site_compare"
     assert response.focus_asset_id == "beirut_port_01"
-    assert response.compare is None
-    assert response.summary == "No compare evidence is loaded yet for this watchlist site."
+    assert response.focus_alert_id == "blk_nd_00001"
+    assert response.compare is not None
+    assert response.compare.current_frame.accepted_for_alerting is True
+    assert "reference event evidence" in response.summary
     assert response.resolved.site_id == "beirut_port_01"
+
+
+def test_stub_service_site_compare_returns_reference_control_for_seeded_water_site() -> None:
+    service = StubAtlasService(
+        Settings(
+            app_env="test",
+            app_port=8000,
+            model_version="lfm2.5-vl-450m-prompted",
+            simsat_current_endpoint=None,
+            simsat_baseline_endpoint=None,
+            mapbox_token_present=False,
+            watchlist_path=None,
+        )
+    )
+
+    response = service.run_agent_query(
+        AtlasAgentQueryRequest(tool="site_compare", site_id="ras_abu_jarjur_01"),
+    )
+
+    assert response.status == "ok"
+    assert response.tool == "site_compare"
+    assert response.focus_asset_id == "ras_abu_jarjur_01"
+    assert response.focus_alert_id is None
+    assert response.compare is not None
+    assert response.compare.current_frame.accepted_for_alerting is False
+    assert response.alerts == []
+    assert "No material change" in response.summary
 
 
 class _FakeHTTPResponse:
