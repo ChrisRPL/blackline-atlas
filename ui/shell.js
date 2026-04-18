@@ -27,22 +27,16 @@ const state = {
 };
 
 const dom = {
-  topCopy: document.querySelector("#top-copy"),
   healthChip: document.querySelector("#health-chip"),
   modeChip: document.querySelector("#mode-chip"),
   alertChip: document.querySelector("#alert-chip"),
-  trustChip: document.querySelector("#trust-chip"),
   plannerChip: document.querySelector("#planner-chip"),
-  mapStatus: document.querySelector("#map-status"),
   mapStage: document.querySelector("#map-stage"),
   mapCanvas: document.querySelector("#map-canvas"),
   mapTrustState: document.querySelector("#map-trust-state"),
-  mapTrustCopy: document.querySelector("#map-trust-copy"),
   mapMarkers: document.querySelector("#map-markers"),
-  mapCoords: document.querySelector("#map-coords"),
   channelPanel: document.querySelector(".channel-panel"),
   drawerPanel: document.querySelector(".drawer-panel"),
-  drawerState: document.querySelector("#drawer-state"),
   siteName: document.querySelector("#site-name"),
   siteImpact: document.querySelector("#site-impact"),
   siteSummary: document.querySelector("#site-summary"),
@@ -57,19 +51,10 @@ const dom = {
   baselineNote: document.querySelector("#baseline-note"),
   baselineCaptured: document.querySelector("#baseline-captured"),
   baselineSource: document.querySelector("#baseline-source"),
-  latestSeverity: document.querySelector("#latest-severity"),
-  latestTitle: document.querySelector("#latest-title"),
-  latestMeta: document.querySelector("#latest-meta"),
-  latestWhy: document.querySelector("#latest-why"),
-  cfgCurrent: document.querySelector("#cfg-current"),
-  cfgBaseline: document.querySelector("#cfg-baseline"),
-  cfgMapbox: document.querySelector("#cfg-mapbox"),
-  cfgReplay: document.querySelector("#cfg-replay"),
   chatLog: document.querySelector("#chat-log"),
   chatForm: document.querySelector("#chat-form"),
   chatInput: document.querySelector("#chat-input"),
   channelNote: document.querySelector("#channel-note"),
-  quickCommands: document.querySelectorAll(".command-pill"),
   sheetToggles: document.querySelectorAll(".sheet-toggle"),
 };
 
@@ -92,14 +77,6 @@ function formatTimestamp(value) {
   }
 
   return timestamp.toISOString().replace("T", " ").replace(".000Z", " UTC").replace("Z", " UTC");
-}
-
-function boolLabel(value) {
-  return value ? "enabled" : "disabled";
-}
-
-function chipClass(value) {
-  return value ? "chip live" : "chip fixture";
 }
 
 function siteImpactClass(level) {
@@ -153,8 +130,6 @@ function topStatus() {
       healthClass: "chip degraded",
       modeText: "health missing",
       modeClass: "chip neutral",
-      trustText: "trust pending",
-      trustClass: "chip neutral",
     };
   }
 
@@ -174,8 +149,6 @@ function topStatus() {
       healthClass: "chip degraded",
       modeText: "fallback active",
       modeClass: "chip neutral",
-      trustText: "trust reduced",
-      trustClass: "chip degraded",
     };
   }
 
@@ -185,8 +158,6 @@ function topStatus() {
       healthClass: "chip live",
       modeText: liveCount === 1 ? "1 live lane" : `${liveCount} live lanes`,
       modeClass: "chip neutral",
-      trustText: "clear path",
-      trustClass: "chip live",
     };
   }
 
@@ -195,8 +166,6 @@ function topStatus() {
     healthClass: "chip fixture",
     modeText: "replay-safe",
     modeClass: "chip neutral",
-    trustText: "cached truth",
-    trustClass: "chip neutral",
   };
 }
 
@@ -237,13 +206,24 @@ function appendMessage(role, text) {
     <p class="message-body">${text}</p>
   `;
   dom.chatLog.append(article);
+  while (dom.chatLog.children.length > 4) {
+    dom.chatLog.firstElementChild?.remove();
+  }
   dom.chatLog.scrollTop = dom.chatLog.scrollHeight;
+}
+
+function setChannelNote(text) {
+  if (!dom.channelNote) {
+    return;
+  }
+  dom.channelNote.textContent = text || "";
+  dom.channelNote.hidden = !text;
 }
 
 function applyPlannerTelemetry(planner) {
   if (!planner) {
     state.plannerFallbackActive = false;
-    return "Ask / focus / explain.";
+    return "";
   }
 
   if (planner.mode === "fallback") {
@@ -257,7 +237,7 @@ function applyPlannerTelemetry(planner) {
   }
 
   state.plannerFallbackActive = false;
-  return "Ask / focus / explain.";
+  return "";
 }
 
 function renderPlannerChip() {
@@ -276,8 +256,8 @@ function seedTranscript() {
   dom.chatLog.innerHTML = "";
   const alert = currentAlert();
   const opening = alert
-    ? `Atlas online. ${alert.asset_name} is the highest-priority readout.`
-    : "Atlas online. No active accepted alert right now.";
+    ? `Atlas online. ${alert.asset_name} is in focus.`
+    : "Atlas online. No accepted alert right now.";
   appendMessage("assistant", opening);
 
   state.transcriptSeeded = true;
@@ -410,7 +390,7 @@ function ensureLiveMap() {
 function focusLatestAlert() {
   const alert = currentAlert();
   if (!alert) {
-    appendMessage("assistant", "No accepted alert to focus. Replay-safe watch continues.");
+    appendMessage("assistant", "No accepted alert to focus.");
     return;
   }
 
@@ -482,7 +462,7 @@ function watchlistSummary() {
   }
 
   const assetList = state.assets.map((asset) => asset.asset_name).join(", ");
-  appendMessage("assistant", `Current watchlist: ${assetList}. Ask to focus the latest alert or compare the selected site.`);
+  appendMessage("assistant", `Watchlist: ${assetList}.`);
 }
 
 function applyAgentResponse(response) {
@@ -584,13 +564,13 @@ async function handleCommand(rawText) {
     const channelNote = applyPlannerTelemetry(response.planner);
     applyAgentResponse(response);
     appendMessage("assistant", response.summary);
-    dom.channelNote.textContent = channelNote;
+    setChannelNote(channelNote);
     renderPlannerChip();
   } catch (error) {
     state.plannerFallbackActive = false;
     renderPlannerChip();
     handleCommandLocally(text);
-    dom.channelNote.textContent = "Agent backend unavailable; local command fallback active.";
+    setChannelNote("Agent backend unavailable. Local command fallback active.");
   }
 }
 
@@ -602,12 +582,7 @@ function renderTopbar() {
   dom.modeChip.className = summary.modeClass;
   dom.alertChip.textContent = `${state.alerts.length} ${state.alerts.length === 1 ? "alert" : "alerts"}`;
   dom.alertChip.className = state.alerts.length ? "chip degraded" : "chip neutral";
-  dom.trustChip.textContent = summary.trustText;
-  dom.trustChip.className = summary.trustClass;
   renderPlannerChip();
-
-  const replayText = state.replay?.running ? "replay active" : "replay idle";
-  dom.topCopy.textContent = `${replayText} / ${state.assets.length} tracked sites`;
 }
 
 function renderMap() {
@@ -617,79 +592,67 @@ function renderMap() {
 
   ensureLiveMap();
 
-  dom.mapMarkers.innerHTML = state.assets
-    .map((asset) => {
-      const position = project(asset, bounds);
-      const isSelected = selected?.asset_id === asset.asset_id;
-      const isAlert = state.alerts.some((item) => item.asset_id === asset.asset_id);
-      const classes = [
-        "marker",
-        isSelected ? "selected" : "",
-        isAlert ? "alert" : "",
-        asset.hero ? "hero" : "",
-      ]
-        .filter(Boolean)
-        .join(" ");
-      return `
-        <button
-          class="${classes || "marker quiet"}"
-          type="button"
-          data-asset-id="${asset.asset_id}"
-          style="left:${position.left};top:${position.top};"
-          aria-label="Focus ${asset.asset_name}"
-        >
-          <span class="marker-core"></span>
-          <span class="marker-label">${asset.asset_name}</span>
-        </button>
-      `;
-    })
-    .join("");
-
-  dom.mapMarkers.querySelectorAll(".marker").forEach((button) => {
-    button.addEventListener("click", () => {
-      const assetId = button.dataset.assetId;
-      if (!assetId) {
-        return;
-      }
-      selectAsset(assetId);
-      const asset = state.assets.find((item) => item.asset_id === assetId);
-      if (asset) {
-        appendMessage("assistant", `Map focused on ${asset.asset_name}.`);
-      }
-    });
-  });
-
   if (!selected) {
-    dom.mapStatus.textContent = "no watchlist";
+    dom.mapMarkers.innerHTML = "";
     dom.mapTrustState.textContent = "trust pending";
     dom.mapTrustState.className = "map-trust-pill neutral";
-    dom.mapTrustCopy.textContent = "No selected site yet.";
-    dom.mapCoords.textContent = "Projection unavailable";
     return;
   }
 
   if (state.mapReady) {
+    dom.mapMarkers.innerHTML = "";
     syncLiveMapMarkers();
     focusMapOnAsset(selected);
+  } else {
+    dom.mapMarkers.innerHTML = state.assets
+      .map((asset) => {
+        const position = project(asset, bounds);
+        const isSelected = selected?.asset_id === asset.asset_id;
+        const isAlert = state.alerts.some((item) => item.asset_id === asset.asset_id);
+        const classes = [
+          "marker",
+          isSelected ? "selected" : "",
+          isAlert ? "alert" : "",
+          asset.hero ? "hero" : "",
+        ]
+          .filter(Boolean)
+          .join(" ");
+        return `
+          <button
+            class="${classes || "marker quiet"}"
+            type="button"
+            data-asset-id="${asset.asset_id}"
+            style="left:${position.left};top:${position.top};"
+            aria-label="Focus ${asset.asset_name}"
+          >
+            <span class="marker-core"></span>
+            <span class="marker-label">${asset.asset_name}</span>
+          </button>
+        `;
+      })
+      .join("");
+
+    dom.mapMarkers.querySelectorAll(".marker").forEach((button) => {
+      button.addEventListener("click", () => {
+        const assetId = button.dataset.assetId;
+        if (!assetId) {
+          return;
+        }
+        selectAsset(assetId);
+        const asset = state.assets.find((item) => item.asset_id === assetId);
+        if (asset) {
+          appendMessage("assistant", `Map focused on ${asset.asset_name}.`);
+        }
+      });
+    });
   }
 
-  const latSpan = Math.abs(bounds.maxLat - bounds.minLat).toFixed(1);
-  const lonSpan = Math.abs(bounds.maxLon - bounds.minLon).toFixed(1);
-  dom.mapStatus.textContent = alert
-    ? `${selected.asset_name} / alert focus`
-    : `${selected.asset_name} / watch focus`;
   dom.mapTrustState.textContent = alert ? humanizeSlug(alert.action) : currentStatusLabel(selected.asset_id);
   dom.mapTrustState.className = alert
     ? "map-trust-pill degraded"
     : state.currentFrame?.accepted_for_alerting === true
       ? "map-trust-pill live"
       : "map-trust-pill neutral";
-  dom.mapTrustCopy.textContent = alert
-    ? `${Math.round(alert.confidence * 100)}% confidence / ${humanizeSlug(alert.civilian_impact)}`
-    : state.currentFrame?.accepted_for_alerting === false
-      ? "Current frame held before alerting."
-      : "Watch posture active.";
-  dom.mapCoords.textContent = `lat span ${latSpan} / lon span ${lonSpan}`;
 }
 
 function renderDrawer() {
@@ -697,18 +660,22 @@ function renderDrawer() {
   const alert = selected ? alertForAsset(selected.asset_id) : null;
 
   if (!selected) {
-    dom.drawerState.textContent = "waiting";
     dom.siteName.textContent = "Waiting for selection";
+    dom.siteImpact.textContent = "quiet";
+    dom.siteImpact.className = "status-pill idle";
+    dom.siteSummary.textContent = "Choose a site or ask the agent to focus the latest alert.";
+    dom.siteRegion.textContent = "-";
+    dom.siteType.textContent = "-";
+    dom.siteCoords.textContent = "-";
     return;
   }
 
-  dom.drawerState.textContent = alert ? "alert in focus" : "watch focus";
   dom.siteName.textContent = selected.asset_name;
   dom.siteImpact.textContent = alert ? alert.severity : currentStatusLabel(selected.asset_id);
   dom.siteImpact.className = siteImpactClass(alert ? alert.severity : currentStatusLabel(selected.asset_id));
   dom.siteSummary.textContent = alert
     ? alert.why
-    : "No accepted alert on the selected site. Watch posture remains active.";
+    : "Watch posture active on this site.";
   dom.siteRegion.textContent = compactLabel(selected.region);
   dom.siteType.textContent = humanizeSlug(selected.asset_type);
   dom.siteCoords.textContent = `${selected.latitude.toFixed(3)}, ${selected.longitude.toFixed(3)}`;
@@ -717,50 +684,24 @@ function renderDrawer() {
     dom.currentTitle.textContent = state.currentFrame.frame.frame_id;
     dom.currentNote.textContent =
       state.currentFrame.accepted_for_alerting === true
-        ? "Current frame accepted."
-        : "Current frame held local.";
+        ? "Accepted for alerting."
+        : "Held before alerting.";
     dom.currentStatus.textContent = currentStatusLabel(selected.asset_id);
     dom.currentCaptured.textContent = formatTimestamp(state.currentFrame.frame.captured_at);
     dom.baselineTitle.textContent = state.baselineFrame.frame.frame_id;
-    dom.baselineNote.textContent = "Baseline reference for the same site.";
+    dom.baselineNote.textContent = "Reference frame.";
     dom.baselineCaptured.textContent = formatTimestamp(state.baselineFrame.frame.captured_at);
     dom.baselineSource.textContent = humanizeSlug(state.baselineFrame.frame.source);
   } else {
-    dom.currentTitle.textContent = "No active compare";
-    dom.currentNote.textContent = "Selected site is not the active compare pair.";
+    dom.currentTitle.textContent = "No compare";
+    dom.currentNote.textContent = "Focus the latest alert to load evidence.";
     dom.currentStatus.textContent = "watch";
     dom.currentCaptured.textContent = "n/a";
-    dom.baselineTitle.textContent = "No active compare";
-    dom.baselineNote.textContent = "Focus the latest alert to load compare evidence.";
+    dom.baselineTitle.textContent = "No compare";
+    dom.baselineNote.textContent = "No baseline in focus.";
     dom.baselineCaptured.textContent = "n/a";
     dom.baselineSource.textContent = "n/a";
   }
-
-  const latest = currentAlert();
-  if (latest) {
-    dom.latestSeverity.textContent = latest.severity;
-    dom.latestSeverity.className = siteImpactClass(latest.severity);
-    dom.latestTitle.textContent = latest.asset_name;
-    dom.latestMeta.textContent = `${formatTimestamp(latest.timestamp)} / ${humanizeSlug(latest.civilian_impact)}`;
-    dom.latestWhy.textContent = latest.why;
-  } else {
-    dom.latestSeverity.textContent = "quiet";
-    dom.latestSeverity.className = "status-pill idle";
-    dom.latestTitle.textContent = "No accepted alert";
-    dom.latestMeta.textContent = "Filter path is holding low-value frames local.";
-    dom.latestWhy.textContent = "The system is quiet right now.";
-  }
-
-  if (state.health) {
-    dom.cfgCurrent.textContent = boolLabel(state.health.config.simsat_current_http_enabled);
-    dom.cfgBaseline.textContent = boolLabel(state.health.config.simsat_baseline_http_enabled);
-    dom.cfgMapbox.textContent = boolLabel(state.health.config.mapbox_context_enabled);
-  } else {
-    dom.cfgCurrent.textContent = "unknown";
-    dom.cfgBaseline.textContent = "unknown";
-    dom.cfgMapbox.textContent = "unknown";
-  }
-  dom.cfgReplay.textContent = state.replay?.running ? "running" : "idle";
 }
 
 function renderHealthFallback() {
@@ -768,10 +709,8 @@ function renderHealthFallback() {
   dom.healthChip.className = "chip degraded";
   dom.modeChip.textContent = "health missing";
   dom.modeChip.className = "chip neutral";
-  dom.trustChip.textContent = "trust reduced";
-  dom.trustChip.className = "chip degraded";
   renderPlannerChip();
-  dom.channelNote.textContent = "Backend health is degraded. Local command loop still works on whatever data is cached.";
+  setChannelNote("Backend health degraded. Local command fallback active.");
 }
 
 async function loadJson(url) {
@@ -804,10 +743,6 @@ function pickInitialSelection() {
 }
 
 function bindEvents() {
-  dom.quickCommands.forEach((button) => {
-    button.addEventListener("click", () => handleCommand(button.dataset.command || button.textContent || ""));
-  });
-
   dom.sheetToggles.forEach((button) => {
     button.addEventListener("click", () => {
       const target = button.dataset.sheetTarget || null;

@@ -21,71 +21,42 @@
   <body>
     <div class="shell">
       <header class="topbar">
-        <div class="brandbar">
-          <p class="badge">Blackline Atlas</p>
-          <p class="top-copy" id="top-copy">civilian lifeline watch</p>
-        </div>
+        <p class="badge">Blackline Atlas</p>
 
         <div class="topchips">
           <span class="chip neutral" id="health-chip">connecting</span>
           <span class="chip neutral" id="mode-chip">replay-safe</span>
           <span class="chip degraded" id="planner-chip" hidden>planner fallback</span>
           <span class="chip neutral" id="alert-chip">0 alerts</span>
-          <span class="chip neutral" id="trust-chip">trust pending</span>
         </div>
       </header>
 
       <main class="workspace">
         <section class="panel map-panel">
-          <div class="panel-head map-head">
-            <div>
-              <p class="panel-kicker">Primary canvas</p>
-              <h2>Theatre map</h2>
-            </div>
-            <p class="panel-meta" id="map-status">watchlist loading</p>
-          </div>
-
           <div class="map-stage" id="map-stage">
             <div class="map-canvas" id="map-canvas" aria-hidden="true"></div>
             <div class="map-wash"></div>
-            <div class="map-grid"></div>
-            <div class="map-arc map-arc-a"></div>
-            <div class="map-arc map-arc-b"></div>
 
             <div class="map-trust">
               <span class="map-trust-pill" id="map-trust-state">trust pending</span>
-              <span class="map-trust-copy" id="map-trust-copy">Loading system truth.</span>
             </div>
 
             <div class="map-markers" id="map-markers"></div>
-            <p class="map-coords" id="map-coords">Projection waiting</p>
           </div>
         </section>
 
         <section class="panel channel-panel" data-sheet="chat">
           <button class="sheet-toggle" type="button" data-sheet-target="chat">
-            <span>Command channel</span>
-            <span class="sheet-toggle-state">control</span>
+            <span>Command</span>
+            <span class="sheet-toggle-state">dock</span>
           </button>
 
           <div class="panel-shell">
-            <div class="panel-head compact-head channel-head">
-              <div>
-                <p class="panel-kicker">Agentic control</p>
-                <h1>Command channel</h1>
-              </div>
-              <p class="panel-meta">ask / focus / explain</p>
-            </div>
-
             <div class="transcript" id="chat-log">
               <article class="message assistant">
                 <p class="message-role">atlas</p>
                 <p class="message-body">Booting command channel.</p>
               </article>
-            </div>
-
-            <div class="quick-commands">
-              <button class="command-pill" data-command="focus latest alert">Focus latest alert</button>
             </div>
 
             <form class="composer" id="chat-form">
@@ -100,77 +71,52 @@
               <button type="submit">Run</button>
             </form>
 
-            <p class="panel-note" id="channel-note">
-              Ask / focus / explain.
-            </p>
+            <p class="panel-note" id="channel-note" hidden></p>
           </div>
         </section>
 
         <aside class="panel drawer-panel" data-sheet="site">
           <button class="sheet-toggle" type="button" data-sheet-target="site">
-            <span>Selected site</span>
-            <span class="sheet-toggle-state">evidence</span>
+            <span>Site</span>
+            <span class="sheet-toggle-state">focus</span>
           </button>
 
           <div class="panel-shell">
-            <div class="panel-head compact-head drawer-head">
-              <div>
-                <p class="panel-kicker">Selected site</p>
-                <h2 id="site-name">Waiting for selection</h2>
+            <div class="site-head">
+              <div class="site-head-copy">
+                <h1 id="site-name">Waiting for selection</h1>
+                <p class="site-summary" id="site-summary">Selection summary pending.</p>
               </div>
               <p class="status-pill idle" id="site-impact">quiet</p>
             </div>
 
-            <div class="drawer-meta">
-              <p class="drawer-summary" id="site-summary">
-                Selection summary pending.
-              </p>
-              <p class="drawer-inline">
-                <span id="site-region">-</span>
-                <span id="site-type">-</span>
-                <span id="site-coords">-</span>
-                <span id="drawer-state">idle</span>
-              </p>
-            </div>
+            <p class="drawer-inline site-meta">
+              <span id="site-region">-</span>
+              <span id="site-type">-</span>
+              <span id="site-coords">-</span>
+            </p>
 
             <div class="tray-grid">
-              <article class="drawer-card tray-card">
+              <article class="drawer-card">
                 <p class="drawer-label">Current</p>
-                <h3 id="current-title">Waiting for /frames/current</h3>
-                <p class="drawer-summary" id="current-note">Current-site evidence pending.</p>
+                <h2 id="current-title">No compare</h2>
+                <p class="drawer-summary" id="current-note">Current evidence pending.</p>
                 <p class="tray-inline">
                   <span id="current-status">-</span>
                   <span id="current-captured">-</span>
                 </p>
               </article>
 
-              <article class="drawer-card tray-card">
+              <article class="drawer-card">
                 <p class="drawer-label">Baseline</p>
-                <h3 id="baseline-title">Waiting for /frames/baseline</h3>
+                <h2 id="baseline-title">No compare</h2>
                 <p class="drawer-summary" id="baseline-note">Baseline reference pending.</p>
                 <p class="tray-inline">
                   <span id="baseline-captured">-</span>
                   <span id="baseline-source">-</span>
                 </p>
               </article>
-
-              <article class="drawer-card tray-card alert-card">
-                <div class="drawer-topline">
-                  <p class="drawer-label">Latest alert</p>
-                  <p class="status-pill idle" id="latest-severity">quiet</p>
-                </div>
-                <h3 id="latest-title">Waiting for /alerts</h3>
-                <p class="drawer-summary" id="latest-meta">Latest accepted alert will anchor the tray when present.</p>
-                <p class="drawer-why" id="latest-why">No active alert readout yet.</p>
-              </article>
             </div>
-
-            <p class="support-inline">
-              Current live <span id="cfg-current">-</span> /
-              baseline live <span id="cfg-baseline">-</span> /
-              Mapbox <span id="cfg-mapbox">-</span> /
-              replay <span id="cfg-replay">-</span>
-            </p>
           </div>
         </aside>
       </main>
