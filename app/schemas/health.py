@@ -18,12 +18,16 @@ class HealthConfig(BaseModel):
     mapbox_context_enabled: bool
     model_http_enabled: bool
     model_provider: str
+    agent_model_version: str
+    agent_http_enabled: bool
+    agent_provider: str
 
 
 class HealthResponse(BaseModel):
     status: Literal["ok"]
     app_env: str
     model_backend: HealthDependency
+    agent_backend: HealthDependency
     simsat_current: HealthDependency
     simsat_baseline: HealthDependency
     mapbox: HealthDependency

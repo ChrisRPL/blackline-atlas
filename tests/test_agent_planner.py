@@ -11,6 +11,7 @@ from app.services.agent_planner import (
 from app.services.agent_prompt_builder import AgentPlannerPromptBuilder
 from app.services.agent_provider import (
     AtlasJsonHttpAgentPlannerProvider,
+    OpenAIChatCompletionsAgentPlannerProvider,
     OpenAIResponsesAgentPlannerProvider,
 )
 from app.services.watchlist_loader import load_watchlist_assets
@@ -159,6 +160,50 @@ def test_openai_agent_planner_provider_builds_responses_request() -> None:
     assert body["model"] == "gpt-4.1-mini"
     assert body["input"][0]["role"] == "system"
     assert body["input"][1]["role"] == "user"
+
+
+def test_openai_chat_completions_agent_planner_provider_builds_request() -> None:
+    provider = OpenAIChatCompletionsAgentPlannerProvider()
+    payload = PromptedAtlasAgentPlanner(
+        model_version="LiquidAI/LFM2.5-1.2B-Instruct",
+        backend=_RecordingPlannerBackend(raw_text='{"tool":"latest_alerts"}'),
+    ).build_payload(
+        query="show biggest disruptions near Black Sea",
+        assets=load_watchlist_assets(None),
+        selected_asset=None,
+    )
+
+    request = provider.build_request(
+        endpoint="https://liquid.example/v1/chat/completions",
+        payload=payload,
+        api_key="liquid-key",
+    )
+    body = json.loads(request.data.decode("utf-8"))
+
+    assert request.full_url == "https://liquid.example/v1/chat/completions"
+    assert request.get_header("Authorization") == "Bearer liquid-key"
+    assert body["model"] == "LiquidAI/LFM2.5-1.2B-Instruct"
+    assert body["messages"][0]["role"] == "system"
+    assert body["messages"][1]["role"] == "user"
+    assert body["temperature"] == 0
+    assert body["max_tokens"] == 64
+
+
+def test_openai_chat_completions_agent_planner_provider_parses_response() -> None:
+    provider = OpenAIChatCompletionsAgentPlannerProvider()
+
+    parsed = provider.parse_response(
+        body=json.dumps(
+            {
+                "choices": [
+                    {"message": {"content": '{"tool":"biggest_disruptions","area":"Black Sea"}'}}
+                ]
+            }
+        ),
+        fallback='{"tool":"latest_alerts"}',
+    )
+
+    assert parsed == '{"tool":"biggest_disruptions","area":"Black Sea"}'
 
 
 class _RecordingPlannerBackend:

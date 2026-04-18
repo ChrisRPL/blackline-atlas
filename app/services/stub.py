@@ -134,6 +134,7 @@ class StubAtlasService:
             status="ok",
             app_env=self.settings.app_env,
             model_backend=self._model_backend_dependency(),
+            agent_backend=self._agent_backend_dependency(),
             simsat_current=self._dependency_state(
                 self.settings.simsat_current_endpoint,
                 "current Sentinel endpoint not configured yet",
@@ -153,6 +154,9 @@ class StubAtlasService:
                 mapbox_context_enabled=self.settings.mapbox_context_enabled,
                 model_http_enabled=self.settings.model_http_enabled,
                 model_provider=self.settings.model_provider,
+                agent_model_version=self.settings.agent_model_version,
+                agent_http_enabled=self.settings.agent_http_enabled,
+                agent_provider=self.settings.agent_provider,
             ),
         )
 
@@ -489,6 +493,30 @@ class StubAtlasService:
         return HealthDependency(
             status="ready",
             detail=f"{self.settings.model_version} ({provider.provider_id} http backend)",
+        )
+
+    def _agent_backend_dependency(self) -> HealthDependency:
+        if not self.settings.agent_http_enabled:
+            return HealthDependency(
+                status="ready",
+                detail=f"{self.settings.agent_model_version} (fixture planner)",
+            )
+        if not self.settings.agent_endpoint:
+            return HealthDependency(
+                status="not_configured",
+                detail="agent planner endpoint not configured yet",
+            )
+        provider = resolve_http_agent_planner_provider(self.settings.agent_provider)
+        if provider is None:
+            return HealthDependency(
+                status="degraded",
+                detail=f"{self.settings.agent_provider} unsupported; fixture planner active",
+            )
+        return HealthDependency(
+            status="ready",
+            detail=(
+                f"{self.settings.agent_model_version} " f"({provider.provider_id} http planner)"
+            ),
         )
 
     def _attach_mapbox_context(self, alert: Alert) -> Alert:

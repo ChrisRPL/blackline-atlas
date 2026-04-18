@@ -24,6 +24,10 @@ def build_api_client(
     model_endpoint: str | None = None,
     model_http_enabled: bool = False,
     model_provider: str | None = None,
+    agent_endpoint: str | None = None,
+    agent_http_enabled: bool = False,
+    agent_provider: str | None = None,
+    agent_model_version: str | None = None,
 ) -> TestClient:
     if simsat_current_endpoint is None:
         monkeypatch.delenv("SIMSAT_CURRENT_ENDPOINT", raising=False)
@@ -67,6 +71,26 @@ def build_api_client(
     else:
         monkeypatch.setenv("MODEL_PROVIDER", model_provider)
 
+    if agent_endpoint is None:
+        monkeypatch.delenv("AGENT_ENDPOINT", raising=False)
+    else:
+        monkeypatch.setenv("AGENT_ENDPOINT", agent_endpoint)
+
+    if agent_http_enabled:
+        monkeypatch.setenv("AGENT_HTTP_ENABLED", "true")
+    else:
+        monkeypatch.delenv("AGENT_HTTP_ENABLED", raising=False)
+
+    if agent_provider is None:
+        monkeypatch.delenv("AGENT_PROVIDER", raising=False)
+    else:
+        monkeypatch.setenv("AGENT_PROVIDER", agent_provider)
+
+    if agent_model_version is None:
+        monkeypatch.delenv("AGENT_MODEL_VERSION", raising=False)
+    else:
+        monkeypatch.setenv("AGENT_MODEL_VERSION", agent_model_version)
+
     get_settings.cache_clear()
     return TestClient(create_app())
 
@@ -98,6 +122,8 @@ def test_health_endpoint() -> None:
     assert payload["status"] == "ok"
     assert payload["model_backend"]["status"] == "ready"
     assert payload["model_backend"]["detail"] == "lfm2.5-vl-450m-prompted (fixture backend)"
+    assert payload["agent_backend"]["status"] == "ready"
+    assert payload["agent_backend"]["detail"] == "lfm2.5-1.2b-instruct (fixture planner)"
 
 
 def test_ui_shell_is_served_same_origin() -> None:
@@ -403,6 +429,9 @@ def test_health_endpoint_exposes_machine_readable_config_flags(monkeypatch) -> N
         "mapbox_context_enabled": False,
         "model_http_enabled": False,
         "model_provider": "atlas_json_http",
+        "agent_model_version": "lfm2.5-1.2b-instruct",
+        "agent_http_enabled": False,
+        "agent_provider": "atlas_json_http",
     }
     get_settings.cache_clear()
 
@@ -423,6 +452,9 @@ def test_health_endpoint_exposes_default_config_flags(tmp_path, monkeypatch) -> 
         "mapbox_context_enabled": True,
         "model_http_enabled": False,
         "model_provider": "atlas_json_http",
+        "agent_model_version": "lfm2.5-1.2b-instruct",
+        "agent_http_enabled": False,
+        "agent_provider": "atlas_json_http",
     }
     get_settings.cache_clear()
 
@@ -446,6 +478,9 @@ def test_health_endpoint_exposes_disabled_mapbox_config_flags(tmp_path, monkeypa
         "mapbox_context_enabled": False,
         "model_http_enabled": False,
         "model_provider": "atlas_json_http",
+        "agent_model_version": "lfm2.5-1.2b-instruct",
+        "agent_http_enabled": False,
+        "agent_provider": "atlas_json_http",
     }
     assert configured_response.json()["mapbox"]["status"] == "ready"
     assert configured_response.json()["mapbox"]["detail"] == (
@@ -472,6 +507,9 @@ def test_health_endpoint_exposes_mixed_transport_config_flags(tmp_path, monkeypa
         "mapbox_context_enabled": True,
         "model_http_enabled": False,
         "model_provider": "atlas_json_http",
+        "agent_model_version": "lfm2.5-1.2b-instruct",
+        "agent_http_enabled": False,
+        "agent_provider": "atlas_json_http",
     }
     get_settings.cache_clear()
 
@@ -499,6 +537,9 @@ def test_health_endpoint_exposes_baseline_only_transport_config_flags(
         "mapbox_context_enabled": True,
         "model_http_enabled": False,
         "model_provider": "atlas_json_http",
+        "agent_model_version": "lfm2.5-1.2b-instruct",
+        "agent_http_enabled": False,
+        "agent_provider": "atlas_json_http",
     }
     assert configured_response.json()["simsat_current"]["status"] == "not_configured"
     assert configured_response.json()["simsat_baseline"]["status"] == "ready"
@@ -548,6 +589,71 @@ def test_health_endpoint_exposes_model_http_config_and_backend_mode(tmp_path, mo
     )
     assert model_response.json()["config"]["model_http_enabled"] is True
     assert model_response.json()["config"]["model_provider"] == "atlas_json_http"
+    get_settings.cache_clear()
+
+
+def test_health_endpoint_exposes_agent_http_config_and_backend_mode(tmp_path, monkeypatch) -> None:
+    monkeypatch.chdir(tmp_path)
+    agent_client = build_api_client(
+        monkeypatch,
+        simsat_current_endpoint=None,
+        simsat_baseline_endpoint=None,
+        agent_endpoint="https://example.test/agent",
+        agent_http_enabled=True,
+        agent_provider="atlas_json_http",
+        agent_model_version="lfm2.5-1.2b-instruct",
+    )
+    agent_response = agent_client.get("/health")
+
+    assert agent_response.status_code == 200
+    assert agent_response.json()["agent_backend"]["status"] == "ready"
+    assert agent_response.json()["agent_backend"]["detail"] == (
+        "lfm2.5-1.2b-instruct (atlas_json_http http planner)"
+    )
+    assert agent_response.json()["config"]["agent_model_version"] == "lfm2.5-1.2b-instruct"
+    assert agent_response.json()["config"]["agent_http_enabled"] is True
+    assert agent_response.json()["config"]["agent_provider"] == "atlas_json_http"
+    get_settings.cache_clear()
+
+
+def test_health_endpoint_marks_missing_agent_endpoint_not_configured(tmp_path, monkeypatch) -> None:
+    monkeypatch.chdir(tmp_path)
+    agent_client = build_api_client(
+        monkeypatch,
+        simsat_current_endpoint=None,
+        simsat_baseline_endpoint=None,
+        agent_http_enabled=True,
+        agent_provider="atlas_json_http",
+    )
+    agent_response = agent_client.get("/health")
+
+    assert agent_response.status_code == 200
+    assert agent_response.json()["agent_backend"]["status"] == "not_configured"
+    assert agent_response.json()["agent_backend"]["detail"] == (
+        "agent planner endpoint not configured yet"
+    )
+    assert agent_response.json()["config"]["agent_http_enabled"] is True
+    get_settings.cache_clear()
+
+
+def test_health_endpoint_exposes_openai_chat_planner_backend_mode(tmp_path, monkeypatch) -> None:
+    monkeypatch.chdir(tmp_path)
+    agent_client = build_api_client(
+        monkeypatch,
+        simsat_current_endpoint=None,
+        simsat_baseline_endpoint=None,
+        agent_endpoint="https://liquid.example/v1/chat/completions",
+        agent_http_enabled=True,
+        agent_provider="openai_chat_completions_http",
+    )
+    agent_response = agent_client.get("/health")
+
+    assert agent_response.status_code == 200
+    assert agent_response.json()["agent_backend"]["status"] == "ready"
+    assert agent_response.json()["agent_backend"]["detail"] == (
+        "lfm2.5-1.2b-instruct (openai_chat_completions_http http planner)"
+    )
+    assert agent_response.json()["config"]["agent_provider"] == "openai_chat_completions_http"
     get_settings.cache_clear()
 
 

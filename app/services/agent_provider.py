@@ -10,6 +10,8 @@ from app.services.model_provider import (
     OPENAI_RESPONSES_PROVIDER,
 )
 
+OPENAI_CHAT_COMPLETIONS_PROVIDER = "openai_chat_completions_http"
+
 
 class HttpAgentPlannerProvider(Protocol):
     provider_id: str
@@ -95,6 +97,69 @@ class OpenAIResponsesAgentPlannerProvider:
         return fallback
 
 
+class OpenAIChatCompletionsAgentPlannerProvider:
+    provider_id = OPENAI_CHAT_COMPLETIONS_PROVIDER
+
+    def build_request(
+        self,
+        *,
+        endpoint: str,
+        payload: PlannerRequestPayload,
+        api_key: str | None,
+    ) -> Request:
+        return Request(
+            endpoint,
+            data=json.dumps(
+                {
+                    "model": payload.model_version,
+                    "messages": [
+                        {
+                            "role": item.role,
+                            "content": item.text,
+                        }
+                        for item in payload.inputs
+                    ],
+                    "temperature": 0,
+                    "max_tokens": 64,
+                }
+            ).encode("utf-8"),
+            headers=_headers(api_key),
+            method="POST",
+        )
+
+    def parse_response(self, *, body: str, fallback: str) -> str:
+        try:
+            payload = json.loads(body)
+        except json.JSONDecodeError:
+            return fallback
+
+        if not isinstance(payload, dict):
+            return fallback
+
+        choices = payload.get("choices")
+        if not isinstance(choices, list) or not choices:
+            return fallback
+
+        message = choices[0].get("message") if isinstance(choices[0], dict) else None
+        if not isinstance(message, dict):
+            return fallback
+
+        content = message.get("content")
+        if isinstance(content, str) and content.strip():
+            return content.strip()
+        if isinstance(content, list):
+            chunks: list[str] = []
+            for item in content:
+                if not isinstance(item, dict):
+                    continue
+                text = item.get("text")
+                if isinstance(text, str) and text.strip():
+                    chunks.append(text.strip())
+            if chunks:
+                return "\n".join(chunks)
+        return fallback
+
+
 def resolve_http_agent_planner_provider(
     provider_id: str,
 ) -> HttpAgentPlannerProvider | None:
@@ -102,6 +167,8 @@ def resolve_http_agent_planner_provider(
         return AtlasJsonHttpAgentPlannerProvider()
     if provider_id == OPENAI_RESPONSES_PROVIDER:
         return OpenAIResponsesAgentPlannerProvider()
+    if provider_id == OPENAI_CHAT_COMPLETIONS_PROVIDER:
+        return OpenAIChatCompletionsAgentPlannerProvider()
     return None
 
 

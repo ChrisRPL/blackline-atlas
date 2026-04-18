@@ -183,3 +183,17 @@ AGENT_HTTP_ENABLED=
 AGENT_API_KEY=
 AGENT_PROVIDER=atlas_json_http
 ```
+
+For Liquid-served `LFM2.5-1.2B-Instruct`, the smallest honest live path is an
+OpenAI-compatible chat-completions endpoint:
+
+```bash
+AGENT_MODEL_VERSION=LiquidAI/LFM2.5-1.2B-Instruct
+AGENT_ENDPOINT=https://your-liquid-host/v1/chat/completions
+AGENT_HTTP_ENABLED=true
+AGENT_PROVIDER=openai_chat_completions_http
+```
+
+`/health` now exposes both `model_backend` and `agent_backend`, plus machine-readable
+planner config flags, so the UI can tell fixture planner vs live planner without
+parsing prose.
