@@ -63,6 +63,15 @@
     "hero": false
   },
   {
+    "asset_id": "bahri_water_01",
+    "asset_name": "Bahri Water Station",
+    "asset_type": "water_infrastructure",
+    "region": "Bahri, Khartoum North",
+    "latitude": 15.6169,
+    "longitude": 32.5347,
+    "hero": false
+  },
+  {
     "asset_id": "vasyshcheve_atb_01",
     "asset_name": "Vasyshcheve ATB Distribution Center",
     "asset_type": "logistics_hub",

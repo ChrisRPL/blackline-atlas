@@ -299,7 +299,7 @@ Primary buckets:
   - better product fit than the Lebanon border lane
   - exact city-serving plant
   - strong civilian-useful story for Khartoum North residents
-- status: `hold_dense_urban_fabric`
+- status: `added_to_non_demo_eval_as_exact_control`
 - coordinates:
   - `15.6169, 32.5347`
 - dates probed:
@@ -310,8 +310,9 @@ Primary buckets:
   - exact lead comes from `Khartoum State Water Corporation Bahri Station`
   - clean `3.0 km` and `1.5 km` sweeps are already available with near-zero cloud
   - a follow-up `0.8 km` parcel-tight `3x3` grid around the lead also failed to isolate one defendable plant-compound scar inside the dense urban fabric around the Nile-edge site
-  - good source trail and perfect cloud are not enough on their own
-  - downgrade for now and only reopen if a stronger plant polygon or independent parcel anchor appears
+  - good source trail and perfect cloud were strong enough for an exact no-material-change control, but not for a positive row
+  - landed in `non_demo_eval.jsonl` as `bahri_water_station_no_material_change`
+  - only reopen if a stronger plant polygon or independent parcel anchor appears for a future positive row
 - sources:
   - [Sudan Tribune on heavy damage to Bahri water station](https://sudantribune.com/archives/296726)
   - [Wikimapia lead for Khartoum State Water Corporation Bahri Station](https://wikimapia.org/891493/Khartoum-State-Water-Corporation-Bahri-Station)

@@ -607,10 +607,12 @@ def test_stub_service_default_watchlist_includes_real_civilian_sites() -> None:
     assert "beirut_port_01" in asset_ids
     assert "port_sudan_01" in asset_ids
     assert "ras_abu_jarjur_01" in asset_ids
+    assert "bahri_water_01" in asset_ids
     assert "unhcr_baghdad_01" in asset_ids
     assert asset_by_id["demo_port_01"].evidence_state == "live_demo"
     assert asset_by_id["beirut_port_01"].evidence_state == "reference_event"
     assert asset_by_id["ras_abu_jarjur_01"].evidence_state == "reference_control"
+    assert asset_by_id["bahri_water_01"].evidence_state == "reference_control"
 
 
 def test_stub_service_can_opt_in_http_agent_planner(tmp_path: Path, monkeypatch) -> None:

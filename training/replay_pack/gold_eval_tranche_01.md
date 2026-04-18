@@ -59,9 +59,9 @@ It is the first acquisition batch with the best chance of moving coverage, not j
 - target type:
   - pumping station or reservoir compound
 - current lead quality:
-  - first concrete lead now tracked in `training/replay_pack/water_tranche_01.md`
+  - `Bahri Water Station` now landed as an exact water control
 - next action:
-  - prioritize assets with obvious basins / tanks / service compounds visible in Sentinel
+  - prioritize the next water candidate only if it has obvious basins / tanks / service compounds visible in Sentinel
 
 #### `water_03`
 - target type:
@@ -142,8 +142,8 @@ Do in parallel with positive cases:
 ## Immediate next work order
 
 1. `water` positive hunt is paused after the bounded exact-site pass stayed soft
-2. one exact named `aid` depot only if the compound is visibly large enough in Sentinel
-3. convert one more already-known blocked case into a control row
+2. keep `Bahri Water Station` as the exact water control row for this tranche
+3. one exact named `aid` depot only if the compound is visibly large enough in Sentinel
 4. only then reopen blocked `food` positives
 
 ## Stop rules

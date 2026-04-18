@@ -9,13 +9,17 @@ Purpose:
 ## Current water truth
 
 - promoted water rows: `0`
+- exact water controls:
+  - `Ras Abu Jarjur`
+  - `Doha West`
+  - `Bahri Water Station`
 - strongest existing evidence:
   - `Doha West` -> exact site, but clouded + mixed-use
   - `Ras Abu Jarjur` -> exact site, but no honest macro-visible change
   - `Al-Arshani` -> exact public coords, but no defendable plant-scale structural change in bounded SimSat pass
   - `Babiri` -> strong civilian story, but service-outage framing and parcel still soft
   - `Maisat / Wazzani` -> strong source trail, but border-sensitive and still too soft for a first positive row
-  - `Bahri` -> exact coords + clean windows, but dense urban fabric blocked the hard parcel-tight pass
+  - `Bahri` -> now promoted as an exact no-material-change control, not a positive row
 
 Rule:
 - the next water row should be a `facility`, not a `city`
@@ -44,9 +48,10 @@ Rule:
   - first `3.0 km` and `1.5 km` sweeps at the lead coordinates did not yet isolate one defendable plant-compound scar inside the dense urban fabric
   - follow-up `0.8 km` parcel-tight `3x3` grid around the lead still failed to isolate a clean treatment-plant footprint honest enough for promotion
 - status:
-  - `hold_dense_urban_fabric`
+  - `added_to_non_demo_eval_as_exact_control`
 - next action:
-  - do not spend more time unless a stronger plant polygon or independent parcel anchor appears
+  - keep as a conflict-adjacent water no-change benchmark
+  - do not spend more time unless a stronger plant polygon or independent parcel anchor appears for a future positive lane
 - sources:
   - [Sudan Tribune on heavy damage to Bahri water station](https://sudantribune.com/archives/296726)
   - [Wikimapia lead for Khartoum State Water Corporation Bahri Station](https://wikimapia.org/891493/Khartoum-State-Water-Corporation-Bahri-Station)
