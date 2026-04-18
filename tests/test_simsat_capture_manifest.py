@@ -221,3 +221,143 @@ def test_write_simsat_capture_manifest_supports_external_cases_dataset(
     assert manifest["case_count"] == 1
     assert manifest["cases"][0]["case_id"] == "beirut_port_blast"
     assert manifest["cases"][0]["asset"]["asset_id"] == "beirut_port_01"
+
+
+def test_write_simsat_capture_manifest_applies_case_capture_override(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    calls: list[str] = []
+
+    def fake_urlopen(url: str, timeout: float):
+        calls.append(url)
+        _ = timeout
+        return _FakeResponse(
+            body=b"png",
+            metadata={
+                "image_available": True,
+                "source": "sentinel-2c",
+                "spectral_bands": ["red", "green", "blue"],
+                "footprint": [30.84, 50.52, 30.86, 50.54],
+                "size_km": 0.5,
+                "cloud_cover": 0.05,
+                "datetime": "2022-03-23T09:06:23Z",
+            },
+        )
+
+    monkeypatch.setattr(capture_simsat_manifest, "urlopen", fake_urlopen)
+    dataset_path = tmp_path / "non_demo_eval.jsonl"
+    dataset_path.write_text(
+        json.dumps(
+            {
+                "case_id": "silpo_kvitneve_distribution_center_strike",
+                "asset": {
+                    "asset_id": "silpo_kvitneve_01",
+                    "asset_name": "Silpo Kvitneve Distribution Center",
+                    "asset_type": "logistics_hub",
+                    "region": "Kvitneve, Kyiv Oblast",
+                    "latitude": 50.529365,
+                    "longitude": 30.852823,
+                    "hero": False,
+                },
+                "hero": False,
+                "current_frame": {
+                    "frame": {
+                        "frame_id": "cur_silpo_kvitneve_01_20220323",
+                        "asset_id": "silpo_kvitneve_01",
+                        "captured_at": "2022-03-23T09:06:23Z",
+                        "image_ref": "pending://silpo_kvitneve_01/current.png",
+                        "cloud_cover": 0.054423,
+                        "source": "seed",
+                    },
+                    "baseline_frame_id": "base_silpo_kvitneve_01_20220226",
+                },
+                "baseline_frame": {
+                    "frame": {
+                        "frame_id": "base_silpo_kvitneve_01_20220226",
+                        "asset_id": "silpo_kvitneve_01",
+                        "captured_at": "2022-02-26T09:06:28Z",
+                        "image_ref": "pending://silpo_kvitneve_01/baseline.png",
+                        "cloud_cover": 17.070061,
+                        "source": "seed",
+                    }
+                },
+                "model_output_text": (
+                    '{"event_type":"probable_large_scale_disruption","severity":"high",'
+                    '"confidence":0.84,"bbox":[0.1,0.16,0.83,0.84],'
+                    '"civilian_impact":"trade_disruption",'
+                    '"why":"Warehouse-scale darkening and damage.",'
+                    '"action":"downlink_now"}'
+                ),
+                "expected_candidate": {
+                    "event_type": "probable_large_scale_disruption",
+                    "severity": "high",
+                    "confidence": 0.84,
+                    "bbox": [0.1, 0.16, 0.83, 0.84],
+                    "civilian_impact": "trade_disruption",
+                    "why": "Warehouse-scale darkening and damage.",
+                    "action": "downlink_now",
+                },
+                "expected_alert": {
+                    "alert_id": "blk_nd_00010",
+                    "timestamp": "2022-03-23T09:06:23Z",
+                    "asset_id": "silpo_kvitneve_01",
+                    "asset_name": "Silpo Kvitneve Distribution Center",
+                    "asset_type": "logistics_hub",
+                    "event_type": "probable_large_scale_disruption",
+                    "severity": "high",
+                    "confidence": 0.84,
+                    "bbox": [0.1, 0.16, 0.83, 0.84],
+                    "civilian_impact": "trade_disruption",
+                    "why": "Warehouse-scale darkening and damage.",
+                    "action": "downlink_now",
+                    "source": {
+                        "current_frame_id": "cur_silpo_kvitneve_01_20220323",
+                        "baseline_frame_id": "base_silpo_kvitneve_01_20220226",
+                        "model_version": "lfm2.5-vl-450m-prompted",
+                    },
+                    "mapbox_context_ref": None,
+                },
+                "expected_action": "downlink_now",
+                "expected_metrics": {
+                    "frames_scanned": 70,
+                    "alerts_emitted": 1,
+                    "raw_frames_suppressed": 66,
+                    "downlink_rate": 0.029,
+                },
+                "split": "holdout_geo",
+                "annotation_source": "manual_public_satellite_event",
+            }
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    overrides_path = tmp_path / "capture_overrides.json"
+    overrides_path.write_text(
+        json.dumps(
+            {
+                "silpo_kvitneve_distribution_center_strike": {
+                    "latitude": 50.528965,
+                    "longitude": 30.849714,
+                    "size_km": 0.5,
+                }
+            }
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+    manifest_path, _ = capture_simsat_manifest.write_simsat_capture_manifest(
+        "https://simsat.test/data/image/sentinel",
+        tmp_path / "captures",
+        cases_dataset_path=dataset_path,
+        capture_overrides_path=overrides_path,
+        scenario_ids=(),
+    )
+
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    record = manifest["cases"][0]
+    assert "lat=50.528965" in calls[0]
+    assert "lon=30.849714" in calls[0]
+    assert "size_km=0.5" in calls[0]
+    assert record["current"]["response_metadata"]["size_km"] == 0.5

@@ -145,6 +145,21 @@ python3 training/scripts/eval_structured_outputs.py \
   --dataset /tmp/blackline-lfm25-vl-v1/blackline_candidate_eval.jsonl
 ```
 
+If one annotated case needs a tighter crop or shifted center to keep the
+facility honest at Sentinel scale, keep that override in a manifest-only JSON
+file keyed by `case_id` and pass it at capture time:
+
+```bash
+python3 training/scripts/capture_simsat_manifest.py \
+  --historical-endpoint http://localhost:9005/data/image/sentinel \
+  --cases-dataset training/replay_pack/non_demo_eval.jsonl \
+  --capture-overrides training/replay_pack/non_demo_capture_overrides.json \
+  --output-dir /tmp/non_demo_simsat_capture
+```
+
+Rule:
+- keep capture overrides out of `non_demo_eval.jsonl`; labels stay canonical, overrides stay capture-only
+
 First real non-demo annotations live in:
 
 - `training/replay_pack/non_demo_eval.jsonl`
@@ -163,6 +178,7 @@ cat training/replay_pack/hero_eval.jsonl training/replay_pack/non_demo_eval.json
 python3 training/scripts/capture_simsat_manifest.py \
   --historical-endpoint http://localhost:9005/data/image/sentinel \
   --cases-dataset /tmp/phase3_eval.jsonl \
+  --capture-overrides training/replay_pack/non_demo_capture_overrides.json \
   --output-dir /tmp/phase3_simsat_capture
 
 python3 training/scripts/build_lfm25_vl_corpus.py \

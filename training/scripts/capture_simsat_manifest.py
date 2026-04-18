@@ -37,6 +37,7 @@ def build_simsat_capture_manifest(
     historical_endpoint: str,
     output_dir: Path = DEFAULT_OUTPUT_DIR,
     cases_dataset_path: Path | None = None,
+    capture_overrides_path: Path | None = None,
     spectral_bands: tuple[str, ...] = DEFAULT_SPECTRAL_BANDS,
     size_km: float = DEFAULT_SIZE_KM,
     window_seconds: float = DEFAULT_WINDOW_SECONDS,
@@ -47,22 +48,30 @@ def build_simsat_capture_manifest(
         cases_dataset_path=cases_dataset_path,
         scenario_ids=scenario_ids,
     )
+    capture_overrides = _load_capture_overrides(capture_overrides_path)
 
     records: list[dict[str, object]] = []
     for case in cases:
         case_dir = output_dir / case.case_id
+        case_capture = _resolve_case_capture_plan(
+            case=case,
+            overrides=capture_overrides,
+            default_spectral_bands=spectral_bands,
+            default_size_km=size_km,
+            default_window_seconds=window_seconds,
+        )
 
         current = _capture_frame(
             endpoint=historical_endpoint,
             output_dir=case_dir,
             variant="current",
             frame_id=case.current_frame.frame.frame_id,
-            lon=case.asset.longitude,
-            lat=case.asset.latitude,
+            lon=case_capture["longitude"],
+            lat=case_capture["latitude"],
             requested_timestamp=case.current_frame.frame.captured_at,
-            spectral_bands=spectral_bands,
-            size_km=size_km,
-            window_seconds=window_seconds,
+            spectral_bands=case_capture["spectral_bands"],
+            size_km=case_capture["size_km"],
+            window_seconds=case_capture["window_seconds"],
             timeout_seconds=timeout_seconds,
         )
         baseline = _capture_frame(
@@ -70,12 +79,12 @@ def build_simsat_capture_manifest(
             output_dir=case_dir,
             variant="baseline",
             frame_id=case.baseline_frame.frame.frame_id,
-            lon=case.asset.longitude,
-            lat=case.asset.latitude,
+            lon=case_capture["longitude"],
+            lat=case_capture["latitude"],
             requested_timestamp=case.baseline_frame.frame.captured_at,
-            spectral_bands=spectral_bands,
-            size_km=size_km,
-            window_seconds=window_seconds,
+            spectral_bands=case_capture["spectral_bands"],
+            size_km=case_capture["size_km"],
+            window_seconds=case_capture["window_seconds"],
             timeout_seconds=timeout_seconds,
         )
 
@@ -98,6 +107,7 @@ def write_simsat_capture_manifest(
     manifest_name: str = DEFAULT_MANIFEST_NAME,
     dataset_name: str = DEFAULT_DATASET_NAME,
     cases_dataset_path: Path | None = None,
+    capture_overrides_path: Path | None = None,
     spectral_bands: tuple[str, ...] = DEFAULT_SPECTRAL_BANDS,
     size_km: float = DEFAULT_SIZE_KM,
     window_seconds: float = DEFAULT_WINDOW_SECONDS,
@@ -109,6 +119,7 @@ def write_simsat_capture_manifest(
         historical_endpoint=historical_endpoint,
         output_dir=output_dir,
         cases_dataset_path=cases_dataset_path,
+        capture_overrides_path=capture_overrides_path,
         spectral_bands=spectral_bands,
         size_km=size_km,
         window_seconds=window_seconds,
@@ -161,6 +172,15 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         type=Path,
         default=DEFAULT_OUTPUT_DIR,
         help=f"Directory for captured pairs. Default: {DEFAULT_OUTPUT_DIR}",
+    )
+    parser.add_argument(
+        "--capture-overrides",
+        type=Path,
+        default=None,
+        help=(
+            "Optional JSON file keyed by case_id with capture overrides such as "
+            "latitude, longitude, size_km, window_seconds, or spectral_bands."
+        ),
     )
     parser.add_argument(
         "--manifest-name",
@@ -225,6 +245,7 @@ def main(argv: list[str] | None = None) -> int:
         manifest_name=args.manifest_name,
         dataset_name=args.dataset_name,
         cases_dataset_path=args.cases_dataset,
+        capture_overrides_path=args.capture_overrides,
         spectral_bands=tuple(args.spectral_bands),
         size_km=args.size_km,
         window_seconds=args.window_seconds,
@@ -355,6 +376,50 @@ def _load_capture_cases(
     if missing:
         raise ValueError(f"missing case_id(s) in {cases_dataset_path}: {', '.join(missing)}")
     return [case for case in cases if case.case_id in selected]
+
+
+def _load_capture_overrides(
+    capture_overrides_path: Path | None,
+) -> dict[str, dict[str, object]]:
+    if capture_overrides_path is None:
+        return {}
+    try:
+        payload = json.loads(capture_overrides_path.read_text(encoding="utf-8"))
+    except (FileNotFoundError, OSError):
+        return {}
+    if not isinstance(payload, dict):
+        raise ValueError("capture overrides must be a JSON object keyed by case_id")
+    return {
+        case_id: override
+        for case_id, override in payload.items()
+        if isinstance(case_id, str) and isinstance(override, dict)
+    }
+
+
+def _resolve_case_capture_plan(
+    *,
+    case: AnnotatedCaseRecord,
+    overrides: dict[str, dict[str, object]],
+    default_spectral_bands: tuple[str, ...],
+    default_size_km: float,
+    default_window_seconds: float,
+) -> dict[str, object]:
+    override = overrides.get(case.case_id, {})
+    raw_spectral_bands = override.get("spectral_bands", default_spectral_bands)
+    if isinstance(raw_spectral_bands, list):
+        spectral_bands = tuple(str(item) for item in raw_spectral_bands)
+    elif isinstance(raw_spectral_bands, tuple):
+        spectral_bands = raw_spectral_bands
+    else:
+        spectral_bands = default_spectral_bands
+
+    return {
+        "latitude": float(override.get("latitude", case.asset.latitude)),
+        "longitude": float(override.get("longitude", case.asset.longitude)),
+        "size_km": float(override.get("size_km", default_size_km)),
+        "window_seconds": float(override.get("window_seconds", default_window_seconds)),
+        "spectral_bands": spectral_bands,
+    }
 
 
 def _load_json_records(path: Path) -> list[dict[str, object]]:
