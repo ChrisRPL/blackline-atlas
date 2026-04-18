@@ -209,6 +209,12 @@ AGENT_PROVIDER=openai_chat_completions_http
 This app now sends `response_format={"type":"json_object"}` on the planner
 chat-completions path to improve strict JSON routing.
 
+To score the first frozen command flows against a running app:
+
+```bash
+python3 -m training.scripts.run_agent_command_eval --base-url http://127.0.0.1:8000
+```
+
 `/health` now exposes both `model_backend` and `agent_backend`, plus machine-readable
 planner config flags, so the UI can tell fixture planner vs live planner without
 parsing prose.

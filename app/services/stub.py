@@ -794,14 +794,15 @@ class StubAtlasService:
             selected_asset=selected_asset,
             fallback_plan=fallback_plan,
         )
+        plan = self._sanitized_planner_plan(decision.plan, request=request)
         return (
             request.model_copy(
                 update={
-                    "tool": decision.plan.tool,
-                    "area": request.area or decision.plan.area,
-                    "category": request.category or decision.plan.category,
-                    "site_id": self._resolved_planner_site_id(request, decision.plan),
-                    "alert_id": request.alert_id or decision.plan.alert_id,
+                    "tool": plan.tool,
+                    "area": request.area or plan.area,
+                    "category": request.category or plan.category,
+                    "site_id": self._resolved_planner_site_id(request, plan),
+                    "alert_id": request.alert_id or plan.alert_id,
                 }
             ),
             self._planner_telemetry(decision),
@@ -887,6 +888,34 @@ class StubAtlasService:
         if query_matches:
             return query_matches
         return candidates
+
+    def _sanitized_planner_plan(
+        self,
+        plan: AtlasAgentPlan,
+        *,
+        request: AtlasAgentQueryRequest,
+    ) -> AtlasAgentPlan:
+        area = self._canonical_area(plan.area)
+        site_id = plan.site_id if self._find_asset(plan.site_id) is not None else None
+        alert_id = plan.alert_id if request.alert_id else None
+        return plan.model_copy(
+            update={
+                "area": area,
+                "site_id": site_id,
+                "alert_id": alert_id,
+            }
+        )
+
+    def _canonical_area(self, area: str | None) -> str | None:
+        if not area:
+            return None
+        area_lower = area.lower()
+        for asset in self.assets:
+            if asset.asset_name.lower() == area_lower:
+                return asset.asset_name
+            if asset.region.lower() == area_lower:
+                return asset.region
+        return None
 
     def _infer_agent_tool(self, query: str) -> AtlasAgentTool:
         lowered = query.lower()
