@@ -12,12 +12,12 @@ const urls = {
 const state = {
   health: null,
   assets: [],
-  alerts: [],
+  liveAlerts: [],
   replay: null,
-  currentFrame: null,
-  baselineFrame: null,
   metrics: null,
   selectedAssetId: null,
+  selectedSiteContext: null,
+  selectedSiteLoading: false,
   transcriptSeeded: false,
   map: null,
   mapMarkers: [],
@@ -33,7 +33,6 @@ const dom = {
   plannerChip: document.querySelector("#planner-chip"),
   mapStage: document.querySelector("#map-stage"),
   mapCanvas: document.querySelector("#map-canvas"),
-  mapTrustState: document.querySelector("#map-trust-state"),
   mapMarkers: document.querySelector("#map-markers"),
   channelPanel: document.querySelector(".channel-panel"),
   drawerPanel: document.querySelector(".drawer-panel"),
@@ -66,6 +65,17 @@ function humanizeSlug(value) {
   return compactLabel(value).replaceAll("_", " ").replaceAll("-", " ");
 }
 
+function evidenceLabel(value) {
+  const labels = {
+    live_demo: "live",
+    reference_event: "archive",
+    reference_control: "control",
+    watch_only: "watch",
+    loading: "loading",
+  };
+  return labels[value] || humanizeSlug(value);
+}
+
 function formatTimestamp(value) {
   if (!value) {
     return "unknown";
@@ -96,28 +106,63 @@ function selectedAsset() {
   return state.assets.find((asset) => asset.asset_id === state.selectedAssetId) || state.assets[0] || null;
 }
 
-function currentAlert() {
-  return state.alerts[0] || null;
+function liveAlert() {
+  return state.liveAlerts[0] || null;
 }
 
-function alertForAsset(assetId) {
-  return state.alerts.find((alert) => alert.asset_id === assetId) || null;
+function liveAlertForAsset(assetId) {
+  return state.liveAlerts.find((alert) => alert.asset_id === assetId) || null;
+}
+
+function selectedSiteContext() {
+  if (!state.selectedSiteContext) {
+    return null;
+  }
+  if (
+    state.selectedSiteContext.focus_asset_id
+    && state.selectedSiteContext.focus_asset_id !== state.selectedAssetId
+  ) {
+    return null;
+  }
+  return state.selectedSiteContext;
+}
+
+function selectedCompare() {
+  return selectedSiteContext()?.compare || null;
+}
+
+function selectedSiteAlerts() {
+  const context = selectedSiteContext();
+  return Array.isArray(context?.alerts) ? context.alerts : [];
 }
 
 function hasCompareForAsset(assetId) {
-  return (
-    state.currentFrame?.frame?.asset_id === assetId && state.baselineFrame?.frame?.asset_id === assetId
-  );
+  return selectedCompare()?.asset_id === assetId;
 }
 
-function currentStatusLabel(assetId) {
-  if (state.currentFrame?.frame?.asset_id !== assetId) {
+function siteEvidenceState(asset) {
+  if (!asset) {
+    return "watch_only";
+  }
+  if (asset.asset_id === selectedAsset()?.asset_id && state.selectedSiteLoading) {
+    return "loading";
+  }
+  return compactLabel(asset.evidence_state, "watch_only");
+}
+
+function selectedStatusLabel(asset) {
+  const alert = selectedSiteAlerts()[0] || null;
+  const compare = selectedCompare();
+  if (alert) {
+    return alert.severity;
+  }
+  if (!compare || compare.asset_id !== asset?.asset_id) {
     return "watch";
   }
-  if (state.currentFrame.accepted_for_alerting === true) {
+  if (compare.current_frame.accepted_for_alerting === true) {
     return "accepted";
   }
-  if (state.currentFrame.accepted_for_alerting === false) {
+  if (compare.current_frame.accepted_for_alerting === false) {
     return "suppressed";
   }
   return "unknown";
@@ -254,7 +299,7 @@ function seedTranscript() {
   }
 
   dom.chatLog.innerHTML = "";
-  const alert = currentAlert();
+  const alert = liveAlert();
   const opening = alert
     ? `Atlas online. ${alert.asset_name} is in focus.`
     : "Atlas online. No accepted alert right now.";
@@ -273,6 +318,7 @@ function selectAsset(assetId) {
   }
   renderMap();
   renderDrawer();
+  void loadSelectedSiteContext(assetId);
 }
 
 function clearLiveMapMarkers() {
@@ -295,6 +341,7 @@ function setMobileSheet(target) {
   state.mobileSheet = isMobileSheetMode() ? target : null;
   dom.channelPanel?.classList.toggle("sheet-open", state.mobileSheet === "chat");
   dom.drawerPanel?.classList.toggle("sheet-open", state.mobileSheet === "site");
+  dom.mapStage?.classList.toggle("site-sheet-open", state.mobileSheet === "site");
 }
 
 function focusMapOnAsset(asset, { immediate = false } = {}) {
@@ -334,12 +381,13 @@ function syncLiveMapMarkers() {
 
   clearLiveMapMarkers();
   state.assets.forEach((asset) => {
-    const alert = alertForAsset(asset.asset_id);
+    const alert = liveAlertForAsset(asset.asset_id);
     const selected = state.selectedAssetId === asset.asset_id;
+    const evidenceState = siteEvidenceState(asset);
     const markerEl = document.createElement("button");
     markerEl.className = [
       "map-marker",
-      alert ? "alert" : "quiet",
+      alert ? "alert" : evidenceState,
       selected ? "selected" : "",
       asset.hero ? "hero" : "",
     ]
@@ -388,7 +436,7 @@ function ensureLiveMap() {
 }
 
 function focusLatestAlert() {
-  const alert = currentAlert();
+  const alert = liveAlert();
   if (!alert) {
     appendMessage("assistant", "No accepted alert to focus.");
     return;
@@ -403,7 +451,8 @@ function focusLatestAlert() {
 
 function explainCurrentDecision() {
   const asset = selectedAsset();
-  const alert = asset ? alertForAsset(asset.asset_id) : null;
+  const alert = selectedSiteAlerts()[0] || null;
+  const compare = selectedCompare();
 
   if (alert) {
     appendMessage(
@@ -413,10 +462,10 @@ function explainCurrentDecision() {
     return;
   }
 
-  if (asset && hasCompareForAsset(asset.asset_id) && state.currentFrame.accepted_for_alerting === false) {
+  if (asset && compare?.asset_id === asset.asset_id && compare.current_frame.accepted_for_alerting === false) {
     appendMessage(
       "assistant",
-      `${asset.asset_name}: current frame stayed local. Filter path held it before alerting, so there is no accepted escalation.`,
+      `${asset.asset_name}: reference control stayed local. Compare exists, but no defendable disruption cleared the alert threshold.`,
     );
     return;
   }
@@ -429,17 +478,18 @@ function explainCurrentDecision() {
 
 function compareSelectedSite() {
   const asset = selectedAsset();
-  if (!asset || !hasCompareForAsset(asset.asset_id)) {
+  const compare = selectedCompare();
+  if (!asset || compare?.asset_id !== asset.asset_id) {
     appendMessage(
       "assistant",
-      "The selected site is not the active compare pair right now. Focus the latest alert or the replay hero asset first.",
+      "Selected site compare is not loaded yet.",
     );
     return;
   }
 
   appendMessage(
     "assistant",
-    `${asset.asset_name}: current ${formatTimestamp(state.currentFrame.frame.captured_at)} versus baseline ${formatTimestamp(state.baselineFrame.frame.captured_at)}. ${state.currentFrame.overlay_ref ? "Overlay ready." : "Overlay held."}`,
+    `${asset.asset_name}: current ${formatTimestamp(compare.current_frame.frame.captured_at)} versus baseline ${formatTimestamp(compare.baseline_frame.frame.captured_at)}. ${compare.current_frame.overlay_ref ? "Overlay ready." : "Reference compare only."}`,
   );
 }
 
@@ -461,18 +511,29 @@ function watchlistSummary() {
     return;
   }
 
-  const assetList = state.assets.map((asset) => asset.asset_name).join(", ");
-  appendMessage("assistant", `Watchlist: ${assetList}.`);
+  const counts = state.assets.reduce(
+    (memo, asset) => {
+      memo[siteEvidenceState(asset)] = (memo[siteEvidenceState(asset)] || 0) + 1;
+      return memo;
+    },
+    {},
+  );
+  appendMessage(
+    "assistant",
+    `Watchlist: ${state.assets.length} sites. ${counts.live_demo || 0} live demo, ${counts.reference_event || 0} reference events, ${counts.reference_control || 0} controls.`,
+  );
 }
 
 function applyAgentResponse(response) {
-  if (Array.isArray(response.alerts) && response.alerts.length) {
-    state.alerts = response.alerts;
+  if (
+    (response.tool === "latest_alerts" || response.tool === "biggest_disruptions")
+    && Array.isArray(response.alerts)
+  ) {
+    state.liveAlerts = response.alerts;
   }
 
-  if (response.compare) {
-    state.currentFrame = response.compare.current_frame;
-    state.baselineFrame = response.compare.baseline_frame;
+  if (response.compare || response.tool === "site_compare" || response.tool === "explain_alert") {
+    state.selectedSiteContext = response;
   }
 
   if (response.focus_asset_id) {
@@ -501,6 +562,52 @@ async function queryAgent(rawText) {
   }
 
   return response.json();
+}
+
+async function querySiteCompare(assetId) {
+  const response = await fetch(urls.agentQuery, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      tool: "site_compare",
+      site_id: assetId,
+    }),
+  });
+
+  if (!response.ok) {
+    throw new Error(`/agent/query returned ${response.status}`);
+  }
+
+  return response.json();
+}
+
+async function loadSelectedSiteContext(assetId) {
+  if (!assetId) {
+    return;
+  }
+
+  state.selectedSiteLoading = true;
+  renderMap();
+  renderDrawer();
+
+  try {
+    const response = await querySiteCompare(assetId);
+    if (state.selectedAssetId === assetId) {
+      state.selectedSiteContext = response;
+    }
+  } catch (error) {
+    if (state.selectedAssetId === assetId) {
+      state.selectedSiteContext = null;
+    }
+  } finally {
+    if (state.selectedAssetId === assetId) {
+      state.selectedSiteLoading = false;
+      renderMap();
+      renderDrawer();
+    }
+  }
 }
 
 function handleCommandLocally(rawText) {
@@ -580,22 +687,20 @@ function renderTopbar() {
   dom.healthChip.className = summary.healthClass;
   dom.modeChip.textContent = summary.modeText;
   dom.modeChip.className = summary.modeClass;
-  dom.alertChip.textContent = `${state.alerts.length} ${state.alerts.length === 1 ? "alert" : "alerts"}`;
-  dom.alertChip.className = state.alerts.length ? "chip degraded" : "chip neutral";
+  dom.alertChip.textContent = `${state.liveAlerts.length} ${state.liveAlerts.length === 1 ? "alert" : "alerts"}`;
+  dom.alertChip.className = state.liveAlerts.length ? "chip degraded" : "chip neutral";
   renderPlannerChip();
 }
 
 function renderMap() {
   const selected = selectedAsset();
-  const alert = selected ? alertForAsset(selected.asset_id) : currentAlert();
+  const alert = selected ? liveAlertForAsset(selected.asset_id) : liveAlert();
   const bounds = computeBounds(state.assets);
 
   ensureLiveMap();
 
   if (!selected) {
     dom.mapMarkers.innerHTML = "";
-    dom.mapTrustState.textContent = "trust pending";
-    dom.mapTrustState.className = "map-trust-pill neutral";
     return;
   }
 
@@ -608,11 +713,13 @@ function renderMap() {
       .map((asset) => {
         const position = project(asset, bounds);
         const isSelected = selected?.asset_id === asset.asset_id;
-        const isAlert = state.alerts.some((item) => item.asset_id === asset.asset_id);
+        const isAlert = state.liveAlerts.some((item) => item.asset_id === asset.asset_id);
+        const evidenceState = siteEvidenceState(asset);
         const classes = [
           "marker",
           isSelected ? "selected" : "",
           isAlert ? "alert" : "",
+          !isAlert ? evidenceState : "",
           asset.hero ? "hero" : "",
         ]
           .filter(Boolean)
@@ -647,23 +754,20 @@ function renderMap() {
     });
   }
 
-  dom.mapTrustState.textContent = alert ? humanizeSlug(alert.action) : currentStatusLabel(selected.asset_id);
-  dom.mapTrustState.className = alert
-    ? "map-trust-pill degraded"
-    : state.currentFrame?.accepted_for_alerting === true
-      ? "map-trust-pill live"
-      : "map-trust-pill neutral";
 }
 
 function renderDrawer() {
   const selected = selectedAsset();
-  const alert = selected ? alertForAsset(selected.asset_id) : null;
+  const context = selectedSiteContext();
+  const compare = selectedCompare();
+  const alert = selectedSiteAlerts()[0] || null;
+  const evidenceState = siteEvidenceState(selected);
 
   if (!selected) {
-    dom.siteName.textContent = "Waiting for selection";
-    dom.siteImpact.textContent = "quiet";
+    dom.siteName.textContent = "Select a site";
+    dom.siteImpact.textContent = "idle";
     dom.siteImpact.className = "status-pill idle";
-    dom.siteSummary.textContent = "Choose a site or ask the agent to focus the latest alert.";
+    dom.siteSummary.textContent = "Map click or command. Compare lands here.";
     dom.siteRegion.textContent = "-";
     dom.siteType.textContent = "-";
     dom.siteCoords.textContent = "-";
@@ -671,34 +775,58 @@ function renderDrawer() {
   }
 
   dom.siteName.textContent = selected.asset_name;
-  dom.siteImpact.textContent = alert ? alert.severity : currentStatusLabel(selected.asset_id);
-  dom.siteImpact.className = siteImpactClass(alert ? alert.severity : currentStatusLabel(selected.asset_id));
-  dom.siteSummary.textContent = alert
-    ? alert.why
-    : "Watch posture active on this site.";
+  dom.siteImpact.textContent = alert
+    ? alert.severity
+    : evidenceState === "reference_control"
+      ? "control"
+      : evidenceState === "reference_event"
+        ? "archive"
+        : evidenceState === "live_demo"
+          ? "demo"
+          : "watch";
+  dom.siteImpact.className = siteImpactClass(
+    alert
+      ? alert.severity
+      : evidenceState === "reference_event"
+        ? "medium"
+        : evidenceState === "live_demo"
+          ? "accepted"
+          : "low",
+  );
+  dom.siteSummary.textContent = state.selectedSiteLoading
+    ? "Loading compare."
+    : alert
+      ? alert.why
+      : context?.summary || "Reference compare ready.";
   dom.siteRegion.textContent = compactLabel(selected.region);
-  dom.siteType.textContent = humanizeSlug(selected.asset_type);
-  dom.siteCoords.textContent = `${selected.latitude.toFixed(3)}, ${selected.longitude.toFixed(3)}`;
+  dom.siteType.textContent = `${humanizeSlug(selected.asset_type)} / ${evidenceLabel(evidenceState)}`;
+  dom.siteCoords.textContent = `${selected.latitude.toFixed(2)}, ${selected.longitude.toFixed(2)}`;
 
-  if (hasCompareForAsset(selected.asset_id)) {
-    dom.currentTitle.textContent = state.currentFrame.frame.frame_id;
+  if (compare?.asset_id === selected.asset_id) {
+    dom.currentTitle.textContent = formatTimestamp(compare.current_frame.frame.captured_at);
     dom.currentNote.textContent =
-      state.currentFrame.accepted_for_alerting === true
-        ? "Accepted for alerting."
-        : "Held before alerting.";
-    dom.currentStatus.textContent = currentStatusLabel(selected.asset_id);
-    dom.currentCaptured.textContent = formatTimestamp(state.currentFrame.frame.captured_at);
-    dom.baselineTitle.textContent = state.baselineFrame.frame.frame_id;
-    dom.baselineNote.textContent = "Reference frame.";
-    dom.baselineCaptured.textContent = formatTimestamp(state.baselineFrame.frame.captured_at);
-    dom.baselineSource.textContent = humanizeSlug(state.baselineFrame.frame.source);
+      evidenceState === "reference_event"
+        ? "Visible disruption."
+        : evidenceState === "reference_control"
+          ? "No clear disruption."
+          : compare.current_frame.accepted_for_alerting === true
+            ? "Alert threshold crossed."
+            : "Held below threshold.";
+    dom.currentStatus.textContent = humanizeSlug(selectedStatusLabel(selected));
+    dom.currentCaptured.textContent = "";
+    dom.baselineTitle.textContent = formatTimestamp(compare.baseline_frame.frame.captured_at);
+    dom.baselineNote.textContent = "Last clear baseline.";
+    dom.baselineCaptured.textContent = evidenceState === "live_demo" ? "live lane" : "archive lane";
+    dom.baselineSource.textContent = "";
   } else {
-    dom.currentTitle.textContent = "No compare";
-    dom.currentNote.textContent = "Focus the latest alert to load evidence.";
+    dom.currentTitle.textContent = "Compare pending";
+    dom.currentNote.textContent = state.selectedSiteLoading
+      ? "Fetching site evidence."
+      : "No evidence loaded.";
     dom.currentStatus.textContent = "watch";
     dom.currentCaptured.textContent = "n/a";
-    dom.baselineTitle.textContent = "No compare";
-    dom.baselineNote.textContent = "No baseline in focus.";
+    dom.baselineTitle.textContent = "Baseline pending";
+    dom.baselineNote.textContent = "Waiting for compare.";
     dom.baselineCaptured.textContent = "n/a";
     dom.baselineSource.textContent = "n/a";
   }
@@ -726,14 +854,9 @@ function pickInitialSelection() {
     return;
   }
 
-  const latest = currentAlert();
+  const latest = liveAlert();
   if (latest) {
     state.selectedAssetId = latest.asset_id;
-    return;
-  }
-
-  if (state.currentFrame?.frame?.asset_id) {
-    state.selectedAssetId = state.currentFrame.frame.asset_id;
     return;
   }
 
@@ -797,27 +920,24 @@ async function boot() {
     state.assets = assetsResult.value;
   }
   if (alertsResult.status === "fulfilled") {
-    state.alerts = alertsResult.value;
+    state.liveAlerts = alertsResult.value;
   }
   if (replayResult.status === "fulfilled") {
     state.replay = replayResult.value;
-  }
-  if (currentResult.status === "fulfilled") {
-    state.currentFrame = currentResult.value;
-  }
-  if (baselineResult.status === "fulfilled") {
-    state.baselineFrame = baselineResult.value;
   }
   if (metricsResult.status === "fulfilled") {
     state.metrics = metricsResult.value;
   }
 
   pickInitialSelection();
+  if (state.selectedAssetId) {
+    await loadSelectedSiteContext(state.selectedAssetId);
+  }
   renderTopbar();
   renderMap();
   renderDrawer();
   seedTranscript();
-  setMobileSheet(null);
+  setMobileSheet(liveAlert() ? "site" : null);
 
   if (healthResult.status !== "fulfilled") {
     renderHealthFallback();

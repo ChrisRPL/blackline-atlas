@@ -37,10 +37,6 @@
             <div class="map-canvas" id="map-canvas" aria-hidden="true"></div>
             <div class="map-wash"></div>
 
-            <div class="map-trust">
-              <span class="map-trust-pill" id="map-trust-state">trust pending</span>
-            </div>
-
             <div class="map-markers" id="map-markers"></div>
           </div>
         </section>
@@ -55,7 +51,7 @@
             <div class="transcript" id="chat-log">
               <article class="message assistant">
                 <p class="message-role">atlas</p>
-                <p class="message-body">Booting command channel.</p>
+                <p class="message-body">Atlas online.</p>
               </article>
             </div>
 
@@ -77,17 +73,17 @@
 
         <aside class="panel drawer-panel" data-sheet="site">
           <button class="sheet-toggle" type="button" data-sheet-target="site">
-            <span>Site</span>
+            <span>Focus</span>
             <span class="sheet-toggle-state">focus</span>
           </button>
 
           <div class="panel-shell">
             <div class="site-head">
               <div class="site-head-copy">
-                <h1 id="site-name">Waiting for selection</h1>
-                <p class="site-summary" id="site-summary">Selection summary pending.</p>
+                <h1 id="site-name">Select a site</h1>
+                <p class="site-summary" id="site-summary">Map click or command. Compare lands here.</p>
               </div>
-              <p class="status-pill idle" id="site-impact">quiet</p>
+              <p class="status-pill idle" id="site-impact">idle</p>
             </div>
 
             <p class="drawer-inline site-meta">
@@ -99,8 +95,8 @@
             <div class="tray-grid">
               <article class="drawer-card">
                 <p class="drawer-label">Current</p>
-                <h2 id="current-title">No compare</h2>
-                <p class="drawer-summary" id="current-note">Current evidence pending.</p>
+                <h2 id="current-title">Compare pending</h2>
+                <p class="drawer-summary" id="current-note">Fetching site evidence.</p>
                 <p class="tray-inline">
                   <span id="current-status">-</span>
                   <span id="current-captured">-</span>
@@ -109,8 +105,8 @@
 
               <article class="drawer-card">
                 <p class="drawer-label">Baseline</p>
-                <h2 id="baseline-title">No compare</h2>
-                <p class="drawer-summary" id="baseline-note">Baseline reference pending.</p>
+                <h2 id="baseline-title">Baseline pending</h2>
+                <p class="drawer-summary" id="baseline-note">Waiting for compare.</p>
                 <p class="tray-inline">
                   <span id="baseline-captured">-</span>
                   <span id="baseline-source">-</span>
