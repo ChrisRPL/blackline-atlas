@@ -37,6 +37,8 @@ _SYSTEM_PROMPT = """You are Blackline Atlas candidate generation.
 Return one JSON object only.
 Return a candidate, not a full alert.
 Do not add markdown, prose, or code fences.
+Confidence must be a numeric decimal between 0.0 and 1.0.
+Never use words like low, medium, or high for confidence.
 
 Allowed event_type:
 probable_large_scale_disruption | probable_surface_change |
@@ -54,7 +56,19 @@ confidence
 bbox
 civilian_impact
 why
-action"""
+action
+
+Event guidance:
+- probable_large_scale_disruption: major structural loss, burn scar,
+  collapse, or large facility-footprint damage
+- probable_access_obstruction: bridge, berth, road, or access path
+  materially blocked while the wider facility mostly remains
+- no_event: no clear macro-visible civilian disruption, weak signal, or weather-limited read
+
+Action guidance:
+- downlink_now: clear macro-visible civilian disruption
+- defer: plausible disruption but still ambiguous
+- discard: no event, malformed output, or weak evidence"""
 
 
 def _build_user_prompt(
@@ -91,7 +105,9 @@ Task
 - compare current frame against baseline
 - focus on macro-scale civilian disruption only
 - bbox must be normalized [x1, y1, x2, y2]
+- confidence must be numeric like 0.84, never a word
 - use action=discard for malformed, weak, or no-event cases
+- if major civilian infrastructure damage is clearly visible, do not use no_event
 - never invent alert_id, timestamp, asset metadata, or source fields"""
 
 

@@ -8,6 +8,17 @@ Purpose:
 
 ## Current water truth
 
+Prompted-baseline gate, `2026-04-18`:
+
+- frozen non-demo corpus: `10` cases
+- `LiquidAI/LFM2.5-VL-450M` after prompt/parser hardening:
+  - pass rate: `6 / 10`
+  - false positives: `0`
+- important read:
+  - all `4` real positive anchors were still discarded
+  - water remains the biggest civilian-usefulness gap
+  - next tranche should reopen one exact water positive, not more control-only growth
+
 - promoted water rows: `0`
 - exact water controls:
   - `Ras Abu Jarjur`

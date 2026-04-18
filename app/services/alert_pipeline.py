@@ -71,6 +71,7 @@ class StructuredAlertPipeline:
             payload = _unwrap_payload(payload)
             if not isinstance(payload, dict):
                 continue
+            payload = _normalize_payload(payload)
 
             try:
                 return AlertCandidate.model_validate(payload)
@@ -121,3 +122,23 @@ def _unwrap_payload(payload: object) -> object:
         if isinstance(nested, dict):
             return nested
     return payload
+
+
+def _normalize_payload(payload: dict[str, object]) -> dict[str, object]:
+    normalized = dict(payload)
+    confidence = normalized.get("confidence")
+    if isinstance(confidence, str):
+        mapped = _normalize_confidence_string(confidence)
+        if mapped is not None:
+            normalized["confidence"] = mapped
+    return normalized
+
+
+def _normalize_confidence_string(value: str) -> float | None:
+    normalized = value.strip().lower()
+    mapping = {
+        "low": 0.25,
+        "medium": 0.6,
+        "high": 0.9,
+    }
+    return mapping.get(normalized)

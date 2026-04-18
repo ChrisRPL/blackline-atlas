@@ -71,3 +71,19 @@ def test_structured_alert_pipeline_rejects_invalid_or_discard_outputs() -> None:
     assert invalid.alert is None
     assert discard.reason == "model_discarded"
     assert discard.alert is None
+
+
+def test_structured_alert_pipeline_repairs_qualitative_confidence_strings() -> None:
+    pipeline = StructuredAlertPipeline(model_version="lfm2.5-vl-450m-prompted")
+
+    candidate = pipeline.parse_candidate(
+        raw_output_text=(
+            '{"event_type":"no_event","severity":"low","confidence":"high",'
+            '"bbox":[0.10,0.10,0.40,0.40],"civilian_impact":"no_material_impact",'
+            '"why":"No durable disruption visible.","action":"discard"}'
+        )
+    )
+
+    assert candidate is not None
+    assert candidate.confidence == 0.9
+    assert candidate.action == "discard"

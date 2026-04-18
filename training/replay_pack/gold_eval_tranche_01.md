@@ -46,7 +46,9 @@ It is the first acquisition batch with the best chance of moving coverage, not j
 - target type:
   - pure treatment plant
 - current lead quality:
-  - first concrete lead now tracked in `training/replay_pack/water_tranche_01.md`
+  - still the biggest category gap after the `2026-04-18` prompted-baseline gate
+  - working memo:
+    - `training/replay_pack/water_tranche_01.md`
 - next action:
   - source `3` exact-site candidates with clear civilian service role
   - reject mixed power+water unless water-first and macro-visible
@@ -90,7 +92,7 @@ It is the first acquisition batch with the best chance of moving coverage, not j
 - next action:
   - prefer inland WFP / UN / NGO / MSF aid compounds first
   - probe `Tyre Red Cross center` only if compound scale looks real enough
-  - priority is now higher because current water-positive hunting remains soft
+  - keep behind `water_01` until a parcel-tight inland depot reappears
   - `Mosul Medical City Hospital` now fills one exact inland medical-aid control slot, but not the missing positive slot
 
 ### Mobility
@@ -138,9 +140,9 @@ Do in parallel with positive cases:
 
 ## Immediate next work order
 
-1. keep `water` positive hunt paused after the bounded exact-site pass stayed soft
+1. reopen `water_01` after the prompted baseline undercalled all `4` real positive anchors
 2. keep `Bahri Water Station` as the exact water control row for this tranche
-3. reopen `aid_02` now that `food_02` is landed
+3. hold `aid_02` behind water until a parcel-tight inland depot appears
 4. only resume new food scouting when weather or parcel quality beats the parked leads
 
 ## Stop rules
