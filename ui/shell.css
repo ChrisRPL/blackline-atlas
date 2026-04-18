@@ -394,6 +394,7 @@ body::before {
 .map-grid,
 .map-arc,
 .map-markers,
+.map-canvas,
 .map-brief,
 .map-trust,
 .map-coords {
@@ -403,8 +404,13 @@ body::before {
 .map-wash,
 .map-grid,
 .map-arc,
-.map-markers {
+.map-markers,
+.map-canvas {
   inset: 0;
+}
+
+.map-canvas {
+  z-index: 0;
 }
 
 .map-wash {
@@ -412,6 +418,7 @@ body::before {
     radial-gradient(circle at 18% 60%, rgba(131, 212, 203, 0.08), transparent 18%),
     radial-gradient(circle at 72% 34%, rgba(216, 161, 90, 0.08), transparent 21%),
     radial-gradient(circle at 57% 76%, rgba(131, 212, 203, 0.08), transparent 25%);
+  z-index: 1;
 }
 
 .map-grid {
@@ -419,11 +426,13 @@ body::before {
     linear-gradient(rgba(131, 212, 203, 0.04) 1px, transparent 1px),
     linear-gradient(90deg, rgba(131, 212, 203, 0.04) 1px, transparent 1px);
   background-size: 4rem 4rem;
+  z-index: 1;
 }
 
 .map-arc {
   border: 1px solid rgba(131, 212, 203, 0.08);
   border-radius: 999px;
+  z-index: 1;
 }
 
 .map-arc-a {
@@ -498,6 +507,75 @@ body::before {
   pointer-events: none;
 }
 
+.map-stage.is-live-map .map-wash {
+  opacity: 0.34;
+}
+
+.map-stage.is-live-map .map-grid {
+  opacity: 0.18;
+}
+
+.map-stage.is-live-map .map-arc {
+  opacity: 0.32;
+}
+
+.map-stage.is-live-map .map-markers::before {
+  opacity: 0.18;
+}
+
+.map-stage .maplibregl-map,
+.map-stage .maplibregl-canvas,
+.map-stage .maplibregl-canvas-container {
+  width: 100%;
+  height: 100%;
+}
+
+.map-stage .maplibregl-canvas {
+  filter: saturate(0.82) brightness(0.64) contrast(1.08);
+}
+
+.map-stage .maplibregl-control-container {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.map-stage .maplibregl-ctrl-bottom-left,
+.map-stage .maplibregl-ctrl-bottom-right,
+.map-stage .maplibregl-ctrl-top-left,
+.map-stage .maplibregl-ctrl-top-right {
+  pointer-events: auto;
+}
+
+.map-stage .maplibregl-ctrl-bottom-left {
+  left: 0.55rem;
+  bottom: 0.55rem;
+}
+
+.map-stage .maplibregl-ctrl-attrib {
+  background: rgba(7, 14, 18, 0.72);
+  color: var(--muted);
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.62rem;
+  border: 1px solid var(--line);
+}
+
+.map-stage .maplibregl-ctrl-attrib a {
+  color: var(--accent);
+}
+
+.map-stage .maplibregl-ctrl-group {
+  border-radius: 0;
+  overflow: hidden;
+  background: rgba(7, 14, 18, 0.72);
+  border: 1px solid var(--line);
+}
+
+.map-stage .maplibregl-ctrl button {
+  background: transparent;
+}
+
 .marker {
   position: absolute;
   display: inline-grid;
@@ -511,6 +589,28 @@ body::before {
   transform: translate(-50%, -50%);
   cursor: pointer;
   z-index: 1;
+}
+
+.map-marker {
+  width: 1rem;
+  height: 1rem;
+  border-radius: 50%;
+  border: 1px solid rgba(0, 0, 0, 0.24);
+  box-shadow: 0 0 0 0 rgba(131, 212, 203, 0.18);
+}
+
+.map-marker.quiet {
+  background: var(--off);
+}
+
+.map-marker.selected,
+.map-marker.hero {
+  background: var(--accent);
+}
+
+.map-marker.alert {
+  background: var(--warn);
+  animation: marker-pulse 2s ease-in-out infinite;
 }
 
 .marker-core {
@@ -761,6 +861,11 @@ body::before {
 
   .map-coords {
     left: 1rem;
+    bottom: 4rem;
+  }
+
+  .map-stage .maplibregl-ctrl-bottom-left {
+    left: 0.4rem;
     bottom: 4rem;
   }
 

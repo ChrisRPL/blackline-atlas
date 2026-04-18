@@ -18,6 +18,9 @@ const state = {
   metrics: null,
   selectedAssetId: null,
   transcriptSeeded: false,
+  map: null,
+  mapMarkers: [],
+  mapReady: false,
 };
 
 const dom = {
@@ -27,6 +30,8 @@ const dom = {
   alertChip: document.querySelector("#alert-chip"),
   trustChip: document.querySelector("#trust-chip"),
   mapStatus: document.querySelector("#map-status"),
+  mapStage: document.querySelector("#map-stage"),
+  mapCanvas: document.querySelector("#map-canvas"),
   mapFocusName: document.querySelector("#map-focus-name"),
   mapFocusSummary: document.querySelector("#map-focus-summary"),
   mapTrustState: document.querySelector("#map-trust-state"),
@@ -262,6 +267,108 @@ function selectAsset(assetId) {
   renderDrawer();
 }
 
+function clearLiveMapMarkers() {
+  state.mapMarkers.forEach((marker) => marker.remove());
+  state.mapMarkers = [];
+}
+
+function currentMapZoom() {
+  if (!state.map) {
+    return 1.4;
+  }
+  return state.map.getZoom();
+}
+
+function focusMapOnAsset(asset, { immediate = false } = {}) {
+  if (!state.map || !asset) {
+    return;
+  }
+
+  const targetZoom = Math.max(currentMapZoom(), 3.25);
+  const options = {
+    center: [asset.longitude, asset.latitude],
+    zoom: targetZoom,
+    duration: immediate ? 0 : 900,
+    essential: true,
+  };
+
+  state.map.easeTo(options);
+}
+
+function fitMapToAssets() {
+  if (!state.map || !state.assets.length || !window.maplibregl) {
+    return;
+  }
+
+  const bounds = new window.maplibregl.LngLatBounds();
+  state.assets.forEach((asset) => bounds.extend([asset.longitude, asset.latitude]));
+  state.map.fitBounds(bounds, {
+    padding: 120,
+    maxZoom: state.assets.length === 1 ? 7 : 2.8,
+    duration: 0,
+  });
+}
+
+function syncLiveMapMarkers() {
+  if (!state.map || !state.mapReady || !window.maplibregl) {
+    return;
+  }
+
+  clearLiveMapMarkers();
+  state.assets.forEach((asset) => {
+    const alert = alertForAsset(asset.asset_id);
+    const selected = state.selectedAssetId === asset.asset_id;
+    const markerEl = document.createElement("button");
+    markerEl.className = [
+      "map-marker",
+      alert ? "alert" : "quiet",
+      selected ? "selected" : "",
+      asset.hero ? "hero" : "",
+    ]
+      .filter(Boolean)
+      .join(" ");
+    markerEl.type = "button";
+    markerEl.setAttribute("aria-label", `Focus ${asset.asset_name}`);
+    markerEl.addEventListener("click", () => {
+      selectAsset(asset.asset_id);
+      appendMessage("assistant", `Map focused on ${asset.asset_name}.`);
+    });
+
+    const marker = new window.maplibregl.Marker({ element: markerEl, anchor: "center" })
+      .setLngLat([asset.longitude, asset.latitude])
+      .addTo(state.map);
+
+    state.mapMarkers.push(marker);
+  });
+}
+
+function ensureLiveMap() {
+  if (state.map || !dom.mapCanvas || !window.maplibregl) {
+    return;
+  }
+
+  state.map = new window.maplibregl.Map({
+    container: dom.mapCanvas,
+    style: "https://demotiles.maplibre.org/globe.json",
+    center: [0, 15],
+    zoom: 1.4,
+    attributionControl: true,
+  });
+
+  state.map.addControl(new window.maplibregl.NavigationControl({ visualizePitch: true }), "top-right");
+
+  state.map.on("load", () => {
+    state.mapReady = true;
+    dom.mapStage.classList.add("is-live-map");
+    fitMapToAssets();
+    syncLiveMapMarkers();
+    const selected = selectedAsset();
+    if (selected) {
+      focusMapOnAsset(selected, { immediate: true });
+    }
+  });
+}
+
 function focusLatestAlert() {
   const alert = currentAlert();
   if (!alert) {
@@ -409,6 +516,8 @@ function renderMap() {
   const alert = selected ? alertForAsset(selected.asset_id) : currentAlert();
   const bounds = computeBounds(state.assets);
 
+  ensureLiveMap();
+
   dom.mapMarkers.innerHTML = state.assets
     .map((asset) => {
       const position = project(asset, bounds);
@@ -460,6 +569,11 @@ function renderMap() {
     dom.mapTrustCopy.textContent = "No selected site yet.";
     dom.mapCoords.textContent = "Projection unavailable";
     return;
+  }
+
+  if (state.mapReady) {
+    syncLiveMapMarkers();
+    focusMapOnAsset(selected);
   }
 
   const latSpan = Math.abs(bounds.maxLat - bounds.minLat).toFixed(1);
