@@ -14,7 +14,7 @@ Use this to grow `training/replay_pack/non_demo_eval.jsonl` from a tiny demo-adj
   - `mobility`: `1` (`Baltimore Bridge`)
   - `water`: `0`
 - current non-demo controls / stress rows:
-  - `water`: `2`
+  - `water`: `3`
     - `Ras Abu Jarjur`
     - `Doha West`
     - `Bahri Water Station`
@@ -26,7 +26,7 @@ Use this to grow `training/replay_pack/non_demo_eval.jsonl` from a tiny demo-adj
 - overall annotated rows:
   - `11`
 - current split shape:
-  - `holdout_geo`: `4`
+  - `holdout_geo`: `2`
   - `dev`: `1`
   - `holdout_stress`: `6`
   - `train`: `0`
@@ -217,8 +217,8 @@ The next acquisition push should not chase more food-only cases blindly.
 
 Better order now:
 
-1. fill `aid`
-2. fill `water`
-3. keep `food` alive only where exact parcel + honest visibility already exist
+1. reopen `food` where exact parcel + honest visibility already exist
+2. keep `aid` open only for a parcel-tight inland depot, not another soft warehouse guess
+3. keep `water` positive hunting paused until a clearly structural facility case appears
 4. use already-scouted ambiguity and weather cases to widen control coverage while positive rows remain blocked
 5. keep `mobility` narrow

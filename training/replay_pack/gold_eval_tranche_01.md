@@ -142,10 +142,10 @@ Do in parallel with positive cases:
 
 ## Immediate next work order
 
-1. `water` positive hunt is paused after the bounded exact-site pass stayed soft
+1. keep `water` positive hunt paused after the bounded exact-site pass stayed soft
 2. keep `Bahri Water Station` as the exact water control row for this tranche
-3. one exact named `aid` depot only if the compound is visibly large enough in Sentinel
-4. only then reopen blocked `food` positives
+3. reopen blocked `food` positives now, because the active inland-aid lead still lacks a public parcel
+4. only resume `aid_02` when a parcel-tight inland depot survives the stop rules
 
 ## Stop rules
 
