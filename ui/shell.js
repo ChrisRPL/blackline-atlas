@@ -6,6 +6,7 @@ const urls = {
   current: new URL("/frames/current", window.location.origin),
   baseline: new URL("/frames/baseline", window.location.origin),
   metrics: new URL("/metrics", window.location.origin),
+  agentQuery: new URL("/agent/query", window.location.origin),
 };
 
 const state = {
@@ -454,13 +455,50 @@ function watchlistSummary() {
   appendMessage("assistant", `Current watchlist: ${assetList}. Ask to focus the latest alert or compare the selected site.`);
 }
 
-function handleCommand(rawText) {
+function applyAgentResponse(response) {
+  if (Array.isArray(response.alerts) && response.alerts.length) {
+    state.alerts = response.alerts;
+  }
+
+  if (response.compare) {
+    state.currentFrame = response.compare.current_frame;
+    state.baselineFrame = response.compare.baseline_frame;
+  }
+
+  if (response.focus_asset_id) {
+    state.selectedAssetId = response.focus_asset_id;
+  }
+
+  renderTopbar();
+  renderMap();
+  renderDrawer();
+}
+
+async function queryAgent(rawText) {
+  const response = await fetch(urls.agentQuery, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      query: rawText,
+      selected_asset_id: state.selectedAssetId,
+    }),
+  });
+
+  if (!response.ok) {
+    throw new Error(`/agent/query returned ${response.status}`);
+  }
+
+  return response.json();
+}
+
+function handleCommandLocally(rawText) {
   const text = rawText.trim();
   if (!text) {
     return;
   }
 
-  appendMessage("user", text);
   const command = text.toLowerCase();
 
   if (command.includes("latest") || command.includes("biggest") || command.includes("focus")) {
@@ -501,6 +539,24 @@ function handleCommand(rawText) {
     "assistant",
     "Supported commands right now: focus latest alert, explain current decision, compare latest vs baseline, show replay state, or list watchlist assets.",
   );
+}
+
+async function handleCommand(rawText) {
+  const text = rawText.trim();
+  if (!text) {
+    return;
+  }
+
+  appendMessage("user", text);
+
+  try {
+    const response = await queryAgent(text);
+    applyAgentResponse(response);
+    appendMessage("assistant", response.summary);
+  } catch (error) {
+    handleCommandLocally(text);
+    dom.channelNote.textContent = "Agent backend unavailable; local command fallback active.";
+  }
 }
 
 function renderTopbar() {

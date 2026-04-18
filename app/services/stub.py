@@ -3,8 +3,18 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import cast
 
 from app.core.config import Settings
+from app.schemas.agent import (
+    AtlasAgentCompare,
+    AtlasAgentQueryRequest,
+    AtlasAgentQueryResponse,
+    AtlasAgentTool,
+    AtlasAgentToolArgument,
+    AtlasAgentToolSpec,
+    AtlasAgentTrust,
+)
 from app.schemas.alert import Alert
 from app.schemas.asset import Asset
 from app.schemas.frame import FrameEnvelope
@@ -49,6 +59,18 @@ class MutableReplayState:
     asset_id: str | None
     scenario_id: str | None
     last_transition_at: str
+
+
+@dataclass(frozen=True)
+class _WatchlistEvaluation:
+    asset: Asset
+    scenario: ScenarioFixture
+    current_frame: FrameEnvelope
+    baseline_frame: FrameEnvelope
+    alerts: list[Alert]
+
+
+_SEVERITY_ORDER = {"high": 3, "medium": 2, "low": 1}
 
 
 class StubAtlasService:
@@ -124,6 +146,116 @@ class StubAtlasService:
     def list_assets(self) -> list[Asset]:
         return self.assets
 
+    def list_agent_tools(self) -> list[AtlasAgentToolSpec]:
+        return [
+            AtlasAgentToolSpec(
+                name="latest_alerts",
+                description="List the latest matching alerts, filtered by area or asset category.",
+                arguments=[
+                    AtlasAgentToolArgument(
+                        name="area",
+                        description="Optional region or asset-name fragment filter.",
+                    ),
+                    AtlasAgentToolArgument(
+                        name="category",
+                        description="Optional asset type filter.",
+                    ),
+                    AtlasAgentToolArgument(
+                        name="limit",
+                        description="Maximum number of alerts to return.",
+                    ),
+                ],
+            ),
+            AtlasAgentToolSpec(
+                name="biggest_disruptions",
+                description="Rank matching alerts by severity and confidence.",
+                arguments=[
+                    AtlasAgentToolArgument(
+                        name="area",
+                        description="Optional region or asset-name fragment filter.",
+                    ),
+                    AtlasAgentToolArgument(
+                        name="category",
+                        description="Optional asset type filter.",
+                    ),
+                    AtlasAgentToolArgument(
+                        name="limit",
+                        description="Maximum number of alerts to return.",
+                    ),
+                ],
+            ),
+            AtlasAgentToolSpec(
+                name="site_compare",
+                description="Return current-versus-baseline evidence for one watchlist site.",
+                arguments=[
+                    AtlasAgentToolArgument(
+                        name="site_id",
+                        description="Watchlist asset id to compare.",
+                        required=True,
+                    ),
+                ],
+            ),
+            AtlasAgentToolSpec(
+                name="explain_alert",
+                description="Explain the selected or latest alert with compare evidence.",
+                arguments=[
+                    AtlasAgentToolArgument(
+                        name="alert_id",
+                        description="Optional alert id to explain.",
+                    ),
+                    AtlasAgentToolArgument(
+                        name="selected_asset_id",
+                        description="Optional selected asset fallback when alert_id is missing.",
+                    ),
+                ],
+            ),
+        ]
+
+    def run_agent_query(self, request: AtlasAgentQueryRequest) -> AtlasAgentQueryResponse:
+        tool = request.tool or self._infer_agent_tool(request.query or "")
+        watchlist = self._watchlist_evaluations()
+        trust = self._agent_trust()
+        alerts = self._filter_agent_alerts(
+            alerts=[alert for evaluation in watchlist for alert in evaluation.alerts],
+            area=request.area or self._infer_area(request.query or ""),
+            category=request.category or self._infer_category(request.query or ""),
+            limit=request.limit,
+        )
+
+        if tool == "site_compare":
+            return self._site_compare_response(request=request, watchlist=watchlist, trust=trust)
+        if tool == "explain_alert":
+            return self._explain_alert_response(
+                request=request,
+                watchlist=watchlist,
+                alerts=alerts,
+                trust=trust,
+            )
+        if tool == "biggest_disruptions":
+            ranked = sorted(
+                alerts,
+                key=lambda alert: (
+                    _SEVERITY_ORDER.get(alert.severity, 0),
+                    alert.confidence,
+                    alert.timestamp,
+                ),
+                reverse=True,
+            )
+            return self._agent_alert_list_response(
+                tool=tool,
+                alerts=ranked,
+                trust=trust,
+                no_result_summary=(
+                    "No accepted disruptions match that filter. " "Watch posture remains active."
+                ),
+            )
+        return self._agent_alert_list_response(
+            tool=cast(AtlasAgentTool, "latest_alerts"),
+            alerts=sorted(alerts, key=lambda alert: alert.timestamp, reverse=True),
+            trust=trust,
+            no_result_summary="No accepted alerts match that filter. Replay-safe watch continues.",
+        )
+
     def start_replay(self, request: ReplayStartRequest) -> ReplayState:
         scenario = self._select_scenario(request.asset_id, request.scenario_id)
         self.replay.running = True
@@ -166,6 +298,119 @@ class StubAtlasService:
 
     def get_metrics(self) -> Metrics:
         return self._evaluate_active_scenario().metrics
+
+    def _agent_alert_list_response(
+        self,
+        *,
+        tool: AtlasAgentTool,
+        alerts: list[Alert],
+        trust: AtlasAgentTrust,
+        no_result_summary: str,
+    ) -> AtlasAgentQueryResponse:
+        if not alerts:
+            return AtlasAgentQueryResponse(
+                status="no_result",
+                tool=tool,
+                summary=no_result_summary,
+                alerts=[],
+                trust=trust,
+                replay=self.get_replay_state(),
+            )
+
+        focus = alerts[0]
+        return AtlasAgentQueryResponse(
+            status="ok",
+            tool=tool,
+            summary=(
+                f"{focus.asset_name}: {focus.why} "
+                f"{humanize_tool_label(tool)} returned {len(alerts)} matching "
+                f"{'alert' if len(alerts) == 1 else 'alerts'}."
+            ),
+            focus_asset_id=focus.asset_id,
+            focus_alert_id=focus.alert_id,
+            alerts=alerts,
+            compare=self._compare_for_asset(focus.asset_id),
+            trust=trust,
+            replay=self.get_replay_state(),
+        )
+
+    def _site_compare_response(
+        self,
+        *,
+        request: AtlasAgentQueryRequest,
+        watchlist: list[_WatchlistEvaluation],
+        trust: AtlasAgentTrust,
+    ) -> AtlasAgentQueryResponse:
+        asset_id = request.site_id or request.selected_asset_id or self.hero_asset.asset_id
+        asset = self._find_asset(asset_id)
+        if asset is None:
+            return AtlasAgentQueryResponse(
+                status="no_result",
+                tool="site_compare",
+                summary="Selected site is not on the current watchlist.",
+                trust=trust,
+                replay=self.get_replay_state(),
+            )
+
+        compare = self._compare_for_asset(asset.asset_id, watchlist=watchlist)
+        alerts = self._alerts_for_asset(asset.asset_id, watchlist=watchlist)
+        current = compare.current_frame
+        summary = (
+            f"{asset.asset_name}: current {format_agent_timestamp(current.frame.captured_at)} "
+            f"versus baseline {format_agent_timestamp(compare.baseline_frame.frame.captured_at)}. "
+            f"{'Overlay ready.' if current.overlay_ref else 'Overlay held.'}"
+        )
+        return AtlasAgentQueryResponse(
+            status="ok",
+            tool="site_compare",
+            summary=summary,
+            focus_asset_id=asset.asset_id,
+            focus_alert_id=alerts[0].alert_id if alerts else None,
+            alerts=alerts,
+            compare=compare,
+            trust=trust,
+            replay=self.get_replay_state(),
+        )
+
+    def _explain_alert_response(
+        self,
+        *,
+        request: AtlasAgentQueryRequest,
+        watchlist: list[_WatchlistEvaluation],
+        alerts: list[Alert],
+        trust: AtlasAgentTrust,
+    ) -> AtlasAgentQueryResponse:
+        target_alert = self._resolve_alert_target(
+            alert_id=request.alert_id,
+            selected_asset_id=request.selected_asset_id or request.site_id,
+            filtered_alerts=alerts,
+            watchlist=watchlist,
+        )
+        if target_alert is None:
+            return AtlasAgentQueryResponse(
+                status="no_result",
+                tool="explain_alert",
+                summary="No accepted alert is available to explain on the current watchlist.",
+                trust=trust,
+                replay=self.get_replay_state(),
+            )
+
+        compare = self._compare_for_asset(target_alert.asset_id, watchlist=watchlist)
+        return AtlasAgentQueryResponse(
+            status="ok",
+            tool="explain_alert",
+            summary=(
+                f"{target_alert.asset_name}: {target_alert.why} "
+                f"Action is {target_alert.action.replace('_', ' ')} at "
+                f"{round(target_alert.confidence * 100)}% confidence."
+            ),
+            focus_asset_id=target_alert.asset_id,
+            focus_alert_id=target_alert.alert_id,
+            alerts=[target_alert],
+            compare=compare,
+            trust=trust,
+            replay=self.get_replay_state(),
+        )
 
     def _dependency_state(
         self,
@@ -276,7 +521,10 @@ class StubAtlasService:
 
     def _evaluate_active_scenario(self):
         scenario = self._active_scenario()
-        request = self._active_frame_request()
+        return self._evaluate_scenario(scenario)
+
+    def _evaluate_scenario(self, scenario: ScenarioFixture):
+        request = FrameRequest(asset_id=scenario.asset_id, scenario_id=scenario.scenario_id)
         current = self.frame_client.get_current_frame(request)
         baseline = self.frame_client.get_baseline_frame(request)
         self.scenario_evaluator.frame_filter_policy = self.frame_filter_policy
@@ -286,6 +534,165 @@ class StubAtlasService:
             scenario=scenario,
             current=current,
             baseline=baseline,
+        )
+
+    def _watchlist_evaluations(self) -> list[_WatchlistEvaluation]:
+        evaluations: list[_WatchlistEvaluation] = []
+        for scenario in self.scenarios.values():
+            evaluated = self._evaluate_scenario(scenario)
+            evaluations.append(
+                _WatchlistEvaluation(
+                    asset=self._asset_by_id(scenario.asset_id),
+                    scenario=scenario,
+                    current_frame=evaluated.current_frame,
+                    baseline_frame=evaluated.baseline_frame,
+                    alerts=evaluated.alerts,
+                )
+            )
+        return evaluations
+
+    def _compare_for_asset(
+        self,
+        asset_id: str,
+        *,
+        watchlist: list[_WatchlistEvaluation] | None = None,
+    ) -> AtlasAgentCompare:
+        evaluation = next(
+            item
+            for item in (watchlist or self._watchlist_evaluations())
+            if item.asset.asset_id == asset_id
+        )
+        return AtlasAgentCompare(
+            asset_id=evaluation.asset.asset_id,
+            asset_name=evaluation.asset.asset_name,
+            current_frame=evaluation.current_frame,
+            baseline_frame=evaluation.baseline_frame,
+        )
+
+    def _alerts_for_asset(
+        self,
+        asset_id: str,
+        *,
+        watchlist: list[_WatchlistEvaluation] | None = None,
+    ) -> list[Alert]:
+        for evaluation in watchlist or self._watchlist_evaluations():
+            if evaluation.asset.asset_id == asset_id:
+                return evaluation.alerts
+        return []
+
+    def _filter_agent_alerts(
+        self,
+        *,
+        alerts: list[Alert],
+        area: str | None,
+        category: str | None,
+        limit: int,
+    ) -> list[Alert]:
+        filtered = alerts
+        if area:
+            area_lower = area.lower()
+            filtered = [
+                alert
+                for alert in filtered
+                if area_lower in alert.asset_name.lower()
+                or area_lower in self._asset_by_id(alert.asset_id).region.lower()
+            ]
+        if category:
+            filtered = [alert for alert in filtered if alert.asset_type == category]
+        return filtered[:limit]
+
+    def _resolve_alert_target(
+        self,
+        *,
+        alert_id: str | None,
+        selected_asset_id: str | None,
+        filtered_alerts: list[Alert],
+        watchlist: list[_WatchlistEvaluation],
+    ) -> Alert | None:
+        if alert_id:
+            for alert in filtered_alerts:
+                if alert.alert_id == alert_id:
+                    return alert
+            for evaluation in watchlist:
+                for alert in evaluation.alerts:
+                    if alert.alert_id == alert_id:
+                        return alert
+
+        if selected_asset_id:
+            selected_alerts = self._alerts_for_asset(selected_asset_id, watchlist=watchlist)
+            if selected_alerts:
+                return selected_alerts[0]
+
+        if filtered_alerts:
+            return filtered_alerts[0]
+
+        all_alerts = [alert for evaluation in watchlist for alert in evaluation.alerts]
+        if not all_alerts:
+            return None
+        return sorted(
+            all_alerts,
+            key=lambda alert: alert.timestamp,
+            reverse=True,
+        )[0]
+
+    def _infer_agent_tool(self, query: str) -> AtlasAgentTool:
+        lowered = query.lower()
+        if any(term in lowered for term in ("compare", "baseline")):
+            return "site_compare"
+        if any(term in lowered for term in ("why", "explain")):
+            return "explain_alert"
+        if any(term in lowered for term in ("biggest", "highest", "most severe")):
+            return "biggest_disruptions"
+        return "latest_alerts"
+
+    def _infer_area(self, query: str) -> str | None:
+        lowered = query.lower()
+        for asset in self.assets:
+            if asset.asset_name.lower() in lowered:
+                return asset.asset_name
+            if asset.region.lower() in lowered:
+                return asset.region
+        return None
+
+    def _infer_category(self, query: str) -> str | None:
+        lowered = query.lower()
+        for asset in self.assets:
+            if asset.asset_type.replace("_", " ") in lowered or asset.asset_type in lowered:
+                return asset.asset_type
+        if "bridge" in lowered:
+            return "bridge"
+        if "port" in lowered:
+            return "grain_port"
+        return None
+
+    def _find_asset(self, asset_id: str | None) -> Asset | None:
+        if asset_id is None:
+            return None
+        return next((asset for asset in self.assets if asset.asset_id == asset_id), None)
+
+    def _agent_trust(self) -> AtlasAgentTrust:
+        health = self.get_health()
+        if "degraded" in {
+            health.simsat_current.status,
+            health.simsat_baseline.status,
+            health.model_backend.status,
+        }:
+            return AtlasAgentTrust(
+                mode="degraded",
+                detail="live fetch degraded; cached fallback truth active",
+            )
+        if (
+            health.config.simsat_current_http_enabled
+            or health.config.simsat_baseline_http_enabled
+            or health.config.model_http_enabled
+        ):
+            return AtlasAgentTrust(
+                mode="live",
+                detail="live transport enabled with deterministic policy guardrails",
+            )
+        return AtlasAgentTrust(
+            mode="replay_safe",
+            detail="fixture-backed replay-safe truth",
         )
 
     def _frame_delegate(self):
@@ -332,3 +739,12 @@ class _CompositeSentinelFrameClient:
 
     def get_baseline_frame(self, request: FrameRequest) -> FrameEnvelope:
         return self.baseline.get_baseline_frame(request)
+
+
+def humanize_tool_label(tool: AtlasAgentTool) -> str:
+    return tool.replace("_", " ")
+
+
+def format_agent_timestamp(value: str) -> str:
+    timestamp = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    return timestamp.strftime("%Y-%m-%d %H:%M UTC")

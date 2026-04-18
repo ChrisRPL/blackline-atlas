@@ -23,6 +23,7 @@ def test_ui_shell_serves_same_origin_dashboard() -> None:
     assert "/frames/baseline" in static_response.text
     assert "/alerts" in static_response.text
     assert "/metrics" in static_response.text
+    assert "/agent/query" in static_response.text
     assert "Command channel" in response.text
     assert "Theatre map" in response.text
     assert "Selected site" in response.text

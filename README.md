@@ -135,6 +135,8 @@ Candidate selection rule:
 
 - `GET /health`
 - `GET /assets`
+- `GET /agent/tools`
+- `POST /agent/query`
 - `POST /replay/start`
 - `POST /replay/stop`
 - `GET /replay/status`

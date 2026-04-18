@@ -4,6 +4,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, Request
 
+from app.schemas.agent import AtlasAgentQueryRequest, AtlasAgentQueryResponse, AtlasAgentToolSpec
 from app.schemas.alert import Alert
 from app.schemas.asset import Asset
 from app.schemas.frame import FrameEnvelope
@@ -27,6 +28,19 @@ def health(service: Annotated[AtlasService, Depends(get_service)]) -> HealthResp
 @router.get("/assets", response_model=list[Asset])
 def assets(service: Annotated[AtlasService, Depends(get_service)]) -> list[Asset]:
     return service.list_assets()
+
+
+@router.get("/agent/tools", response_model=list[AtlasAgentToolSpec])
+def agent_tools(service: Annotated[AtlasService, Depends(get_service)]) -> list[AtlasAgentToolSpec]:
+    return service.list_agent_tools()
+
+
+@router.post("/agent/query", response_model=AtlasAgentQueryResponse)
+def agent_query(
+    payload: AtlasAgentQueryRequest,
+    service: Annotated[AtlasService, Depends(get_service)],
+) -> AtlasAgentQueryResponse:
+    return service.run_agent_query(payload)
 
 
 @router.post("/replay/start", response_model=ReplayState)

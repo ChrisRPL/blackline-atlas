@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import Protocol
 
+from app.schemas.agent import AtlasAgentQueryRequest, AtlasAgentQueryResponse, AtlasAgentToolSpec
 from app.schemas.alert import Alert
 from app.schemas.asset import Asset
 from app.schemas.frame import FrameEnvelope
@@ -14,6 +15,10 @@ class AtlasService(Protocol):
     def get_health(self) -> HealthResponse: ...
 
     def list_assets(self) -> list[Asset]: ...
+
+    def list_agent_tools(self) -> list[AtlasAgentToolSpec]: ...
+
+    def run_agent_query(self, request: AtlasAgentQueryRequest) -> AtlasAgentQueryResponse: ...
 
     def start_replay(self, request: ReplayStartRequest) -> ReplayState: ...
 

@@ -1,0 +1,80 @@
+from __future__ import annotations
+
+from fastapi.testclient import TestClient
+
+from app.main import create_app
+
+
+def test_agent_tools_contract() -> None:
+    client = TestClient(create_app())
+
+    response = client.get("/agent/tools")
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert [item["name"] for item in payload] == [
+        "latest_alerts",
+        "biggest_disruptions",
+        "site_compare",
+        "explain_alert",
+    ]
+
+
+def test_agent_query_latest_alerts_returns_watchlist_latest() -> None:
+    client = TestClient(create_app())
+
+    response = client.post("/agent/query", json={"query": "show latest alerts"})
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["tool"] == "latest_alerts"
+    assert payload["status"] == "ok"
+    assert payload["focus_asset_id"] == "demo_bridge_01"
+    assert payload["alerts"][0]["alert_id"] == "blk_00018"
+    assert payload["compare"]["asset_id"] == "demo_bridge_01"
+    assert payload["trust"]["mode"] == "replay_safe"
+
+
+def test_agent_query_biggest_disruptions_prioritizes_high_severity() -> None:
+    client = TestClient(create_app())
+
+    response = client.post("/agent/query", json={"tool": "biggest_disruptions"})
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["tool"] == "biggest_disruptions"
+    assert payload["focus_asset_id"] == "demo_port_01"
+    assert payload["alerts"][0]["severity"] == "high"
+    assert payload["compare"]["asset_id"] == "demo_port_01"
+
+
+def test_agent_query_site_compare_returns_selected_site_frames() -> None:
+    client = TestClient(create_app())
+
+    response = client.post(
+        "/agent/query",
+        json={"tool": "site_compare", "site_id": "demo_bridge_01"},
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["tool"] == "site_compare"
+    assert payload["focus_asset_id"] == "demo_bridge_01"
+    assert payload["compare"]["current_frame"]["frame"]["asset_id"] == "demo_bridge_01"
+    assert payload["compare"]["baseline_frame"]["frame"]["asset_id"] == "demo_bridge_01"
+
+
+def test_agent_query_explain_alert_uses_selected_asset_context() -> None:
+    client = TestClient(create_app())
+
+    response = client.post(
+        "/agent/query",
+        json={"query": "why is this high confidence", "selected_asset_id": "demo_port_01"},
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["tool"] == "explain_alert"
+    assert payload["focus_asset_id"] == "demo_port_01"
+    assert payload["focus_alert_id"] == "blk_00017"
+    assert "Large terminal footprint change" in payload["summary"]

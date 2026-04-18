@@ -3,9 +3,10 @@
 Read-only shell for the future single-page operator surface.
 
 Current layout:
-- left: command channel
+- top: thin status rail
 - center: theatre map
-- right: selected-site drawer
+- left-bottom: compact command dock
+- bottom: selected-site evidence tray
 
 Current scope:
 - same-origin shell at `/ui`
@@ -18,8 +19,9 @@ Current scope:
 - reads `/frames/baseline`
 - reads `/alerts`
 - reads `/metrics`
+- posts `/agent/query`
 - renders real projected watchlist points on a map-first stage
 - upgrades to a live MapLibre canvas when the browser loads the external map library
-- renders a tiny local command loop for operator-style verbs
-- renders selected-site evidence in a compact drawer
-- no real globe, no live chat backend, no replay controls yet
+- renders a deterministic backend agent/query loop for operator-style verbs
+- renders selected-site evidence in a compact tray
+- no real globe, no text-model control plane yet, no replay controls yet
