@@ -51,12 +51,6 @@
             <div class="map-arc map-arc-a"></div>
             <div class="map-arc map-arc-b"></div>
 
-            <div class="map-brief">
-              <p class="map-kicker">selected site</p>
-              <h3 id="map-focus-name">Waiting for assets</h3>
-              <p id="map-focus-summary">Map will center on the highest-priority visible site first.</p>
-            </div>
-
             <div class="map-trust">
               <span class="map-trust-pill" id="map-trust-state">trust pending</span>
               <span class="map-trust-copy" id="map-trust-copy">Loading system truth.</span>
@@ -67,146 +61,115 @@
           </div>
         </section>
 
-        <section class="panel channel-panel">
-          <div class="panel-head compact-head">
-            <div>
-              <p class="panel-kicker">Agentic control</p>
-              <h1>Command channel</h1>
+        <section class="panel channel-panel" data-sheet="chat">
+          <button class="sheet-toggle" type="button" data-sheet-target="chat">
+            <span>Command channel</span>
+            <span class="sheet-toggle-state">control</span>
+          </button>
+
+          <div class="panel-shell">
+            <div class="panel-head compact-head channel-head">
+              <div>
+                <p class="panel-kicker">Agentic control</p>
+                <h1>Command channel</h1>
+              </div>
+              <p class="panel-meta">ask / focus / explain</p>
             </div>
-            <p class="panel-meta">operator verbs only</p>
+
+            <div class="transcript" id="chat-log">
+              <article class="message assistant">
+                <p class="message-role">atlas</p>
+                <p class="message-body">Booting command channel.</p>
+              </article>
+            </div>
+
+            <div class="quick-commands">
+              <button class="command-pill" data-command="focus latest alert">Focus latest alert</button>
+            </div>
+
+            <form class="composer" id="chat-form">
+              <label class="sr-only" for="chat-input">Command</label>
+              <input
+                id="chat-input"
+                name="chat-input"
+                type="text"
+                autocomplete="off"
+                placeholder="Ask: show biggest disruption near the watchlist"
+              />
+              <button type="submit">Run</button>
+            </form>
+
+            <p class="panel-note" id="channel-note">
+              Local command loop only for now.
+            </p>
           </div>
-
-          <div class="transcript" id="chat-log">
-            <article class="message assistant">
-              <p class="message-role">atlas</p>
-              <p class="message-body">Booting command channel.</p>
-            </article>
-          </div>
-
-          <div class="quick-commands">
-            <button class="command-pill" data-command="focus latest alert">Focus latest alert</button>
-            <button class="command-pill" data-command="explain current decision">Explain decision</button>
-            <button class="command-pill" data-command="compare latest vs baseline">Compare latest vs baseline</button>
-            <button class="command-pill" data-command="show replay state">Show replay state</button>
-          </div>
-
-          <form class="composer" id="chat-form">
-            <label class="sr-only" for="chat-input">Command</label>
-            <input
-              id="chat-input"
-              name="chat-input"
-              type="text"
-              autocomplete="off"
-              placeholder="Ask: show biggest disruption near the watchlist"
-            />
-            <button type="submit">Run</button>
-          </form>
-
-          <p class="panel-note" id="channel-note">
-            Local command loop only for now. Real model-backed control comes after the interaction model is right.
-          </p>
         </section>
 
-        <aside class="panel drawer-panel">
-          <div class="panel-head compact-head">
-            <div>
-              <p class="panel-kicker">Selected site</p>
-              <h2 id="site-name">Waiting for selection</h2>
+        <aside class="panel drawer-panel" data-sheet="site">
+          <button class="sheet-toggle" type="button" data-sheet-target="site">
+            <span>Selected site</span>
+            <span class="sheet-toggle-state">evidence</span>
+          </button>
+
+          <div class="panel-shell">
+            <div class="panel-head compact-head drawer-head">
+              <div>
+                <p class="panel-kicker">Selected site</p>
+                <h2 id="site-name">Waiting for selection</h2>
+              </div>
+              <p class="status-pill idle" id="site-impact">quiet</p>
             </div>
-            <p class="status-pill idle" id="site-impact">quiet</p>
-          </div>
 
-          <article class="drawer-card drawer-primary">
-            <p class="drawer-summary" id="site-summary">
-              The site drawer will explain what changed, how sure we are, and what the operator should look at next.
+            <div class="drawer-meta">
+              <p class="drawer-summary" id="site-summary">
+                Selection summary pending.
+              </p>
+              <p class="drawer-inline">
+                <span id="site-region">-</span>
+                <span id="site-type">-</span>
+                <span id="site-coords">-</span>
+                <span id="drawer-state">idle</span>
+              </p>
+            </div>
+
+            <div class="tray-grid">
+              <article class="drawer-card tray-card">
+                <p class="drawer-label">Current</p>
+                <h3 id="current-title">Waiting for /frames/current</h3>
+                <p class="drawer-summary" id="current-note">Current-site evidence pending.</p>
+                <p class="tray-inline">
+                  <span id="current-status">-</span>
+                  <span id="current-captured">-</span>
+                </p>
+              </article>
+
+              <article class="drawer-card tray-card">
+                <p class="drawer-label">Baseline</p>
+                <h3 id="baseline-title">Waiting for /frames/baseline</h3>
+                <p class="drawer-summary" id="baseline-note">Baseline reference pending.</p>
+                <p class="tray-inline">
+                  <span id="baseline-captured">-</span>
+                  <span id="baseline-source">-</span>
+                </p>
+              </article>
+
+              <article class="drawer-card tray-card alert-card">
+                <div class="drawer-topline">
+                  <p class="drawer-label">Latest alert</p>
+                  <p class="status-pill idle" id="latest-severity">quiet</p>
+                </div>
+                <h3 id="latest-title">Waiting for /alerts</h3>
+                <p class="drawer-summary" id="latest-meta">Latest accepted alert will anchor the tray when present.</p>
+                <p class="drawer-why" id="latest-why">No active alert readout yet.</p>
+              </article>
+            </div>
+
+            <p class="support-inline">
+              Current live <span id="cfg-current">-</span> /
+              baseline live <span id="cfg-baseline">-</span> /
+              Mapbox <span id="cfg-mapbox">-</span> /
+              replay <span id="cfg-replay">-</span>
             </p>
-
-            <dl class="facts">
-              <div class="fact">
-                <dt>Region</dt>
-                <dd id="site-region">-</dd>
-              </div>
-              <div class="fact">
-                <dt>Type</dt>
-                <dd id="site-type">-</dd>
-              </div>
-              <div class="fact">
-                <dt>Coordinates</dt>
-                <dd id="site-coords">-</dd>
-              </div>
-              <div class="fact">
-                <dt>Drawer state</dt>
-                <dd id="drawer-state">idle</dd>
-              </div>
-            </dl>
-          </article>
-
-          <div class="compare-stack">
-            <article class="drawer-card">
-              <p class="drawer-label">Current frame</p>
-              <h3 id="current-title">Waiting for /frames/current</h3>
-              <p class="drawer-summary" id="current-note">Current-site evidence pending.</p>
-              <dl class="facts compact">
-                <div class="fact">
-                  <dt>Status</dt>
-                  <dd id="current-status">-</dd>
-                </div>
-                <div class="fact">
-                  <dt>Captured</dt>
-                  <dd id="current-captured">-</dd>
-                </div>
-              </dl>
-            </article>
-
-            <article class="drawer-card">
-              <p class="drawer-label">Baseline frame</p>
-              <h3 id="baseline-title">Waiting for /frames/baseline</h3>
-              <p class="drawer-summary" id="baseline-note">Baseline reference pending.</p>
-              <dl class="facts compact">
-                <div class="fact">
-                  <dt>Captured</dt>
-                  <dd id="baseline-captured">-</dd>
-                </div>
-                <div class="fact">
-                  <dt>Source</dt>
-                  <dd id="baseline-source">-</dd>
-                </div>
-              </dl>
-            </article>
-          </div>
-
-          <div class="drawer-lower">
-            <article class="drawer-card">
-              <div class="drawer-topline">
-                <p class="drawer-label">Latest alert</p>
-                <p class="status-pill idle" id="latest-severity">quiet</p>
-              </div>
-              <h3 id="latest-title">Waiting for /alerts</h3>
-              <p class="drawer-summary" id="latest-meta">Latest accepted alert will anchor the drawer when present.</p>
-              <p class="drawer-why" id="latest-why">No active alert readout yet.</p>
-            </article>
-
-            <article class="drawer-card drawer-support">
-              <p class="drawer-label">System truth</p>
-              <dl class="facts compact">
-                <div class="fact">
-                  <dt>Current live fetch</dt>
-                  <dd id="cfg-current">-</dd>
-                </div>
-                <div class="fact">
-                  <dt>Baseline live fetch</dt>
-                  <dd id="cfg-baseline">-</dd>
-                </div>
-                <div class="fact">
-                  <dt>Mapbox context</dt>
-                  <dd id="cfg-mapbox">-</dd>
-                </div>
-                <div class="fact">
-                  <dt>Replay state</dt>
-                  <dd id="cfg-replay">-</dd>
-                </div>
-              </dl>
-            </article>
           </div>
         </aside>
       </main>

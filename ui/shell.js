@@ -21,6 +21,7 @@ const state = {
   map: null,
   mapMarkers: [],
   mapReady: false,
+  mobileSheet: null,
 };
 
 const dom = {
@@ -32,12 +33,12 @@ const dom = {
   mapStatus: document.querySelector("#map-status"),
   mapStage: document.querySelector("#map-stage"),
   mapCanvas: document.querySelector("#map-canvas"),
-  mapFocusName: document.querySelector("#map-focus-name"),
-  mapFocusSummary: document.querySelector("#map-focus-summary"),
   mapTrustState: document.querySelector("#map-trust-state"),
   mapTrustCopy: document.querySelector("#map-trust-copy"),
   mapMarkers: document.querySelector("#map-markers"),
   mapCoords: document.querySelector("#map-coords"),
+  channelPanel: document.querySelector(".channel-panel"),
+  drawerPanel: document.querySelector(".drawer-panel"),
   drawerState: document.querySelector("#drawer-state"),
   siteName: document.querySelector("#site-name"),
   siteImpact: document.querySelector("#site-impact"),
@@ -66,6 +67,7 @@ const dom = {
   chatInput: document.querySelector("#chat-input"),
   channelNote: document.querySelector("#channel-note"),
   quickCommands: document.querySelectorAll(".command-pill"),
+  sheetToggles: document.querySelectorAll(".sheet-toggle"),
 };
 
 function compactLabel(value, fallback = "none") {
@@ -242,18 +244,10 @@ function seedTranscript() {
 
   dom.chatLog.innerHTML = "";
   const alert = currentAlert();
-  const selected = selectedAsset();
   const opening = alert
-    ? `Atlas online. ${alert.asset_name} is the current highest-priority readout. Ask to focus it, compare frames, or explain the decision.`
-    : `Atlas online. No active accepted alert right now. Ask for replay state, watchlist scan, or compare the current selected site.`;
+    ? `Atlas online. ${alert.asset_name} is the highest-priority readout.`
+    : "Atlas online. No active accepted alert right now.";
   appendMessage("assistant", opening);
-
-  if (selected) {
-    appendMessage(
-      "assistant",
-      `Selected site is ${selected.asset_name} in ${selected.region}. Map-first shell active; cards demoted to supporting context.`,
-    );
-  }
 
   state.transcriptSeeded = true;
 }
@@ -263,6 +257,9 @@ function selectAsset(assetId) {
     return;
   }
   state.selectedAssetId = assetId;
+  if (isMobileSheetMode()) {
+    setMobileSheet("site");
+  }
   renderMap();
   renderDrawer();
 }
@@ -277,6 +274,16 @@ function currentMapZoom() {
     return 1.4;
   }
   return state.map.getZoom();
+}
+
+function isMobileSheetMode() {
+  return window.matchMedia("(max-width: 760px)").matches;
+}
+
+function setMobileSheet(target) {
+  state.mobileSheet = isMobileSheetMode() ? target : null;
+  dom.channelPanel?.classList.toggle("sheet-open", state.mobileSheet === "chat");
+  dom.drawerPanel?.classList.toggle("sheet-open", state.mobileSheet === "site");
 }
 
 function focusMapOnAsset(asset, { immediate = false } = {}) {
@@ -562,8 +569,6 @@ function renderMap() {
 
   if (!selected) {
     dom.mapStatus.textContent = "no watchlist";
-    dom.mapFocusName.textContent = "Waiting for assets";
-    dom.mapFocusSummary.textContent = "Map needs at least one watchlist site.";
     dom.mapTrustState.textContent = "trust pending";
     dom.mapTrustState.className = "map-trust-pill neutral";
     dom.mapTrustCopy.textContent = "No selected site yet.";
@@ -578,11 +583,9 @@ function renderMap() {
 
   const latSpan = Math.abs(bounds.maxLat - bounds.minLat).toFixed(1);
   const lonSpan = Math.abs(bounds.maxLon - bounds.minLon).toFixed(1);
-  dom.mapStatus.textContent = alert ? "alert-led focus" : "watchlist focus";
-  dom.mapFocusName.textContent = selected.asset_name;
-  dom.mapFocusSummary.textContent = alert
-    ? `${humanizeSlug(alert.event_type)}. ${alert.why}`
-    : "No accepted alert on this site. Keep watching for macro-visible change, not tiny-object noise.";
+  dom.mapStatus.textContent = alert
+    ? `${selected.asset_name} / alert focus`
+    : `${selected.asset_name} / watch focus`;
   dom.mapTrustState.textContent = alert ? humanizeSlug(alert.action) : currentStatusLabel(selected.asset_id);
   dom.mapTrustState.className = alert
     ? "map-trust-pill degraded"
@@ -613,7 +616,7 @@ function renderDrawer() {
   dom.siteImpact.className = siteImpactClass(alert ? alert.severity : currentStatusLabel(selected.asset_id));
   dom.siteSummary.textContent = alert
     ? alert.why
-    : "No accepted alert on the selected site. This drawer stays useful by showing exact location, compare state, and current trust posture.";
+    : "No accepted alert on the selected site. Watch posture remains active.";
   dom.siteRegion.textContent = compactLabel(selected.region);
   dom.siteType.textContent = humanizeSlug(selected.asset_type);
   dom.siteCoords.textContent = `${selected.latitude.toFixed(3)}, ${selected.longitude.toFixed(3)}`;
@@ -622,21 +625,21 @@ function renderDrawer() {
     dom.currentTitle.textContent = state.currentFrame.frame.frame_id;
     dom.currentNote.textContent =
       state.currentFrame.accepted_for_alerting === true
-        ? "Current frame cleared into the alerting path."
-        : "Current frame stayed local before alerting.";
+        ? "Current frame accepted."
+        : "Current frame held local.";
     dom.currentStatus.textContent = currentStatusLabel(selected.asset_id);
     dom.currentCaptured.textContent = formatTimestamp(state.currentFrame.frame.captured_at);
     dom.baselineTitle.textContent = state.baselineFrame.frame.frame_id;
-    dom.baselineNote.textContent = "Baseline reference for the same selected site.";
+    dom.baselineNote.textContent = "Baseline reference for the same site.";
     dom.baselineCaptured.textContent = formatTimestamp(state.baselineFrame.frame.captured_at);
     dom.baselineSource.textContent = humanizeSlug(state.baselineFrame.frame.source);
   } else {
     dom.currentTitle.textContent = "No active compare";
-    dom.currentNote.textContent = "The selected site is not the active current-frame pair.";
+    dom.currentNote.textContent = "Selected site is not the active compare pair.";
     dom.currentStatus.textContent = "watch";
     dom.currentCaptured.textContent = "n/a";
     dom.baselineTitle.textContent = "No active compare";
-    dom.baselineNote.textContent = "Focus the latest alert or hero asset to see live compare evidence.";
+    dom.baselineNote.textContent = "Focus the latest alert to load compare evidence.";
     dom.baselineCaptured.textContent = "n/a";
     dom.baselineSource.textContent = "n/a";
   }
@@ -712,10 +715,29 @@ function bindEvents() {
     button.addEventListener("click", () => handleCommand(button.dataset.command || button.textContent || ""));
   });
 
+  dom.sheetToggles.forEach((button) => {
+    button.addEventListener("click", () => {
+      const target = button.dataset.sheetTarget || null;
+      if (!target || !isMobileSheetMode()) {
+        return;
+      }
+      setMobileSheet(state.mobileSheet === target ? null : target);
+    });
+  });
+
   dom.chatForm.addEventListener("submit", (event) => {
     event.preventDefault();
+    if (isMobileSheetMode()) {
+      setMobileSheet("chat");
+    }
     handleCommand(dom.chatInput.value);
     dom.chatInput.value = "";
+  });
+
+  window.addEventListener("resize", () => {
+    if (!isMobileSheetMode()) {
+      setMobileSheet(null);
+    }
   });
 }
 
@@ -767,6 +789,7 @@ async function boot() {
   renderMap();
   renderDrawer();
   seedTranscript();
+  setMobileSheet(null);
 
   if (healthResult.status !== "fulfilled") {
     renderHealthFallback();
