@@ -30,7 +30,10 @@ def test_agent_prompt_builder_targets_tool_plan_only() -> None:
     assert "Return JSON only" in prompt.system
     assert "latest_alerts" in prompt.system
     assert "biggest_disruptions" in prompt.system
-    assert "Allowed category values: bridge, grain_port." in prompt.system
+    assert (
+        "Allowed category values: aid_warehouse_cluster, bridge, container_port, "
+        "grain_port, logistics_hub, water_infrastructure."
+    ) in prompt.system
     assert "site_id must be exactly one watchlist asset_id or null." in prompt.system
     assert "For site_compare, set site_id" in prompt.system
     assert "selected_asset: demo_port_01" in prompt.user

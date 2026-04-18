@@ -32,6 +32,15 @@ def test_agent_query_latest_alerts_returns_watchlist_latest() -> None:
     assert payload["focus_asset_id"] == "demo_bridge_01"
     assert payload["alerts"][0]["alert_id"] == "blk_00018"
     assert payload["compare"]["asset_id"] == "demo_bridge_01"
+    assert payload["resolved"] == {
+        "tool": "latest_alerts",
+        "area": None,
+        "category": None,
+        "site_id": None,
+        "alert_id": None,
+        "selected_asset_id": None,
+        "limit": 3,
+    }
     assert payload["planner"]["mode"] == "deterministic"
     assert payload["planner"]["reason"] == "fixture_planner"
     assert payload["trust"]["mode"] == "replay_safe"
@@ -68,6 +77,8 @@ def test_agent_query_site_compare_returns_selected_site_frames() -> None:
     assert payload["focus_asset_id"] == "demo_bridge_01"
     assert payload["compare"]["current_frame"]["frame"]["asset_id"] == "demo_bridge_01"
     assert payload["compare"]["baseline_frame"]["frame"]["asset_id"] == "demo_bridge_01"
+    assert payload["resolved"]["site_id"] == "demo_bridge_01"
+    assert payload["resolved"]["tool"] == "site_compare"
 
 
 def test_agent_query_explain_alert_uses_selected_asset_context() -> None:
@@ -86,3 +97,19 @@ def test_agent_query_explain_alert_uses_selected_asset_context() -> None:
     assert payload["focus_asset_id"] == "demo_port_01"
     assert payload["focus_alert_id"] == "blk_00017"
     assert "Large terminal footprint change" in payload["summary"]
+    assert payload["resolved"]["site_id"] == "demo_port_01"
+    assert payload["resolved"]["selected_asset_id"] == "demo_port_01"
+
+
+def test_agent_query_latest_alerts_can_return_no_result_for_real_watchlist_area() -> None:
+    client = TestClient(create_app())
+
+    response = client.post("/agent/query", json={"query": "show latest alerts near Bahrain"})
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["tool"] == "latest_alerts"
+    assert payload["status"] == "no_result"
+    assert payload["focus_asset_id"] is None
+    assert payload["alerts"] == []
+    assert payload["resolved"]["area"] == "Bahrain"

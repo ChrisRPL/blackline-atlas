@@ -587,6 +587,28 @@ def test_stub_service_loads_assets_from_watchlist_manifest(tmp_path: Path) -> No
     assert service.hero_asset.asset_name == "Manifest Grain Port"
 
 
+def test_stub_service_default_watchlist_includes_real_civilian_sites() -> None:
+    service = StubAtlasService(
+        Settings(
+            app_env="test",
+            app_port=8000,
+            model_version="lfm2.5-vl-450m-prompted",
+            simsat_current_endpoint=None,
+            simsat_baseline_endpoint=None,
+            mapbox_token_present=False,
+            watchlist_path=None,
+        )
+    )
+
+    asset_ids = [asset.asset_id for asset in service.list_assets()]
+
+    assert asset_ids[:2] == ["demo_port_01", "demo_bridge_01"]
+    assert "beirut_port_01" in asset_ids
+    assert "port_sudan_01" in asset_ids
+    assert "ras_abu_jarjur_01" in asset_ids
+    assert "unhcr_baghdad_01" in asset_ids
+
+
 def test_stub_service_can_opt_in_http_agent_planner(tmp_path: Path, monkeypatch) -> None:
     monkeypatch.chdir(tmp_path)
 
@@ -747,6 +769,7 @@ def test_stub_service_resolves_missing_live_planner_site_id_from_query(
     assert response.tool == "site_compare"
     assert response.planner.mode == "live"
     assert response.focus_asset_id == "demo_bridge_01"
+    assert response.resolved.site_id == "demo_bridge_01"
 
 
 def test_stub_service_sanitizes_invalid_live_planner_area_filter(
@@ -804,6 +827,66 @@ def test_stub_service_sanitizes_invalid_live_planner_area_filter(
     assert response.planner.mode == "live"
     assert response.focus_asset_id == "demo_bridge_01"
     assert response.focus_alert_id == "blk_00018"
+    assert response.resolved.area is None
+
+
+def test_stub_service_drops_spurious_live_planner_category_filter(
+    tmp_path: Path, monkeypatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+
+    def fake_urlopen(request, timeout: float):
+        _ = request
+        _ = timeout
+        return _FakeHTTPResponse(
+            body=json.dumps(
+                {
+                    "choices": [
+                        {
+                            "message": {
+                                "content": json.dumps(
+                                    {
+                                        "tool": "latest_alerts",
+                                        "area": "Black Sea",
+                                        "category": "aid_warehouse_cluster",
+                                        "site_id": None,
+                                        "alert_id": None,
+                                    }
+                                )
+                            }
+                        }
+                    ]
+                }
+            ).encode("utf-8")
+        )
+
+    monkeypatch.setattr("app.services.agent_planner.urlopen", fake_urlopen)
+    service = StubAtlasService(
+        Settings(
+            app_env="test",
+            app_port=8000,
+            model_version="lfm2.5-vl-450m-prompted",
+            simsat_current_endpoint=None,
+            simsat_baseline_endpoint=None,
+            mapbox_token_present=False,
+            watchlist_path=None,
+            agent_model_version="hf.co/LiquidAI/LFM2.5-1.2B-Instruct-GGUF",
+            agent_endpoint="http://127.0.0.1:11434/v1/chat/completions",
+            agent_http_enabled=True,
+            agent_provider="openai_chat_completions_http",
+        )
+    )
+
+    response = service.run_agent_query(
+        AtlasAgentQueryRequest(query="show latest alerts near Black Sea"),
+    )
+
+    assert response.tool == "latest_alerts"
+    assert response.planner.mode == "live"
+    assert response.focus_asset_id == "demo_port_01"
+    assert response.focus_alert_id == "blk_00017"
+    assert response.resolved.area == "Black Sea"
+    assert response.resolved.category is None
 
 
 def test_stub_service_reports_agent_planner_http_fallback(tmp_path: Path, monkeypatch) -> None:
@@ -872,6 +955,31 @@ def test_stub_service_reports_agent_planner_invalid_json_fallback(
     assert response.tool == "site_compare"
     assert response.planner.mode == "fallback"
     assert response.planner.reason == "planner_invalid_json"
+
+
+def test_stub_service_site_compare_returns_no_result_for_metadata_only_watchlist_site() -> None:
+    service = StubAtlasService(
+        Settings(
+            app_env="test",
+            app_port=8000,
+            model_version="lfm2.5-vl-450m-prompted",
+            simsat_current_endpoint=None,
+            simsat_baseline_endpoint=None,
+            mapbox_token_present=False,
+            watchlist_path=None,
+        )
+    )
+
+    response = service.run_agent_query(
+        AtlasAgentQueryRequest(tool="site_compare", site_id="beirut_port_01"),
+    )
+
+    assert response.status == "no_result"
+    assert response.tool == "site_compare"
+    assert response.focus_asset_id == "beirut_port_01"
+    assert response.compare is None
+    assert response.summary == "No compare evidence is loaded yet for this watchlist site."
+    assert response.resolved.site_id == "beirut_port_01"
 
 
 class _FakeHTTPResponse:

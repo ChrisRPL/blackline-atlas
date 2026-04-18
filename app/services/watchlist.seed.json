@@ -16,5 +16,68 @@
     "latitude": 45.169,
     "longitude": 28.801,
     "hero": false
+  },
+  {
+    "asset_id": "beirut_port_01",
+    "asset_name": "Beirut Grain Silos",
+    "asset_type": "grain_port",
+    "region": "Port of Beirut",
+    "latitude": 33.901,
+    "longitude": 35.52,
+    "hero": false
+  },
+  {
+    "asset_id": "baltimore_bridge_01",
+    "asset_name": "Francis Scott Key Bridge",
+    "asset_type": "bridge",
+    "region": "Baltimore Harbor",
+    "latitude": 39.218,
+    "longitude": -76.531,
+    "hero": false
+  },
+  {
+    "asset_id": "port_sudan_01",
+    "asset_name": "Port Sudan Aid Hub",
+    "asset_type": "container_port",
+    "region": "Port Sudan",
+    "latitude": 19.5937,
+    "longitude": 37.236699,
+    "hero": false
+  },
+  {
+    "asset_id": "ras_abu_jarjur_01",
+    "asset_name": "Ras Abu Jarjur Desalination Plant",
+    "asset_type": "water_infrastructure",
+    "region": "Bahrain",
+    "latitude": 26.073889,
+    "longitude": 50.621944,
+    "hero": false
+  },
+  {
+    "asset_id": "doha_west_01",
+    "asset_name": "Doha West Power And Desalination Plant",
+    "asset_type": "water_infrastructure",
+    "region": "Kuwait",
+    "latitude": 29.368333,
+    "longitude": 47.788333,
+    "hero": false
+  },
+  {
+    "asset_id": "vasyshcheve_atb_01",
+    "asset_name": "Vasyshcheve ATB Distribution Center",
+    "asset_type": "logistics_hub",
+    "region": "Vasyshcheve, Kharkiv Oblast",
+    "latitude": 49.849286,
+    "longitude": 36.326572,
+    "hero": false
+  },
+  {
+    "asset_id": "unhcr_baghdad_01",
+    "asset_name": "UNHCR Baghdad Warehouse",
+    "asset_type": "aid_warehouse_cluster",
+    "region": "Al Shaljia, Baghdad",
+    "latitude": 33.341502,
+    "longitude": 44.365041,
+    "hero": false
   }
 ]

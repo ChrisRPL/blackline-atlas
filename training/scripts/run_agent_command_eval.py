@@ -8,21 +8,33 @@ from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
 DATASET_PATH = Path(__file__).resolve().parent.parent / "replay_pack" / "agent_command_eval.jsonl"
+SKIP_FIELD = "__skip__"
 
 
 @dataclass(frozen=True)
 class AgentCommandEvalCase:
     case_id: str
-    query: str
     expected_status: str
     expected_tool: str
     expected_planner_mode: str
     expected_trust_mode: str
-    expected_focus_asset_id: str
     expected_summary_contains: str
+    query: str | None = None
+    request_tool: str | None = None
+    request_area: str | None = None
+    request_category: str | None = None
+    request_site_id: str | None = None
+    request_alert_id: str | None = None
+    expected_focus_asset_id: str | None = SKIP_FIELD
     expected_alert_count: int | None = None
+    expected_planner_reason: str | None = None
+    expected_resolved_area: str | None = SKIP_FIELD
+    expected_resolved_category: str | None = SKIP_FIELD
+    expected_resolved_site_id: str | None = SKIP_FIELD
+    expected_resolved_alert_id: str | None = SKIP_FIELD
+    expected_resolved_selected_asset_id: str | None = SKIP_FIELD
     selected_asset_id: str | None = None
-    expected_focus_alert_id: str | None = None
+    expected_focus_alert_id: str | None = SKIP_FIELD
     expected_top_alert_asset_id: str | None = None
     expected_compare_asset_id: str | None = None
 
@@ -58,16 +70,22 @@ def score_case(case: AgentCommandEvalCase, payload: dict[str, object]) -> list[s
     planner = payload.get("planner")
     if not isinstance(planner, dict) or planner.get("mode") != case.expected_planner_mode:
         mismatches.append("planner_mode")
+    if case.expected_planner_reason is not None:
+        if not isinstance(planner, dict) or planner.get("reason") != case.expected_planner_reason:
+            mismatches.append("planner_reason")
 
     trust = payload.get("trust")
     if not isinstance(trust, dict) or trust.get("mode") != case.expected_trust_mode:
         mismatches.append("trust_mode")
 
-    if payload.get("focus_asset_id") != case.expected_focus_asset_id:
+    if (
+        case.expected_focus_asset_id != SKIP_FIELD
+        and payload.get("focus_asset_id") != case.expected_focus_asset_id
+    ):
         mismatches.append("focus_asset_id")
 
     if (
-        case.expected_focus_alert_id
+        case.expected_focus_alert_id != SKIP_FIELD
         and payload.get("focus_alert_id") != case.expected_focus_alert_id
     ):
         mismatches.append("focus_alert_id")
@@ -92,6 +110,38 @@ def score_case(case: AgentCommandEvalCase, payload: dict[str, object]) -> list[s
         ):
             mismatches.append("compare_asset_id")
 
+    resolved = payload.get("resolved")
+    if not isinstance(resolved, dict):
+        mismatches.append("resolved")
+    else:
+        if resolved.get("tool") != case.expected_tool:
+            mismatches.append("resolved_tool")
+        if (
+            case.expected_resolved_area != SKIP_FIELD
+            and resolved.get("area") != case.expected_resolved_area
+        ):
+            mismatches.append("resolved_area")
+        if (
+            case.expected_resolved_category != SKIP_FIELD
+            and resolved.get("category") != case.expected_resolved_category
+        ):
+            mismatches.append("resolved_category")
+        if (
+            case.expected_resolved_site_id != SKIP_FIELD
+            and resolved.get("site_id") != case.expected_resolved_site_id
+        ):
+            mismatches.append("resolved_site_id")
+        if (
+            case.expected_resolved_alert_id != SKIP_FIELD
+            and resolved.get("alert_id") != case.expected_resolved_alert_id
+        ):
+            mismatches.append("resolved_alert_id")
+        if (
+            case.expected_resolved_selected_asset_id != SKIP_FIELD
+            and resolved.get("selected_asset_id") != case.expected_resolved_selected_asset_id
+        ):
+            mismatches.append("resolved_selected_asset_id")
+
     summary = payload.get("summary")
     if not isinstance(summary, str) or case.expected_summary_contains not in summary:
         mismatches.append("summary")
@@ -100,7 +150,19 @@ def score_case(case: AgentCommandEvalCase, payload: dict[str, object]) -> list[s
 
 
 def query_case(base_url: str, case: AgentCommandEvalCase) -> dict[str, object]:
-    request_body = {"query": case.query}
+    request_body: dict[str, object] = {}
+    if case.query is not None:
+        request_body["query"] = case.query
+    if case.request_tool is not None:
+        request_body["tool"] = case.request_tool
+    if case.request_area is not None:
+        request_body["area"] = case.request_area
+    if case.request_category is not None:
+        request_body["category"] = case.request_category
+    if case.request_site_id is not None:
+        request_body["site_id"] = case.request_site_id
+    if case.request_alert_id is not None:
+        request_body["alert_id"] = case.request_alert_id
     if case.selected_asset_id:
         request_body["selected_asset_id"] = case.selected_asset_id
 

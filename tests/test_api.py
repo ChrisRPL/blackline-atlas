@@ -701,8 +701,10 @@ def test_assets_endpoint_returns_seeded_assets() -> None:
 
     assert response.status_code == 200
     payload = response.json()
-    assert len(payload) >= 2
+    assert len(payload) >= 9
     assert payload[0]["asset_id"] == "demo_port_01"
+    asset_ids = {item["asset_id"] for item in payload}
+    assert {"beirut_port_01", "port_sudan_01", "ras_abu_jarjur_01", "unhcr_baghdad_01"} <= asset_ids
 
 
 def test_replay_cycle() -> None:

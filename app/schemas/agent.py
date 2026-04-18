@@ -51,6 +51,16 @@ class AtlasAgentPlannerTelemetry(BaseModel):
     reason: AtlasAgentPlannerReason | None = None
 
 
+class AtlasAgentResolvedRequest(BaseModel):
+    tool: AtlasAgentTool
+    area: str | None = None
+    category: AssetType | None = None
+    site_id: str | None = None
+    alert_id: str | None = None
+    selected_asset_id: str | None = None
+    limit: int = Field(default=3, ge=1, le=10)
+
+
 class AtlasAgentCompare(BaseModel):
     asset_id: str
     asset_name: str
@@ -87,6 +97,7 @@ class AtlasAgentQueryResponse(BaseModel):
     status: Literal["ok", "no_result"]
     tool: AtlasAgentTool
     summary: str
+    resolved: AtlasAgentResolvedRequest
     focus_asset_id: str | None = None
     focus_alert_id: str | None = None
     alerts: list[Alert] = Field(default_factory=list)

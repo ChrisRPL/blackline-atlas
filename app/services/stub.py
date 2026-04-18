@@ -12,6 +12,7 @@ from app.schemas.agent import (
     AtlasAgentPlannerTelemetry,
     AtlasAgentQueryRequest,
     AtlasAgentQueryResponse,
+    AtlasAgentResolvedRequest,
     AtlasAgentTool,
     AtlasAgentToolArgument,
     AtlasAgentToolSpec,
@@ -233,6 +234,7 @@ class StubAtlasService:
     def run_agent_query(self, request: AtlasAgentQueryRequest) -> AtlasAgentQueryResponse:
         resolved_request, planner = self._resolve_agent_request(request)
         tool = resolved_request.tool or self._infer_agent_tool(resolved_request.query or "")
+        resolved = self._resolved_agent_request(request=resolved_request, tool=tool)
         watchlist = self._watchlist_evaluations()
         trust = self._agent_trust()
         alerts = self._filter_agent_alerts(
@@ -247,6 +249,7 @@ class StubAtlasService:
                 request=resolved_request,
                 watchlist=watchlist,
                 planner=planner,
+                resolved=resolved,
                 trust=trust,
             )
         if tool == "explain_alert":
@@ -255,6 +258,7 @@ class StubAtlasService:
                 watchlist=watchlist,
                 alerts=alerts,
                 planner=planner,
+                resolved=resolved,
                 trust=trust,
             )
         if tool == "biggest_disruptions":
@@ -271,6 +275,7 @@ class StubAtlasService:
                 tool=tool,
                 alerts=ranked,
                 planner=planner,
+                resolved=resolved,
                 trust=trust,
                 no_result_summary=(
                     "No accepted disruptions match that filter. " "Watch posture remains active."
@@ -280,6 +285,7 @@ class StubAtlasService:
             tool=cast(AtlasAgentTool, "latest_alerts"),
             alerts=sorted(alerts, key=lambda alert: alert.timestamp, reverse=True),
             planner=planner,
+            resolved=resolved,
             trust=trust,
             no_result_summary="No accepted alerts match that filter. Replay-safe watch continues.",
         )
@@ -333,6 +339,7 @@ class StubAtlasService:
         tool: AtlasAgentTool,
         alerts: list[Alert],
         planner: AtlasAgentPlannerTelemetry,
+        resolved: AtlasAgentResolvedRequest,
         trust: AtlasAgentTrust,
         no_result_summary: str,
     ) -> AtlasAgentQueryResponse:
@@ -341,6 +348,7 @@ class StubAtlasService:
                 status="no_result",
                 tool=tool,
                 summary=no_result_summary,
+                resolved=resolved,
                 alerts=[],
                 planner=planner,
                 trust=trust,
@@ -356,6 +364,7 @@ class StubAtlasService:
                 f"{humanize_tool_label(tool)} returned {len(alerts)} matching "
                 f"{'alert' if len(alerts) == 1 else 'alerts'}."
             ),
+            resolved=resolved,
             focus_asset_id=focus.asset_id,
             focus_alert_id=focus.alert_id,
             alerts=alerts,
@@ -371,6 +380,7 @@ class StubAtlasService:
         request: AtlasAgentQueryRequest,
         watchlist: list[_WatchlistEvaluation],
         planner: AtlasAgentPlannerTelemetry,
+        resolved: AtlasAgentResolvedRequest,
         trust: AtlasAgentTrust,
     ) -> AtlasAgentQueryResponse:
         asset_id = request.site_id or request.selected_asset_id or self.hero_asset.asset_id
@@ -380,6 +390,7 @@ class StubAtlasService:
                 status="no_result",
                 tool="site_compare",
                 summary="Selected site is not on the current watchlist.",
+                resolved=resolved,
                 planner=planner,
                 trust=trust,
                 replay=self.get_replay_state(),
@@ -387,6 +398,17 @@ class StubAtlasService:
 
         compare = self._compare_for_asset(asset.asset_id, watchlist=watchlist)
         alerts = self._alerts_for_asset(asset.asset_id, watchlist=watchlist)
+        if compare is None:
+            return AtlasAgentQueryResponse(
+                status="no_result",
+                tool="site_compare",
+                summary="No compare evidence is loaded yet for this watchlist site.",
+                resolved=resolved,
+                focus_asset_id=asset.asset_id,
+                planner=planner,
+                trust=trust,
+                replay=self.get_replay_state(),
+            )
         current = compare.current_frame
         summary = (
             f"{asset.asset_name}: current {format_agent_timestamp(current.frame.captured_at)} "
@@ -397,6 +419,7 @@ class StubAtlasService:
             status="ok",
             tool="site_compare",
             summary=summary,
+            resolved=resolved,
             focus_asset_id=asset.asset_id,
             focus_alert_id=alerts[0].alert_id if alerts else None,
             alerts=alerts,
@@ -413,6 +436,7 @@ class StubAtlasService:
         watchlist: list[_WatchlistEvaluation],
         alerts: list[Alert],
         planner: AtlasAgentPlannerTelemetry,
+        resolved: AtlasAgentResolvedRequest,
         trust: AtlasAgentTrust,
     ) -> AtlasAgentQueryResponse:
         target_alert = self._resolve_alert_target(
@@ -426,6 +450,7 @@ class StubAtlasService:
                 status="no_result",
                 tool="explain_alert",
                 summary="No accepted alert is available to explain on the current watchlist.",
+                resolved=resolved,
                 planner=planner,
                 trust=trust,
                 replay=self.get_replay_state(),
@@ -440,6 +465,7 @@ class StubAtlasService:
                 f"Action is {target_alert.action.replace('_', ' ')} at "
                 f"{round(target_alert.confidence * 100)}% confidence."
             ),
+            resolved=resolved,
             focus_asset_id=target_alert.asset_id,
             focus_alert_id=target_alert.alert_id,
             alerts=[target_alert],
@@ -631,17 +657,42 @@ class StubAtlasService:
         asset_id: str,
         *,
         watchlist: list[_WatchlistEvaluation] | None = None,
-    ) -> AtlasAgentCompare:
+    ) -> AtlasAgentCompare | None:
         evaluation = next(
-            item
-            for item in (watchlist or self._watchlist_evaluations())
-            if item.asset.asset_id == asset_id
+            (
+                item
+                for item in (watchlist or self._watchlist_evaluations())
+                if item.asset.asset_id == asset_id
+            ),
+            None,
         )
+        if evaluation is None:
+            return None
         return AtlasAgentCompare(
             asset_id=evaluation.asset.asset_id,
             asset_name=evaluation.asset.asset_name,
             current_frame=evaluation.current_frame,
             baseline_frame=evaluation.baseline_frame,
+        )
+
+    def _resolved_agent_request(
+        self,
+        *,
+        request: AtlasAgentQueryRequest,
+        tool: AtlasAgentTool,
+    ) -> AtlasAgentResolvedRequest:
+        effective_site_id = request.site_id
+        if effective_site_id is None and tool in {"site_compare", "explain_alert"}:
+            effective_site_id = request.selected_asset_id
+
+        return AtlasAgentResolvedRequest(
+            tool=tool,
+            area=request.area,
+            category=request.category,
+            site_id=effective_site_id,
+            alert_id=request.alert_id,
+            selected_asset_id=request.selected_asset_id,
+            limit=request.limit,
         )
 
     def _alerts_for_asset(
@@ -896,11 +947,16 @@ class StubAtlasService:
         request: AtlasAgentQueryRequest,
     ) -> AtlasAgentPlan:
         area = self._canonical_area(plan.area)
+        category = self._canonical_category(plan.category)
+        if request.category is None and category is not None:
+            if not self._query_mentions_category(request.query or "", category):
+                category = None
         site_id = plan.site_id if self._find_asset(plan.site_id) is not None else None
         alert_id = plan.alert_id if request.alert_id else None
         return plan.model_copy(
             update={
                 "area": area,
+                "category": category,
                 "site_id": site_id,
                 "alert_id": alert_id,
             }
@@ -916,6 +972,27 @@ class StubAtlasService:
             if asset.region.lower() == area_lower:
                 return asset.region
         return None
+
+    def _canonical_category(self, category: str | None) -> str | None:
+        if not category:
+            return None
+        category_lower = category.lower()
+        known = {asset.asset_type for asset in self.assets}
+        return next((value for value in known if value == category_lower), None)
+
+    def _query_mentions_category(self, query: str, category: str) -> bool:
+        lowered = query.lower()
+        if category in lowered or category.replace("_", " ") in lowered:
+            return True
+        category_tokens = {
+            "bridge": {"bridge"},
+            "grain_port": {"grain port", "grain terminal", "port"},
+            "container_port": {"container port", "aid hub", "port"},
+            "water_infrastructure": {"water", "desalination", "treatment plant"},
+            "logistics_hub": {"logistics", "distribution", "warehouse"},
+            "aid_warehouse_cluster": {"aid", "warehouse", "unhcr", "wfp", "red cross"},
+        }
+        return any(token in lowered for token in category_tokens.get(category, set()))
 
     def _infer_agent_tool(self, query: str) -> AtlasAgentTool:
         lowered = query.lower()

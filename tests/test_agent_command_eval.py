@@ -33,7 +33,9 @@ def test_load_agent_command_eval_cases(tmp_path: Path) -> None:
             '{"case_id":"case_01","query":"show latest alerts","expected_status":"ok",'
             '"expected_tool":"latest_alerts","expected_planner_mode":"live",'
             '"expected_trust_mode":"replay_safe","expected_focus_asset_id":"demo_bridge_01",'
-            '"expected_summary_contains":"latest alerts"}\n'
+            '"expected_summary_contains":"latest alerts","expected_resolved_area":null,'
+            '"expected_resolved_category":null,"expected_resolved_site_id":null,'
+            '"expected_resolved_alert_id":null,"expected_resolved_selected_asset_id":null}\n'
         ),
         encoding="utf-8",
     )
@@ -59,6 +61,12 @@ def test_score_case_reports_mismatch_labels() -> None:
         expected_top_alert_asset_id="demo_port_01",
         expected_compare_asset_id="demo_port_01",
         expected_summary_contains="biggest disruptions",
+        expected_planner_reason="planner_invalid_json",
+        expected_resolved_area="Black Sea",
+        expected_resolved_category=None,
+        expected_resolved_site_id="demo_port_01",
+        expected_resolved_alert_id=None,
+        expected_resolved_selected_asset_id=None,
     )
 
     mismatches = score_case(
@@ -66,7 +74,7 @@ def test_score_case_reports_mismatch_labels() -> None:
         {
             "status": "ok",
             "tool": "latest_alerts",
-            "planner": {"mode": "fallback"},
+            "planner": {"mode": "fallback", "reason": "planner_http_failed"},
             "trust": {"mode": "degraded"},
             "focus_asset_id": "demo_bridge_01",
             "focus_alert_id": "blk_00018",
@@ -75,6 +83,15 @@ def test_score_case_reports_mismatch_labels() -> None:
                 {"asset_id": "demo_port_01"},
             ],
             "compare": {"asset_id": "demo_bridge_01"},
+            "resolved": {
+                "tool": "latest_alerts",
+                "area": "Lower Danube",
+                "category": None,
+                "site_id": None,
+                "alert_id": None,
+                "selected_asset_id": None,
+                "limit": 3,
+            },
             "summary": "wrong summary",
         },
     )
@@ -82,11 +99,15 @@ def test_score_case_reports_mismatch_labels() -> None:
     assert mismatches == [
         "tool",
         "planner_mode",
+        "planner_reason",
         "trust_mode",
         "focus_asset_id",
         "focus_alert_id",
         "alert_count",
         "top_alert_asset_id",
         "compare_asset_id",
+        "resolved_tool",
+        "resolved_area",
+        "resolved_site_id",
         "summary",
     ]
