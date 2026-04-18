@@ -14,6 +14,22 @@ It watches a small, curated set of public civilian lifelines such as food hubs, 
 - deterministic replay and cached fallback paths
 - strict civilian, non-tactical scope
 
+## Repo tree
+
+```text
+blackline-atlas/
+├── app/
+│   ├── api/         FastAPI routes
+│   ├── core/        config and app wiring
+│   ├── schemas/     typed boundaries for assets, frames, alerts, replay, health
+│   └── services/    runtime spine, planner seam, replay/eval helpers, watchlist
+├── training/
+│   ├── replay_pack/ annotated eval rows, tranche plans, acquisition memos
+│   └── scripts/     SimSat capture, corpus build, eval, prompted baseline runs
+├── tests/           API, service, eval, and UI regressions
+└── ui/              same-origin map-first shell and static assets
+```
+
 ## Screens
 
 Map-first shell:
@@ -34,6 +50,13 @@ This repo is optimized for:
 - one clear end-to-end demonstration path
 - structured outputs over chatty text
 - deterministic replay and cached fallback paths
+
+## How it works
+
+1. Fetch current Sentinel imagery for a small curated watchlist.
+2. Pair it with a historical baseline.
+3. Suppress low-value frames locally.
+4. Emit a compact structured alert only when macro-visible disruption is defensible.
 
 ## What this is not
 
@@ -66,15 +89,6 @@ This repo contains:
 - a SimSat Sentinel capture-manifest exporter for freezing real current/baseline pairs
 - a Liquid-compatible corpus freezer that joins SimSat captures with replay labels
 - tests for API and service behavior
-
-## Repo layout
-
-```text
-app/        backend services, routes, schemas, policy spine
-tests/      API and service regressions
-training/   replay pack, eval harness, training helpers
-ui/         same-origin dashboard shell
-```
 
 ## Where community help matters most
 
@@ -184,15 +198,6 @@ Candidate selection rule:
 - `GET /frames/baseline`
 - `GET /alerts`
 - `GET /metrics`
-
-## v0 priorities
-
-1. Stable end-to-end flow
-2. Deterministic replay
-3. Cached current/baseline frame retrieval
-4. Structured alert schema
-5. One-page UI
-6. Eval harness before training
 
 ## Hugging Face workflows
 
