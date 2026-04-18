@@ -161,3 +161,25 @@ This project can optionally use Hugging Face tooling for:
 - evaluation
 - training on HF Jobs
 - Hub artifact handling
+
+## Agent control plane
+
+The `/agent/query` contract is now deterministic-first:
+
+- text planner chooses a tool and filters
+- deterministic backend tools execute:
+  - `latest_alerts`
+  - `biggest_disruptions`
+  - `site_compare`
+  - `explain_alert`
+- trust, ranking, replay/live truth, and alert evidence remain backend-owned
+
+Optional text-planner envs:
+
+```bash
+AGENT_MODEL_VERSION=lfm2.5-1.2b-instruct
+AGENT_ENDPOINT=
+AGENT_HTTP_ENABLED=
+AGENT_API_KEY=
+AGENT_PROVIDER=atlas_json_http
+```

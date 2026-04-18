@@ -5,6 +5,7 @@ from dataclasses import replace
 from pathlib import Path
 
 from app.core.config import Settings
+from app.schemas.agent import AtlasAgentQueryRequest
 from app.schemas.replay import ReplayStartRequest
 from app.services.frame_filters import FrameFilterPolicy
 from app.services.model_wrapper import PromptedCandidateModel
@@ -583,6 +584,53 @@ def test_stub_service_loads_assets_from_watchlist_manifest(tmp_path: Path) -> No
     assert [asset.asset_id for asset in assets] == ["demo_port_01", "demo_bridge_01"]
     assert assets[0].asset_name == "Manifest Grain Port"
     assert service.hero_asset.asset_name == "Manifest Grain Port"
+
+
+def test_stub_service_can_opt_in_http_agent_planner(tmp_path: Path, monkeypatch) -> None:
+    monkeypatch.chdir(tmp_path)
+
+    def fake_urlopen(request, timeout: float):
+        assert request.full_url == "https://example.test/agent"
+        assert timeout == 10.0
+        body = json.loads(request.data.decode("utf-8"))
+        assert body["model_version"] == "lfm2.5-1.2b-instruct"
+        return _FakeHTTPResponse(
+            body=json.dumps(
+                {
+                    "output_text": json.dumps(
+                        {
+                            "tool": "site_compare",
+                            "site_id": "demo_bridge_01",
+                        }
+                    )
+                }
+            ).encode("utf-8")
+        )
+
+    monkeypatch.setattr("app.services.agent_planner.urlopen", fake_urlopen)
+    service = StubAtlasService(
+        Settings(
+            app_env="test",
+            app_port=8000,
+            model_version="lfm2.5-vl-450m-prompted",
+            simsat_current_endpoint=None,
+            simsat_baseline_endpoint=None,
+            mapbox_token_present=False,
+            watchlist_path=None,
+            agent_endpoint="https://example.test/agent",
+            agent_http_enabled=True,
+            agent_provider="atlas_json_http",
+        )
+    )
+
+    response = service.run_agent_query(
+        AtlasAgentQueryRequest(query="compare the bridge"),
+    )
+
+    assert response.tool == "site_compare"
+    assert response.focus_asset_id == "demo_bridge_01"
+    assert response.compare is not None
+    assert response.compare.asset_id == "demo_bridge_01"
 
 
 class _FakeHTTPResponse:

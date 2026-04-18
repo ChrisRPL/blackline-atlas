@@ -36,6 +36,11 @@ class Settings:
     model_http_enabled: bool = False
     model_api_key: str | None = None
     model_provider: str = "atlas_json_http"
+    agent_model_version: str = "lfm2.5-1.2b-instruct"
+    agent_endpoint: str | None = None
+    agent_http_enabled: bool = False
+    agent_api_key: str | None = None
+    agent_provider: str = "atlas_json_http"
 
 
 def env_flag(name: str, default: bool = False) -> bool:
@@ -63,4 +68,9 @@ def get_settings() -> Settings:
         model_http_enabled=env_flag("MODEL_HTTP_ENABLED"),
         model_api_key=os.getenv("MODEL_API_KEY") or None,
         model_provider=os.getenv("MODEL_PROVIDER", "atlas_json_http"),
+        agent_model_version=os.getenv("AGENT_MODEL_VERSION", "lfm2.5-1.2b-instruct"),
+        agent_endpoint=os.getenv("AGENT_ENDPOINT") or None,
+        agent_http_enabled=env_flag("AGENT_HTTP_ENABLED"),
+        agent_api_key=os.getenv("AGENT_API_KEY") or None,
+        agent_provider=os.getenv("AGENT_PROVIDER", "atlas_json_http"),
     )

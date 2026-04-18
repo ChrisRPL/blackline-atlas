@@ -8,6 +8,7 @@ from typing import cast
 from app.core.config import Settings
 from app.schemas.agent import (
     AtlasAgentCompare,
+    AtlasAgentPlan,
     AtlasAgentQueryRequest,
     AtlasAgentQueryResponse,
     AtlasAgentTool,
@@ -21,6 +22,13 @@ from app.schemas.frame import FrameEnvelope
 from app.schemas.health import HealthConfig, HealthDependency, HealthResponse
 from app.schemas.metrics import Metrics
 from app.schemas.replay import ReplayStartRequest, ReplayState
+from app.services.agent_planner import (
+    FixtureAgentPlannerBackend,
+    HttpAgentPlannerBackend,
+    PromptedAtlasAgentPlanner,
+)
+from app.services.agent_prompt_builder import AgentPlannerPromptBuilder
+from app.services.agent_provider import resolve_http_agent_planner_provider
 from app.services.alert_pipeline import StructuredAlertPipeline
 from app.services.baseline_compare import FixtureBaselineComparator
 from app.services.frame_cache import FrameCacheLayout
@@ -93,6 +101,11 @@ class StubAtlasService:
             model_version=self.settings.model_version,
             backend=self._model_backend(),
             prompt_builder=CandidatePromptBuilder(),
+        )
+        self.agent_planner = PromptedAtlasAgentPlanner(
+            model_version=self.settings.agent_model_version,
+            backend=self._agent_planner_backend(),
+            prompt_builder=AgentPlannerPromptBuilder(),
         )
         self.scenario_evaluator = ScenarioEvaluator(
             comparator=self.baseline_comparator,
@@ -212,21 +225,26 @@ class StubAtlasService:
         ]
 
     def run_agent_query(self, request: AtlasAgentQueryRequest) -> AtlasAgentQueryResponse:
-        tool = request.tool or self._infer_agent_tool(request.query or "")
+        resolved_request = self._resolve_agent_request(request)
+        tool = resolved_request.tool or self._infer_agent_tool(resolved_request.query or "")
         watchlist = self._watchlist_evaluations()
         trust = self._agent_trust()
         alerts = self._filter_agent_alerts(
             alerts=[alert for evaluation in watchlist for alert in evaluation.alerts],
-            area=request.area or self._infer_area(request.query or ""),
-            category=request.category or self._infer_category(request.query or ""),
-            limit=request.limit,
+            area=resolved_request.area,
+            category=resolved_request.category,
+            limit=resolved_request.limit,
         )
 
         if tool == "site_compare":
-            return self._site_compare_response(request=request, watchlist=watchlist, trust=trust)
+            return self._site_compare_response(
+                request=resolved_request,
+                watchlist=watchlist,
+                trust=trust,
+            )
         if tool == "explain_alert":
             return self._explain_alert_response(
-                request=request,
+                request=resolved_request,
                 watchlist=watchlist,
                 alerts=alerts,
                 trust=trust,
@@ -519,6 +537,20 @@ class StubAtlasService:
             )
         return FixtureRawCandidateBackend()
 
+    def _agent_planner_backend(self):
+        provider = resolve_http_agent_planner_provider(self.settings.agent_provider)
+        if (
+            self.settings.agent_http_enabled
+            and self.settings.agent_endpoint
+            and provider is not None
+        ):
+            return HttpAgentPlannerBackend(
+                endpoint=self.settings.agent_endpoint,
+                provider=provider,
+                api_key=self.settings.agent_api_key,
+            )
+        return FixtureAgentPlannerBackend()
+
     def _evaluate_active_scenario(self):
         scenario = self._active_scenario()
         return self._evaluate_scenario(scenario)
@@ -634,6 +666,39 @@ class StubAtlasService:
             key=lambda alert: alert.timestamp,
             reverse=True,
         )[0]
+
+    def _resolve_agent_request(self, request: AtlasAgentQueryRequest) -> AtlasAgentQueryRequest:
+        if request.tool or not request.query:
+            return request.model_copy(
+                update={
+                    "area": request.area or self._infer_area(request.query or ""),
+                    "category": request.category or self._infer_category(request.query or ""),
+                }
+            )
+
+        fallback_plan = AtlasAgentPlan(
+            tool=self._infer_agent_tool(request.query),
+            area=request.area or self._infer_area(request.query),
+            category=request.category or self._infer_category(request.query),
+            site_id=request.site_id,
+            alert_id=request.alert_id,
+        )
+        selected_asset = self._find_asset(request.selected_asset_id)
+        plan = self.agent_planner.plan(
+            query=request.query,
+            assets=self.assets,
+            selected_asset=selected_asset,
+            fallback_plan=fallback_plan,
+        )
+        return request.model_copy(
+            update={
+                "tool": plan.tool,
+                "area": request.area or plan.area,
+                "category": request.category or plan.category,
+                "site_id": request.site_id or plan.site_id,
+                "alert_id": request.alert_id or plan.alert_id,
+            }
+        )
 
     def _infer_agent_tool(self, query: str) -> AtlasAgentTool:
         lowered = query.lower()

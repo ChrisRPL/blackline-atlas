@@ -60,6 +60,14 @@ class AtlasAgentQueryRequest(BaseModel):
         return self
 
 
+class AtlasAgentPlan(BaseModel):
+    tool: AtlasAgentTool
+    area: str | None = None
+    category: AssetType | None = None
+    site_id: str | None = None
+    alert_id: str | None = None
+
+
 class AtlasAgentQueryResponse(BaseModel):
     status: Literal["ok", "no_result"]
     tool: AtlasAgentTool
