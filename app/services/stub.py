@@ -1060,6 +1060,16 @@ class StubAtlasService:
             "water_infrastructure": {"water", "desalination", "treatment plant"},
             "logistics_hub": {"logistics", "distribution", "warehouse"},
             "aid_warehouse_cluster": {"aid", "warehouse", "unhcr", "wfp", "red cross"},
+            "medical_aid_node": {
+                "hospital",
+                "medical",
+                "ambulance",
+                "clinic",
+                "health directorate",
+                "red crescent",
+                "red cross",
+                "msf",
+            },
         }
         return any(token in lowered for token in category_tokens.get(category, set()))
 

@@ -95,6 +95,7 @@ It is the first acquisition batch with the best chance of moving coverage, not j
   - prefer inland WFP / UN / NGO / MSF aid compounds first
   - probe `Tyre Red Cross center` only if compound scale looks real enough
   - priority is now higher because current water-positive hunting remains soft
+  - `Mosul Medical City Hospital` now fills one exact inland medical-aid control slot, but not the missing positive slot
 
 ### Mobility
 

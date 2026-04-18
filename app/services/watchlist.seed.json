@@ -88,5 +88,14 @@
     "latitude": 33.341502,
     "longitude": 44.365041,
     "hero": false
+  },
+  {
+    "asset_id": "mosul_medical_city_01",
+    "asset_name": "Mosul Medical City Hospital",
+    "asset_type": "medical_aid_node",
+    "region": "West Mosul, Nineveh",
+    "latitude": 36.357025,
+    "longitude": 43.116703,
+    "hero": false
   }
 ]

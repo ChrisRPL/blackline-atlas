@@ -13,6 +13,7 @@ AssetType = Literal[
     "rail_yard",
     "aid_corridor_node",
     "aid_warehouse_cluster",
+    "medical_aid_node",
 ]
 AssetEvidenceState = Literal[
     "watch_only",

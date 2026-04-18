@@ -29,6 +29,7 @@ def test_non_demo_eval_pack_rows_parse() -> None:
         "vasyshcheve_atb_address_scar_ambiguity",
         "unhcr_baghdad_warehouse_no_material_change",
         "bahri_water_station_no_material_change",
+        "mosul_medical_city_broad_damage_ambiguity",
     ]
     assert rows[0].split == "holdout_geo"
     assert rows[0].holdout_reason == "retrospective_food_security_anchor"
@@ -57,4 +58,9 @@ def test_non_demo_eval_pack_rows_parse() -> None:
     assert (
         by_case_id["bahri_water_station_no_material_change"].holdout_reason
         == "exact_conflict_water_control_no_macro_change"
+    )
+    assert by_case_id["mosul_medical_city_broad_damage_ambiguity"].split == "holdout_stress"
+    assert (
+        by_case_id["mosul_medical_city_broad_damage_ambiguity"].holdout_reason
+        == "exact_medical_aid_broad_damage_ambiguity_control"
     )

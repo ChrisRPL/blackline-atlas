@@ -11,9 +11,11 @@ Purpose:
 - promoted aid rows: `1`
   - `Port Sudan Aid Hub`
 - inland aid positives: `0`
-- strongest current repo lead:
-  - `Tyre Red Cross center`
-  - but current tranche already warns it may be too small for honest Sentinel labeling
+- exact aid / medical-aid controls:
+  - `UNHCR Baghdad Warehouse`
+  - `Mosul Medical City Hospital`
+- strongest current positive repo lead:
+  - `WFP El Obeid logistics base / Agricultural Bank of Sudan warehouse complex`
 
 Rule:
 - aid next should be:
@@ -171,12 +173,38 @@ Reject:
 - sources:
   - [WFP statement on incident at Al-Ghafari warehouse](https://www.wfp.org/news/statement-incident-wfp-warehouse-gaza)
 
+### `aid_06` Mosul Medical City Hospital
+
+- country:
+  - `Iraq`
+- type:
+  - `medical_aid_node`
+- why:
+  - exact inland medical campus with obvious civilian-use framing
+  - large enough to matter on the watchlist
+  - useful as a strict ambiguity control for broader urban battle damage
+- parcel state:
+  - exact Airwars coordinates:
+    - `36.3570248, 43.116703`
+- status:
+  - `promoted_to_non_demo_eval_as_ambiguity_control`
+- next action:
+  - clean pair exists:
+    - baseline request `2017-02-15T10:00:00Z` -> returned `2017-02-11T07:55:46Z` with `30.921766` cloud
+    - current request `2017-02-25T10:00:00Z` -> returned `2017-02-21T07:58:34Z` with `2.300551` cloud
+  - result:
+    - visible large-area damage surrounds the medical campus
+    - but the exact hospital parcel cannot be separated defensibly from broader city destruction in Sentinel
+    - useful exact inland medical-aid ambiguity control, not a positive row
+- sources:
+  - [Airwars on Mosul Medical City Hospital strike](https://airwars.org/civilian-casualties/ci463-february-17-2017/)
+
 ## Immediate next work order
 
 1. keep `aid_01` `El Obeid` on hold unless the ABS complex itself becomes publicly mappable
 2. keep `aid_02` `Lankien` as evidence only unless a larger hospital-support warehouse campus is publicly pinned
 3. keep `Tyre` only if scale permits
-4. `UNHCR Baghdad` is now the exact aid benchmark / control anchor
+4. `UNHCR Baghdad` and `Mosul Medical City` are now the exact aid / medical-aid control anchors
 5. if no inland aid positive survives, reopen inland `food` before adding more aid notes
 
 ## Stop rules

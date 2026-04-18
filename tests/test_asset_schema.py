@@ -34,3 +34,16 @@ def test_asset_allows_aid_warehouse_cluster_type() -> None:
     )
 
     assert asset.asset_type == "aid_warehouse_cluster"
+
+
+def test_asset_allows_medical_aid_node_type() -> None:
+    asset = Asset(
+        asset_id="medical_aid_01",
+        asset_name="Demo Medical Aid Node",
+        asset_type="medical_aid_node",
+        region="Idlib",
+        latitude=35.9,
+        longitude=36.6,
+    )
+
+    assert asset.asset_type == "medical_aid_node"
