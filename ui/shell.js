@@ -32,6 +32,7 @@ const dom = {
   modeChip: document.querySelector("#mode-chip"),
   alertChip: document.querySelector("#alert-chip"),
   trustChip: document.querySelector("#trust-chip"),
+  plannerChip: document.querySelector("#planner-chip"),
   mapStatus: document.querySelector("#map-status"),
   mapStage: document.querySelector("#map-stage"),
   mapCanvas: document.querySelector("#map-canvas"),
@@ -239,7 +240,7 @@ function appendMessage(role, text) {
   dom.chatLog.scrollTop = dom.chatLog.scrollHeight;
 }
 
-function plannerNote(planner) {
+function applyPlannerTelemetry(planner) {
   if (!planner) {
     state.plannerFallbackActive = false;
     return "Ask / focus / explain.";
@@ -257,6 +258,14 @@ function plannerNote(planner) {
 
   state.plannerFallbackActive = false;
   return "Ask / focus / explain.";
+}
+
+function renderPlannerChip() {
+  if (!dom.plannerChip) {
+    return;
+  }
+
+  dom.plannerChip.hidden = !state.plannerFallbackActive;
 }
 
 function seedTranscript() {
@@ -572,10 +581,14 @@ async function handleCommand(rawText) {
 
   try {
     const response = await queryAgent(text);
+    const channelNote = applyPlannerTelemetry(response.planner);
     applyAgentResponse(response);
     appendMessage("assistant", response.summary);
-    dom.channelNote.textContent = plannerNote(response.planner);
+    dom.channelNote.textContent = channelNote;
+    renderPlannerChip();
   } catch (error) {
+    state.plannerFallbackActive = false;
+    renderPlannerChip();
     handleCommandLocally(text);
     dom.channelNote.textContent = "Agent backend unavailable; local command fallback active.";
   }
@@ -591,6 +604,7 @@ function renderTopbar() {
   dom.alertChip.className = state.alerts.length ? "chip degraded" : "chip neutral";
   dom.trustChip.textContent = summary.trustText;
   dom.trustChip.className = summary.trustClass;
+  renderPlannerChip();
 
   const replayText = state.replay?.running ? "replay active" : "replay idle";
   dom.topCopy.textContent = `${replayText} / ${state.assets.length} tracked sites`;
@@ -756,6 +770,7 @@ function renderHealthFallback() {
   dom.modeChip.className = "chip neutral";
   dom.trustChip.textContent = "trust reduced";
   dom.trustChip.className = "chip degraded";
+  renderPlannerChip();
   dom.channelNote.textContent = "Backend health is degraded. Local command loop still works on whatever data is cached.";
 }
 
