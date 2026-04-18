@@ -23,6 +23,7 @@ const state = {
   mapMarkers: [],
   mapReady: false,
   mobileSheet: null,
+  plannerFallbackActive: false,
 };
 
 const dom = {
@@ -236,6 +237,26 @@ function appendMessage(role, text) {
   `;
   dom.chatLog.append(article);
   dom.chatLog.scrollTop = dom.chatLog.scrollHeight;
+}
+
+function plannerNote(planner) {
+  if (!planner) {
+    state.plannerFallbackActive = false;
+    return "Ask / focus / explain.";
+  }
+
+  if (planner.mode === "fallback") {
+    state.plannerFallbackActive = true;
+    return planner.detail;
+  }
+
+  if (planner.mode === "live" && state.plannerFallbackActive) {
+    state.plannerFallbackActive = false;
+    return "Planner restored.";
+  }
+
+  state.plannerFallbackActive = false;
+  return "Ask / focus / explain.";
 }
 
 function seedTranscript() {
@@ -553,6 +574,7 @@ async function handleCommand(rawText) {
     const response = await queryAgent(text);
     applyAgentResponse(response);
     appendMessage("assistant", response.summary);
+    dom.channelNote.textContent = plannerNote(response.planner);
   } catch (error) {
     handleCommandLocally(text);
     dom.channelNote.textContent = "Agent backend unavailable; local command fallback active.";

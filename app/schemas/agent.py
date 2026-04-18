@@ -17,6 +17,15 @@ AtlasAgentTool = Literal[
 ]
 
 AtlasAgentTrustMode = Literal["live", "replay_safe", "degraded"]
+AtlasAgentPlannerMode = Literal["deterministic", "live", "fallback"]
+AtlasAgentPlannerReason = Literal[
+    "explicit_tool",
+    "fixture_planner",
+    "planner_not_configured",
+    "planner_unsupported_provider",
+    "planner_http_failed",
+    "planner_invalid_json",
+]
 
 
 class AtlasAgentToolArgument(BaseModel):
@@ -34,6 +43,12 @@ class AtlasAgentToolSpec(BaseModel):
 class AtlasAgentTrust(BaseModel):
     mode: AtlasAgentTrustMode
     detail: str
+
+
+class AtlasAgentPlannerTelemetry(BaseModel):
+    mode: AtlasAgentPlannerMode
+    detail: str
+    reason: AtlasAgentPlannerReason | None = None
 
 
 class AtlasAgentCompare(BaseModel):
@@ -76,5 +91,6 @@ class AtlasAgentQueryResponse(BaseModel):
     focus_alert_id: str | None = None
     alerts: list[Alert] = Field(default_factory=list)
     compare: AtlasAgentCompare | None = None
+    planner: AtlasAgentPlannerTelemetry
     trust: AtlasAgentTrust
     replay: ReplayState

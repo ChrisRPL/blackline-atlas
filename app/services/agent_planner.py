@@ -1,13 +1,18 @@
 from __future__ import annotations
 
 import json
+from dataclasses import dataclass
 from typing import Protocol
 from urllib.error import URLError
 from urllib.request import urlopen
 
 from pydantic import ValidationError
 
-from app.schemas.agent import AtlasAgentPlan
+from app.schemas.agent import (
+    AtlasAgentPlan,
+    AtlasAgentPlannerMode,
+    AtlasAgentPlannerReason,
+)
 from app.schemas.asset import Asset
 from app.schemas.planner_payload import PlannerRequestPayload, PlannerTextInput
 from app.services.agent_prompt_builder import AgentPlannerPrompt, AgentPlannerPromptBuilder
@@ -20,7 +25,20 @@ class RawAgentPlannerBackend(Protocol):
         *,
         payload: PlannerRequestPayload,
         fallback_plan: AtlasAgentPlan,
-    ) -> str: ...
+    ) -> "AgentPlannerBackendResult": ...
+
+
+@dataclass(frozen=True)
+class AgentPlannerBackendResult:
+    raw_text: str
+    reason: AtlasAgentPlannerReason | None = None
+
+
+@dataclass(frozen=True)
+class AgentPlannerDecision:
+    plan: AtlasAgentPlan
+    mode: AtlasAgentPlannerMode
+    reason: AtlasAgentPlannerReason | None = None
 
 
 class FixtureAgentPlannerBackend:
@@ -29,9 +47,9 @@ class FixtureAgentPlannerBackend:
         *,
         payload: PlannerRequestPayload,
         fallback_plan: AtlasAgentPlan,
-    ) -> str:
+    ) -> AgentPlannerBackendResult:
         _ = payload
-        return fallback_plan.model_dump_json(exclude_none=True)
+        return AgentPlannerBackendResult(raw_text=fallback_plan.model_dump_json(exclude_none=True))
 
 
 class HttpAgentPlannerBackend:
@@ -53,7 +71,7 @@ class HttpAgentPlannerBackend:
         *,
         payload: PlannerRequestPayload,
         fallback_plan: AtlasAgentPlan,
-    ) -> str:
+    ) -> AgentPlannerBackendResult:
         request = self.provider.build_request(
             endpoint=self.endpoint,
             payload=payload,
@@ -64,12 +82,20 @@ class HttpAgentPlannerBackend:
         try:
             with urlopen(request, timeout=self.timeout_seconds) as response:
                 if response.status != 200:
-                    return fallback
+                    return AgentPlannerBackendResult(
+                        raw_text=fallback,
+                        reason="planner_http_failed",
+                    )
                 body = response.read().decode("utf-8")
         except (OSError, URLError, UnicodeDecodeError):
-            return fallback
+            return AgentPlannerBackendResult(
+                raw_text=fallback,
+                reason="planner_http_failed",
+            )
 
-        return self.provider.parse_response(body=body, fallback=fallback)
+        return AgentPlannerBackendResult(
+            raw_text=self.provider.parse_response(body=body, fallback=fallback)
+        )
 
 
 class PromptedAtlasAgentPlanner:
@@ -124,19 +150,42 @@ class PromptedAtlasAgentPlanner:
         assets: list[Asset],
         selected_asset: Asset | None,
         fallback_plan: AtlasAgentPlan,
-    ) -> AtlasAgentPlan:
+    ) -> AgentPlannerDecision:
         payload = self.build_payload(
             query=query,
             assets=assets,
             selected_asset=selected_asset,
         )
-        raw_text = self.backend.generate(
+        backend_result = self.backend.generate(
             payload=payload,
             fallback_plan=fallback_plan,
         )
-        return self.parse_plan(raw_text=raw_text, fallback_plan=fallback_plan)
+        if backend_result.reason is not None:
+            return AgentPlannerDecision(
+                plan=fallback_plan,
+                mode="fallback",
+                reason=backend_result.reason,
+            )
 
-    def parse_plan(self, *, raw_text: str, fallback_plan: AtlasAgentPlan) -> AtlasAgentPlan:
+        parsed = self.parse_plan(
+            raw_text=backend_result.raw_text,
+            fallback_plan=fallback_plan,
+        )
+        if parsed is None:
+            return AgentPlannerDecision(
+                plan=fallback_plan,
+                mode="fallback",
+                reason="planner_invalid_json",
+            )
+        return AgentPlannerDecision(plan=parsed, mode="live")
+
+    def parse_plan(
+        self,
+        *,
+        raw_text: str,
+        fallback_plan: AtlasAgentPlan,
+    ) -> AtlasAgentPlan | None:
+        _ = fallback_plan
         for blob in _json_blobs(raw_text):
             try:
                 payload = json.loads(blob)
@@ -148,7 +197,7 @@ class PromptedAtlasAgentPlanner:
                 return AtlasAgentPlan.model_validate(payload)
             except ValidationError:
                 continue
-        return fallback_plan
+        return None
 
 
 def _json_blobs(raw_text: str) -> list[str]:

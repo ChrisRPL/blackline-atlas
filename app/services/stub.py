@@ -9,6 +9,7 @@ from app.core.config import Settings
 from app.schemas.agent import (
     AtlasAgentCompare,
     AtlasAgentPlan,
+    AtlasAgentPlannerTelemetry,
     AtlasAgentQueryRequest,
     AtlasAgentQueryResponse,
     AtlasAgentTool,
@@ -23,6 +24,7 @@ from app.schemas.health import HealthConfig, HealthDependency, HealthResponse
 from app.schemas.metrics import Metrics
 from app.schemas.replay import ReplayStartRequest, ReplayState
 from app.services.agent_planner import (
+    AgentPlannerDecision,
     FixtureAgentPlannerBackend,
     HttpAgentPlannerBackend,
     PromptedAtlasAgentPlanner,
@@ -229,7 +231,7 @@ class StubAtlasService:
         ]
 
     def run_agent_query(self, request: AtlasAgentQueryRequest) -> AtlasAgentQueryResponse:
-        resolved_request = self._resolve_agent_request(request)
+        resolved_request, planner = self._resolve_agent_request(request)
         tool = resolved_request.tool or self._infer_agent_tool(resolved_request.query or "")
         watchlist = self._watchlist_evaluations()
         trust = self._agent_trust()
@@ -244,6 +246,7 @@ class StubAtlasService:
             return self._site_compare_response(
                 request=resolved_request,
                 watchlist=watchlist,
+                planner=planner,
                 trust=trust,
             )
         if tool == "explain_alert":
@@ -251,6 +254,7 @@ class StubAtlasService:
                 request=resolved_request,
                 watchlist=watchlist,
                 alerts=alerts,
+                planner=planner,
                 trust=trust,
             )
         if tool == "biggest_disruptions":
@@ -266,6 +270,7 @@ class StubAtlasService:
             return self._agent_alert_list_response(
                 tool=tool,
                 alerts=ranked,
+                planner=planner,
                 trust=trust,
                 no_result_summary=(
                     "No accepted disruptions match that filter. " "Watch posture remains active."
@@ -274,6 +279,7 @@ class StubAtlasService:
         return self._agent_alert_list_response(
             tool=cast(AtlasAgentTool, "latest_alerts"),
             alerts=sorted(alerts, key=lambda alert: alert.timestamp, reverse=True),
+            planner=planner,
             trust=trust,
             no_result_summary="No accepted alerts match that filter. Replay-safe watch continues.",
         )
@@ -326,6 +332,7 @@ class StubAtlasService:
         *,
         tool: AtlasAgentTool,
         alerts: list[Alert],
+        planner: AtlasAgentPlannerTelemetry,
         trust: AtlasAgentTrust,
         no_result_summary: str,
     ) -> AtlasAgentQueryResponse:
@@ -335,6 +342,7 @@ class StubAtlasService:
                 tool=tool,
                 summary=no_result_summary,
                 alerts=[],
+                planner=planner,
                 trust=trust,
                 replay=self.get_replay_state(),
             )
@@ -352,6 +360,7 @@ class StubAtlasService:
             focus_alert_id=focus.alert_id,
             alerts=alerts,
             compare=self._compare_for_asset(focus.asset_id),
+            planner=planner,
             trust=trust,
             replay=self.get_replay_state(),
         )
@@ -361,6 +370,7 @@ class StubAtlasService:
         *,
         request: AtlasAgentQueryRequest,
         watchlist: list[_WatchlistEvaluation],
+        planner: AtlasAgentPlannerTelemetry,
         trust: AtlasAgentTrust,
     ) -> AtlasAgentQueryResponse:
         asset_id = request.site_id or request.selected_asset_id or self.hero_asset.asset_id
@@ -370,6 +380,7 @@ class StubAtlasService:
                 status="no_result",
                 tool="site_compare",
                 summary="Selected site is not on the current watchlist.",
+                planner=planner,
                 trust=trust,
                 replay=self.get_replay_state(),
             )
@@ -390,6 +401,7 @@ class StubAtlasService:
             focus_alert_id=alerts[0].alert_id if alerts else None,
             alerts=alerts,
             compare=compare,
+            planner=planner,
             trust=trust,
             replay=self.get_replay_state(),
         )
@@ -400,6 +412,7 @@ class StubAtlasService:
         request: AtlasAgentQueryRequest,
         watchlist: list[_WatchlistEvaluation],
         alerts: list[Alert],
+        planner: AtlasAgentPlannerTelemetry,
         trust: AtlasAgentTrust,
     ) -> AtlasAgentQueryResponse:
         target_alert = self._resolve_alert_target(
@@ -413,6 +426,7 @@ class StubAtlasService:
                 status="no_result",
                 tool="explain_alert",
                 summary="No accepted alert is available to explain on the current watchlist.",
+                planner=planner,
                 trust=trust,
                 replay=self.get_replay_state(),
             )
@@ -430,6 +444,7 @@ class StubAtlasService:
             focus_alert_id=target_alert.alert_id,
             alerts=[target_alert],
             compare=compare,
+            planner=planner,
             trust=trust,
             replay=self.get_replay_state(),
         )
@@ -695,13 +710,23 @@ class StubAtlasService:
             reverse=True,
         )[0]
 
-    def _resolve_agent_request(self, request: AtlasAgentQueryRequest) -> AtlasAgentQueryRequest:
+    def _resolve_agent_request(
+        self,
+        request: AtlasAgentQueryRequest,
+    ) -> tuple[AtlasAgentQueryRequest, AtlasAgentPlannerTelemetry]:
         if request.tool or not request.query:
-            return request.model_copy(
-                update={
-                    "area": request.area or self._infer_area(request.query or ""),
-                    "category": request.category or self._infer_category(request.query or ""),
-                }
+            return (
+                request.model_copy(
+                    update={
+                        "area": request.area or self._infer_area(request.query or ""),
+                        "category": request.category or self._infer_category(request.query or ""),
+                    }
+                ),
+                AtlasAgentPlannerTelemetry(
+                    mode="deterministic",
+                    detail="Explicit tool path bypassed planner.",
+                    reason="explicit_tool",
+                ),
             )
 
         fallback_plan = AtlasAgentPlan(
@@ -711,21 +736,95 @@ class StubAtlasService:
             site_id=request.site_id,
             alert_id=request.alert_id,
         )
+        if not self.settings.agent_http_enabled:
+            return (
+                request.model_copy(
+                    update={
+                        "tool": fallback_plan.tool,
+                        "area": request.area or fallback_plan.area,
+                        "category": request.category or fallback_plan.category,
+                        "site_id": request.site_id or fallback_plan.site_id,
+                        "alert_id": request.alert_id or fallback_plan.alert_id,
+                    }
+                ),
+                AtlasAgentPlannerTelemetry(
+                    mode="deterministic",
+                    detail="Fixture planner routed this command.",
+                    reason="fixture_planner",
+                ),
+            )
+        if not self.settings.agent_endpoint:
+            return (
+                request.model_copy(
+                    update={
+                        "tool": fallback_plan.tool,
+                        "area": request.area or fallback_plan.area,
+                        "category": request.category or fallback_plan.category,
+                        "site_id": request.site_id or fallback_plan.site_id,
+                        "alert_id": request.alert_id or fallback_plan.alert_id,
+                    }
+                ),
+                AtlasAgentPlannerTelemetry(
+                    mode="fallback",
+                    detail="Planner endpoint missing; deterministic fallback active.",
+                    reason="planner_not_configured",
+                ),
+            )
+        if resolve_http_agent_planner_provider(self.settings.agent_provider) is None:
+            return (
+                request.model_copy(
+                    update={
+                        "tool": fallback_plan.tool,
+                        "area": request.area or fallback_plan.area,
+                        "category": request.category or fallback_plan.category,
+                        "site_id": request.site_id or fallback_plan.site_id,
+                        "alert_id": request.alert_id or fallback_plan.alert_id,
+                    }
+                ),
+                AtlasAgentPlannerTelemetry(
+                    mode="fallback",
+                    detail="Planner provider unsupported; deterministic fallback active.",
+                    reason="planner_unsupported_provider",
+                ),
+            )
         selected_asset = self._find_asset(request.selected_asset_id)
-        plan = self.agent_planner.plan(
+        decision = self.agent_planner.plan(
             query=request.query,
             assets=self.assets,
             selected_asset=selected_asset,
             fallback_plan=fallback_plan,
         )
-        return request.model_copy(
-            update={
-                "tool": plan.tool,
-                "area": request.area or plan.area,
-                "category": request.category or plan.category,
-                "site_id": request.site_id or plan.site_id,
-                "alert_id": request.alert_id or plan.alert_id,
-            }
+        return (
+            request.model_copy(
+                update={
+                    "tool": decision.plan.tool,
+                    "area": request.area or decision.plan.area,
+                    "category": request.category or decision.plan.category,
+                    "site_id": request.site_id or decision.plan.site_id,
+                    "alert_id": request.alert_id or decision.plan.alert_id,
+                }
+            ),
+            self._planner_telemetry(decision),
+        )
+
+    def _planner_telemetry(self, decision: AgentPlannerDecision) -> AtlasAgentPlannerTelemetry:
+        if decision.mode == "live":
+            return AtlasAgentPlannerTelemetry(
+                mode="live",
+                detail="Live planner routed this command.",
+            )
+
+        detail_by_reason = {
+            "planner_http_failed": "Planner request failed; deterministic fallback active.",
+            "planner_invalid_json": "Planner output invalid; deterministic fallback active.",
+        }
+        return AtlasAgentPlannerTelemetry(
+            mode="fallback",
+            detail=detail_by_reason.get(
+                decision.reason,
+                "Deterministic planner fallback active.",
+            ),
+            reason=decision.reason,
         )
 
     def _infer_agent_tool(self, query: str) -> AtlasAgentTool:

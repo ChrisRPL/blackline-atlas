@@ -5,6 +5,7 @@ from urllib.error import URLError
 
 from app.schemas.agent import AtlasAgentPlan
 from app.services.agent_planner import (
+    AgentPlannerBackendResult,
     HttpAgentPlannerBackend,
     PromptedAtlasAgentPlanner,
 )
@@ -58,14 +59,16 @@ def test_prompted_agent_planner_falls_back_on_invalid_json() -> None:
         backend=_RecordingPlannerBackend(raw_text="not json"),
     )
 
-    plan = planner.plan(
+    decision = planner.plan(
         query="show biggest disruptions near Black Sea",
         assets=assets,
         selected_asset=assets[0],
         fallback_plan=fallback,
     )
 
-    assert plan == fallback
+    assert decision.plan == fallback
+    assert decision.mode == "fallback"
+    assert decision.reason == "planner_invalid_json"
 
 
 def test_http_agent_planner_backend_posts_payload(monkeypatch) -> None:
@@ -90,7 +93,7 @@ def test_http_agent_planner_backend_posts_payload(monkeypatch) -> None:
         timeout_seconds=6.0,
     )
 
-    raw = backend.generate(
+    result = backend.generate(
         payload=PromptedAtlasAgentPlanner(
             model_version="lfm2.5-1.2b-instruct",
             backend=_RecordingPlannerBackend(raw_text='{"tool":"latest_alerts"}'),
@@ -102,7 +105,8 @@ def test_http_agent_planner_backend_posts_payload(monkeypatch) -> None:
         fallback_plan=AtlasAgentPlan(tool="latest_alerts"),
     )
 
-    assert raw == '{"tool":"site_compare","site_id":"demo_port_01"}'
+    assert result.raw_text == '{"tool":"site_compare","site_id":"demo_port_01"}'
+    assert result.reason is None
     assert captured["url"] == "https://example.test/planner"
     assert captured["auth"] == "Bearer planner-key"
     assert captured["body"]["model_version"] == "lfm2.5-1.2b-instruct"
@@ -122,7 +126,7 @@ def test_http_agent_planner_backend_falls_back_on_failure(monkeypatch) -> None:
     )
     fallback = AtlasAgentPlan(tool="latest_alerts", area="Black Sea")
 
-    raw = backend.generate(
+    result = backend.generate(
         payload=PromptedAtlasAgentPlanner(
             model_version="lfm2.5-1.2b-instruct",
             backend=_RecordingPlannerBackend(raw_text='{"tool":"latest_alerts"}'),
@@ -134,7 +138,8 @@ def test_http_agent_planner_backend_falls_back_on_failure(monkeypatch) -> None:
         fallback_plan=fallback,
     )
 
-    assert raw == fallback.model_dump_json(exclude_none=True)
+    assert result.raw_text == fallback.model_dump_json(exclude_none=True)
+    assert result.reason == "planner_http_failed"
 
 
 def test_openai_agent_planner_provider_builds_responses_request() -> None:
@@ -213,7 +218,7 @@ class _RecordingPlannerBackend:
     def generate(self, *, payload, fallback_plan) -> str:
         _ = payload
         _ = fallback_plan
-        return self.raw_text
+        return AgentPlannerBackendResult(raw_text=self.raw_text)
 
 
 class _FakeHTTPResponse:

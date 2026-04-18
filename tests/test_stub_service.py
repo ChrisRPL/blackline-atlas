@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 from dataclasses import replace
 from pathlib import Path
+from urllib.error import URLError
 
 from app.core.config import Settings
 from app.schemas.agent import AtlasAgentQueryRequest
@@ -628,6 +629,7 @@ def test_stub_service_can_opt_in_http_agent_planner(tmp_path: Path, monkeypatch)
     )
 
     assert response.tool == "site_compare"
+    assert response.planner.mode == "live"
     assert response.focus_asset_id == "demo_bridge_01"
     assert response.compare is not None
     assert response.compare.asset_id == "demo_bridge_01"
@@ -685,9 +687,78 @@ def test_stub_service_can_opt_in_openai_chat_agent_planner(tmp_path: Path, monke
     )
 
     assert response.tool == "site_compare"
+    assert response.planner.mode == "live"
     assert response.focus_asset_id == "demo_bridge_01"
     assert response.compare is not None
     assert response.compare.asset_id == "demo_bridge_01"
+
+
+def test_stub_service_reports_agent_planner_http_fallback(tmp_path: Path, monkeypatch) -> None:
+    monkeypatch.chdir(tmp_path)
+
+    def fake_urlopen(request, timeout: float):
+        _ = request
+        _ = timeout
+        raise URLError("offline")
+
+    monkeypatch.setattr("app.services.agent_planner.urlopen", fake_urlopen)
+    service = StubAtlasService(
+        Settings(
+            app_env="test",
+            app_port=8000,
+            model_version="lfm2.5-vl-450m-prompted",
+            simsat_current_endpoint=None,
+            simsat_baseline_endpoint=None,
+            mapbox_token_present=False,
+            watchlist_path=None,
+            agent_endpoint="https://example.test/agent",
+            agent_http_enabled=True,
+            agent_provider="atlas_json_http",
+        )
+    )
+
+    response = service.run_agent_query(
+        AtlasAgentQueryRequest(query="show biggest disruptions"),
+    )
+
+    assert response.tool == "biggest_disruptions"
+    assert response.planner.mode == "fallback"
+    assert response.planner.reason == "planner_http_failed"
+
+
+def test_stub_service_reports_agent_planner_invalid_json_fallback(
+    tmp_path: Path, monkeypatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+
+    def fake_urlopen(request, timeout: float):
+        _ = request
+        _ = timeout
+        return _FakeHTTPResponse(body=b'{"output_text":"not-json"}')
+
+    monkeypatch.setattr("app.services.agent_planner.urlopen", fake_urlopen)
+    service = StubAtlasService(
+        Settings(
+            app_env="test",
+            app_port=8000,
+            model_version="lfm2.5-vl-450m-prompted",
+            simsat_current_endpoint=None,
+            simsat_baseline_endpoint=None,
+            mapbox_token_present=False,
+            watchlist_path=None,
+            agent_endpoint="https://example.test/agent",
+            agent_http_enabled=True,
+            agent_provider="atlas_json_http",
+        )
+    )
+
+    response = service.run_agent_query(
+        AtlasAgentQueryRequest(query="compare the bridge"),
+    )
+
+    assert response.tool == "site_compare"
+    assert response.planner.mode == "fallback"
+    assert response.planner.reason == "planner_invalid_json"
 
 
 class _FakeHTTPResponse:

@@ -32,6 +32,8 @@ def test_agent_query_latest_alerts_returns_watchlist_latest() -> None:
     assert payload["focus_asset_id"] == "demo_bridge_01"
     assert payload["alerts"][0]["alert_id"] == "blk_00018"
     assert payload["compare"]["asset_id"] == "demo_bridge_01"
+    assert payload["planner"]["mode"] == "deterministic"
+    assert payload["planner"]["reason"] == "fixture_planner"
     assert payload["trust"]["mode"] == "replay_safe"
 
 
@@ -43,6 +45,8 @@ def test_agent_query_biggest_disruptions_prioritizes_high_severity() -> None:
     assert response.status_code == 200
     payload = response.json()
     assert payload["tool"] == "biggest_disruptions"
+    assert payload["planner"]["mode"] == "deterministic"
+    assert payload["planner"]["reason"] == "explicit_tool"
     assert payload["focus_asset_id"] == "demo_port_01"
     assert payload["alerts"][0]["severity"] == "high"
     assert payload["compare"]["asset_id"] == "demo_port_01"
@@ -59,6 +63,8 @@ def test_agent_query_site_compare_returns_selected_site_frames() -> None:
     assert response.status_code == 200
     payload = response.json()
     assert payload["tool"] == "site_compare"
+    assert payload["planner"]["mode"] == "deterministic"
+    assert payload["planner"]["reason"] == "explicit_tool"
     assert payload["focus_asset_id"] == "demo_bridge_01"
     assert payload["compare"]["current_frame"]["frame"]["asset_id"] == "demo_bridge_01"
     assert payload["compare"]["baseline_frame"]["frame"]["asset_id"] == "demo_bridge_01"
@@ -75,6 +81,8 @@ def test_agent_query_explain_alert_uses_selected_asset_context() -> None:
     assert response.status_code == 200
     payload = response.json()
     assert payload["tool"] == "explain_alert"
+    assert payload["planner"]["mode"] == "deterministic"
+    assert payload["planner"]["reason"] == "fixture_planner"
     assert payload["focus_asset_id"] == "demo_port_01"
     assert payload["focus_alert_id"] == "blk_00017"
     assert "Large terminal footprint change" in payload["summary"]
