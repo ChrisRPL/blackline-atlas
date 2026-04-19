@@ -15,8 +15,9 @@ Purpose:
   - `UNHCR Baghdad Warehouse`
   - `Mosul Medical City Hospital`
 - strongest current inland repo lead:
-  - `WFP El Obeid logistics base / Agricultural Bank of Sudan warehouse complex`
-  - still `blocked-but-alive`, not promotion-ready
+  - `Saudi Teaching Maternal Hospital`, `El Fasher`
+  - exact parcel locked
+  - still needs a defendable hospital-only Sentinel read
 
 Rule:
 - aid next should be:
@@ -246,14 +247,93 @@ Reject:
   - [MSF published Kunduz coordinates](https://www.msf.org/kunduz-afghanistan-36%C2%B043%E2%80%99491%E2%80%99%E2%80%99n-68%C2%B051%E2%80%994396%E2%80%99%E2%80%99)
   - [MSF on the Kunduz hospital attack](https://www.msf.org/kunduz-hospital-attack)
 
+### `aid_09` Saudi Teaching Maternal Hospital, El Fasher
+
+- country:
+  - `Sudan`
+- type:
+  - `medical_aid_node`
+- why:
+  - exact named civilian hospital
+  - MSF-supported during the siege of El Fasher
+  - one of the clearest inland current-conflict medical-aid leads in the repo lane
+- parcel state:
+  - exact OSM hospital polygon exists
+  - current parcel anchor:
+    - `13.6299070, 25.3298850`
+- status:
+  - `active_exact_lead_needs_honest_bbox_review`
+- next action:
+  - bounded local SimSat pass returned a usable pre/post pair on the exact parcel:
+    - baseline request `2024-07-15T08:00:00Z` -> returned `2024-07-14T08:56:32Z` with `17.404674` cloud
+    - current request `2024-08-20T08:00:00Z` -> returned `2024-08-18T08:56:29Z` with `9.6509` cloud
+  - exact parcel truth is now stronger than `El Obeid`
+  - do one bounded bbox review only
+  - keep only if the read stays hospital-compound-specific, not generalized front-line urban damage
+  - caution:
+    - AP reports the hospital sits just north of El Fasher airport and near the front lines
+    - if that proximity makes the interpretation feel tactical or too mixed, downgrade fast
+- sources:
+  - [MSF on repeated attacks on Saudi hospital in El Fasher](https://www.msf.org.za/news-and-resources/latest-news/hospitals-are-damaged-and-closed-el-fasher-fighting-rages)
+  - [MSF on shelling that damaged the hospital pharmacy](https://www.msf-me.org/media-centre/news-and-stories/sudan-fighting-el-fasher-remains-incessant-despite-unsc-resolution)
+  - [AP on the January 2025 Saudi hospital attack](https://apnews.com/article/sudan-war-hospital-attack-fasher-53f41de57ca442ed5dd3a8a1312f4052)
+  - [OpenStreetMap / Nominatim parcel anchor](https://nominatim.openstreetmap.org/ui/details.html?osmtype=W&osmid=1447266861)
+
+### `aid_10` Urum al-Kubra SARC / UN aid warehouse compound
+
+- country:
+  - `Syria`
+- type:
+  - `aid_warehouse_cluster`
+- why:
+  - exact humanitarian warehouse compound
+  - strongest exact inland warehouse lead discovered in this search pass
+  - low tactical drift in source framing
+- parcel state:
+  - exact geolocated compound:
+    - `36.151583, 36.967750`
+- status:
+  - `hold_archive_not_available`
+- next action:
+  - local SimSat pass across `2016-09` to `2016-10` returned no usable historical images
+  - keep as the best retrospective aid-warehouse lead if archive coverage broadens
+- sources:
+  - [Bellingcat geolocation of the Urum al-Kubra warehouse compound](https://www.bellingcat.com/news/middle-east/2016/09/21/aleppo-un-aid-analysis/)
+  - [UN Board of Inquiry summary](https://digitallibrary.un.org/record/853646/files/S_2016_1093-EN.pdf)
+  - [Human Rights Watch on the convoy/warehouse attack](https://www.hrw.org/news/2016/09/20/syria-investigate-attack-un-aid-convoy)
+
+### `aid_11` MSF-supported Abs hospital
+
+- country:
+  - `Yemen`
+- type:
+  - `medical_aid_node`
+- why:
+  - exact named MSF-supported hospital compound
+  - strong civilian caseload and protected-status documentation
+- parcel state:
+  - exact public map anchor:
+    - `16.0034, 43.19697`
+- status:
+  - `hold_archive_not_available`
+- next action:
+  - local SimSat pass across `2016-08` to `2016-09` returned no usable historical images
+  - keep only as a retrospective medical-aid lead
+  - extra caution:
+    - map context places it roughly `2.5 km` from Abbs airport, so keep the read hospital-only if this ever reopens
+- sources:
+  - [MSF investigation of the Abs hospital attack](https://www.msf.org/sites/default/files/2018-05/yemen_abs_investigation.pdf)
+  - [MSF attack statement](https://www.msf.org/yemen-eleven-people-dead-and-least-19-injured-after-airstrike-hits-abs-hospital-hajjah)
+  - [Mapcarta / OSM place anchor](https://mapcarta.com/27241474)
+
 ## Immediate next work order
 
-1. freeze `aid_01` `El Obeid` until the ABS complex itself becomes publicly mappable
-2. keep `aid_02` `Lankien` and `aid_03` `Tyre` as evidence-only, not active parcel hunts
-3. keep `aid_07` `Taiz` and `aid_08` `Kunduz` as archive-blocked retrospective leads only
-4. `UNHCR Baghdad` and `Mosul Medical City` are now the exact aid / medical-aid control anchors
-5. next active aid work should be a new inland named depot / warehouse campus, not another `El Obeid` or `Tyre` pass
-6. if no inland aid positive survives, reopen inland `food` before adding more aid notes
+1. do one bounded bbox review on `aid_09` `Saudi Teaching Maternal Hospital`
+2. keep `aid_01` `El Obeid` frozen until the ABS complex itself becomes publicly mappable
+3. keep `aid_02` `Lankien` and `aid_03` `Tyre` as evidence-only, not active parcel hunts
+4. keep `aid_07` `Taiz`, `aid_08` `Kunduz`, `aid_10` `Urum`, and `aid_11` `Abs` as archive-blocked retrospective leads only
+5. `UNHCR Baghdad` and `Mosul Medical City` are now the exact aid / medical-aid control anchors
+6. if `aid_09` still feels too mixed or too soft, reopen inland `food` before adding more aid notes
 
 ## Stop rules
 

@@ -85,15 +85,17 @@ It is the first acquisition batch with the best chance of moving coverage, not j
 - target:
   - exact named humanitarian depot / warehouse cluster
 - current lead:
+  - `Saudi Teaching Maternal Hospital`, `El Fasher`
   - working board:
     - `training/replay_pack/aid_tranche_01.md`
 - blocker:
-  - no current in-repo inland aid lead is promotion-ready
+  - exact parcel is now real, but hospital-only damage still needs an honest Sentinel read
 - next action:
-  - search a new inland WFP / UN / NGO / MSF aid compound first
+  - do one bounded bbox review on `Saudi Teaching Maternal Hospital`
   - keep `El Obeid` blocked unless the ABS complex itself becomes publicly mappable
   - keep `Tyre Red Cross center` as evidence-only unless compound scale becomes obviously warehouse-yard sized
-  - this stays the next open positive gap once a parcel-tight inland depot reappears
+  - keep `Urum al-Kubra` and `Abs hospital` as archive-blocked retrospective backups
+  - this stays the next open positive gap unless `Saudi Hospital` proves too mixed or too soft
   - `Mosul Medical City Hospital` now fills one exact inland medical-aid control slot, but not the missing positive slot
 
 ### Mobility
@@ -141,10 +143,10 @@ Do in parallel with positive cases:
 
 ## Immediate next work order
 
-1. search a new `aid_02` lead now that the current in-repo aid board is blocked
+1. finish the bounded `aid_02` review on `Saudi Teaching Maternal Hospital`
 2. keep `Ayn al-Bayda Water Pumping Station` as the second-water lead only if archive baseline truth improves
 3. keep `Bahri Water Station` as the exact water control row for this tranche
-4. add one more inland food positive/control pair before more prompt churn
+4. if `Saudi Hospital` downgrades, add one more inland food positive/control pair before more prompt churn
 5. expand planner eval before any agent-model fine-tune dataset work
 
 ## Stop rules
