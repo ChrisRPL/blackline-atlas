@@ -51,9 +51,14 @@ def test_cached_frame_client_reuses_cached_baseline_payload(tmp_path) -> None:
         "base_demo_bridge_01_20251012",
         "metadata.json",
     )
+    cached_image = metadata_path.parent / "image.png"
+    cached_image.write_bytes(b"cached-bytes")
     original = metadata_path.read_text(encoding="utf-8")
     metadata_path.write_text(
-        original.replace("base_demo_bridge_01_20251012", "base_demo_bridge_01_cached"),
+        original.replace("base_demo_bridge_01_20251012", "base_demo_bridge_01_cached").replace(
+            "fixtures/demo_bridge_01/baseline-2025-10-12.png",
+            str(cached_image),
+        ),
         encoding="utf-8",
     )
 
@@ -137,6 +142,61 @@ def test_cached_frame_client_copies_real_frame_bytes_into_cache(tmp_path) -> Non
     assert Path(current.frame.image_ref).read_bytes() == b"current-bytes"
     assert Path(current.overlay_ref).read_bytes() == b"overlay-bytes"
     assert Path(baseline.frame.image_ref).read_bytes() == b"baseline-bytes"
+
+
+def test_cached_frame_client_refreshes_zero_byte_cached_refs(tmp_path) -> None:
+    source_dir = tmp_path / "source"
+    source_dir.mkdir()
+    current_image = source_dir / "current.png"
+    current_image.write_bytes(b"fresh-bytes")
+
+    scenarios = _scenarios()
+    scenario = scenarios["hero_port_disruption"]
+    scenarios["hero_port_disruption"] = replace(
+        scenario,
+        current_frame=scenario.current_frame.model_copy(
+            update={
+                "frame": scenario.current_frame.frame.model_copy(
+                    update={"image_ref": str(current_image)}
+                ),
+                "overlay_ref": None,
+            }
+        ),
+    )
+    cache_root = tmp_path / "cache"
+    client = CachedFrameClient(
+        delegate=FixtureFrameClient(scenarios),
+        cache_layout=FrameCacheLayout(cache_root),
+    )
+    request = FrameRequest(asset_id="demo_port_01", scenario_id="hero_port_disruption")
+
+    stale_dir = (
+        cache_root
+        / "demo_port_01"
+        / "hero_port_disruption"
+        / "current"
+        / "cur_demo_port_01_20260414"
+    )
+    stale_dir.mkdir(parents=True)
+    stale_image = stale_dir / "image.png"
+    stale_image.write_bytes(b"")
+    stale_metadata = stale_dir / "metadata.json"
+    stale_metadata.write_text(
+        scenario.current_frame.model_copy(
+            update={
+                "frame": scenario.current_frame.frame.model_copy(
+                    update={"image_ref": str(stale_image)}
+                ),
+                "overlay_ref": None,
+            }
+        ).model_dump_json(indent=2),
+        encoding="utf-8",
+    )
+
+    refreshed = client.get_current_frame(request)
+
+    assert refreshed.frame.image_ref is not None
+    assert Path(refreshed.frame.image_ref).read_bytes() == b"fresh-bytes"
 
 
 def _scenarios():

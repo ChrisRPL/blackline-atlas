@@ -68,7 +68,9 @@ class CachedFrameClient:
         metadata_path = self._cache_layout.metadata_path(cache_key)
 
         if metadata_path.exists():
-            return FrameEnvelope.model_validate_json(metadata_path.read_text(encoding="utf-8"))
+            cached = FrameEnvelope.model_validate_json(metadata_path.read_text(encoding="utf-8"))
+            if self._cached_envelope_usable(cached):
+                return cached
 
         envelope = loader(request)
         materialized = self._materialize_envelope(
@@ -124,6 +126,18 @@ class CachedFrameClient:
                 "overlay_ref": cached_overlay_ref,
             }
         )
+
+    def _cached_envelope_usable(self, envelope: FrameEnvelope) -> bool:
+        refs = [envelope.frame.image_ref, envelope.overlay_ref]
+        for ref in refs:
+            if not ref:
+                continue
+            path = Path(ref)
+            if not path.exists():
+                return False
+            if path.is_file() and path.stat().st_size == 0:
+                return False
+        return True
 
     def _materialize_ref(self, *, source_ref: str, target_path: Path) -> str:
         source_path = Path(source_ref)
