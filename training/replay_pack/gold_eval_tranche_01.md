@@ -140,14 +140,16 @@ Do in parallel with positive cases:
 
 ## Immediate next work order
 
-1. reopen `water_01` after the prompted baseline undercalled all `4` real positive anchors
+1. reopen `water_01` after both:
+   - the prompted baseline undercalled all `4` real positive anchors
+   - the live local Liquid-VL smoke still collapsed catastrophic positives to `no_event`
    - active probe order now:
      - `Arbaat Dam`
      - `Ayn al-Bayda Water Pumping Station`
      - `Al-Khafsa` retrospective reopen only
 2. keep `Bahri Water Station` as the exact water control row for this tranche
 3. hold `aid_02` behind water until a parcel-tight inland depot appears
-4. only resume new food scouting when weather or parcel quality beats the parked leads
+4. add one more inland food positive/control pair before more prompt churn
 5. expand planner eval before any agent-model fine-tune dataset work
 
 ## Stop rules
