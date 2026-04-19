@@ -36,6 +36,83 @@ Rule:
 - the next water row should be a `facility`, not a `city`
 - visible physical disruption, not only service interruption
 
+## Active shortlist after `2026-04-19` planning pass
+
+### `water_07` Arbaat Dam
+
+- country:
+  - `Sudan`
+- type:
+  - dam / reservoir water source
+- why:
+  - main potable-water source system for Port Sudan
+  - strong civilian dependence, low tactical drift
+  - breach / reservoir-shape change is exactly the kind of macro signal the lane needs
+- parcel state:
+  - exact public lead:
+    - `19.833554, 36.941204`
+- first bounded SimSat truth:
+  - baseline request `2024-07-20T08:00:00Z` -> returned `2024-07-17T08:14:43Z` with `13.07416` cloud
+  - post sweep:
+    - request `2024-08-24T08:00:00Z` -> returned `2024-08-21T08:14:42Z` with `75.901413` cloud
+    - request `2024-08-30T08:00:00Z` -> returned `2024-08-26T08:14:40Z` with `18.400928` cloud
+    - request `2024-09-05T08:00:00Z` -> returned `2024-08-31T08:14:44Z` with `13.812824` cloud
+    - request `2024-09-12T08:00:00Z` -> returned `2024-09-10T08:14:44Z` with `38.68123` cloud
+    - request `2024-09-20T08:00:00Z` -> returned `2024-09-15T08:14:41Z` with `6.886818` cloud
+  - result:
+    - exact facility lead is good
+    - immediate post-event frames are still too cloud / atmosphere compromised over the breach to promote honestly
+- status:
+  - `active_exact_lead_weather_blocked`
+- next action:
+  - keep as the first live water-positive probe
+  - one tighter breach-centered crop next, then stop if signal still does not clear
+- sources:
+  - [World Bank on Arbaat critical water source](https://documents1.worldbank.org/curated/en/650011609914976904/pdf/Management-of-Critical-Water-Supply-Sources-near-Port-Sudan-Sudan-Arbaat-Dam-and-Well-Fields-at-Arbaat-and-Moj.pdf)
+  - [UNDP on Port Sudan dependence on Arbaat](https://www.undp.org/stories/restoring-water)
+  - [UN Geneva / OCHA on the 2024-08-24 collapse](https://www.ungeneva.org/en/news-media/news/2024/08/96844/flooding-sudan-dam-collapse-worsens-humanitarian-crisis)
+
+### `water_08` Ayn al-Bayda Water Pumping Station
+
+- country:
+  - `Syria`
+- type:
+  - pumping station
+- why:
+  - direct civilian drinking-water source for al-Bab and nearby towns
+  - exact public geolocation exists
+  - better fixed-facility semantics than pipeline / outage stories
+- parcel state:
+  - exact public lead:
+    - `36.224362, 37.566329`
+- status:
+  - `active_exact_lead_unprobed`
+- next action:
+  - first bounded SimSat pair
+  - keep crop on the station only, not surrounding pipeline politics
+- sources:
+  - [UNICEF June 2025 sitrep](https://www.unicef.org/syria/media/20661/file/Syria-Humanitarian-situation-report-June-2025.pdf)
+  - [Syrians for Truth and Justice geolocated station report](https://stj-sy.org/en/al-babs-thirsty-is-the-syrian-government-using-dehydration-as-a-punishment/)
+  - [UN statement on damage and rehabilitation context](https://www.un.org/sg/en/content/highlight/2024-12-27.html)
+
+### `water_09` Al-Khafsa retrospective reopen
+
+- country:
+  - `Syria`
+- type:
+  - pure treatment plant
+- why:
+  - very large water-first campus
+  - strongest morphology in the repo
+  - still worth a retrospective reopen even though the recent `2025` pair failed
+- parcel state:
+  - best current public lead remains around `36.1839511, 38.0086273`
+- status:
+  - `retrospective_reopen_only`
+- next action:
+  - do not reopen as a fresh `2025` hit
+  - only use a retrospective structural-damage pass if the tighter parcel lock gets better
+
 ## Promotion candidates
 
 ### `water_01` Bahri Water Treatment Plant

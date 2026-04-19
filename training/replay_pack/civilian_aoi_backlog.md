@@ -84,6 +84,33 @@ Primary buckets:
 
 ### Hold; retry with different timestamps
 
+#### Arbaat Dam
+- asset type: `water_infrastructure`
+- why:
+  - exact public water-source asset for Port Sudan
+  - high civilian dependence
+  - breach / reservoir-shape change is a good macro-signal candidate
+- coordinates:
+  - `19.833554, 36.941204`
+- first bounded probe:
+  - baseline request `2024-07-20T08:00:00Z` -> returned `2024-07-17T08:14:43Z` with `13.07416` cloud
+  - post requests:
+    - `2024-08-24T08:00:00Z` -> `2024-08-21T08:14:42Z` with `75.901413` cloud
+    - `2024-08-30T08:00:00Z` -> `2024-08-26T08:14:40Z` with `18.400928` cloud
+    - `2024-09-05T08:00:00Z` -> `2024-08-31T08:14:44Z` with `13.812824` cloud
+    - `2024-09-12T08:00:00Z` -> `2024-09-10T08:14:44Z` with `38.68123` cloud
+    - `2024-09-20T08:00:00Z` -> `2024-09-15T08:14:41Z` with `6.886818` cloud
+- status:
+  - `hold_exact_lead_weather_blocked`
+- notes:
+  - exact lead is good
+  - immediate post-event frames still keep too much cloud / atmospheric interference over the breach to promote honestly
+  - next try should be one tighter breach-centered crop only
+- sources:
+  - [World Bank on Arbaat critical water source](https://documents1.worldbank.org/curated/en/650011609914976904/pdf/Management-of-Critical-Water-Supply-Sources-near-Port-Sudan-Sudan-Arbaat-Dam-and-Well-Fields-at-Arbaat-and-Moj.pdf)
+  - [UNDP on Port Sudan dependence on Arbaat](https://www.undp.org/stories/restoring-water)
+  - [UN Geneva / OCHA on the collapse](https://www.ungeneva.org/en/news-media/news/2024/08/96844/flooding-sudan-dam-collapse-worsens-humanitarian-crisis)
+
 #### Chornomorsk Grain Port
 - asset type: `grain_port`
 - why:
