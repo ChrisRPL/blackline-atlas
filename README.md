@@ -290,6 +290,43 @@ MODEL_HTTP_ENABLED=true
 MODEL_PROVIDER=openai_chat_completions_http
 ```
 
+For Apple Silicon, this repo now includes a thin local Liquid-VL bridge instead
+of pretending `vLLM` is the default laptop path:
+
+```bash
+uv venv .venv
+source .venv/bin/activate
+uv pip install -e ".[dev,local-vlm]"
+
+HF_TOKEN=... \
+python training/scripts/serve_liquid_vl_openai.py \
+  --model-id LiquidAI/LFM2.5-VL-450M-MLX-4bit \
+  --port 8014
+
+MODEL_VERSION=LiquidAI/LFM2.5-VL-450M-MLX-4bit
+MODEL_ENDPOINT=http://127.0.0.1:8014/v1/chat/completions
+MODEL_HTTP_ENABLED=true
+MODEL_PROVIDER=openai_chat_completions_http
+```
+
+To prove the candidate backend against real SimSat image bytes instead of stub
+refs, run the smoke helper on one annotated case:
+
+```bash
+python training/scripts/run_candidate_backend_smoke.py \
+  --historical-endpoint http://localhost:9005/data/image/sentinel \
+  --model-endpoint http://127.0.0.1:8014/v1/chat/completions \
+  --case-id beirut_port_blast
+```
+
+Important:
+- Liquid’s published MLX quickstart currently pins `mlx-vlm==0.3.9`
+- this repo mirrors that pin in `.[local-vlm]`
+- Liquid’s MLX processor path still pulls in `torch` + `torchvision` here, so
+  `.[local-vlm]` includes them
+- the smoke helper defaults to a `120s` gateway timeout so first-run downloads do
+  not masquerade as model failures
+
 ## Model gateway
 
 Blackline now uses one small shared Python model gateway for both:
@@ -311,6 +348,10 @@ That is intentional. We want a thin product-owned seam, not a custom ML framewor
 
 `/health` now also exposes a tiny `debug` block with the last model/planner gateway
 event per lane. This is last-event status only, not a rolling trace.
+
+Frame-cache note:
+- old zero-byte cached image refs now self-heal on read
+- cached metadata is reused only when its local image paths still exist and have bytes
 
 To score the first frozen command flows against a running app:
 
