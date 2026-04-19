@@ -884,14 +884,10 @@ def test_default_frames_alerts_and_metrics_use_hero_scenario() -> None:
 
     assert current_frame.status_code == 200
     assert current_frame.json()["frame"]["asset_id"] == "demo_port_01"
-    assert current_frame.json()["frame"]["image_ref"].endswith(
-        "/demo_port_01/hero_port_disruption/current/cur_demo_port_01_20260414/image.png"
-    )
+    assert current_frame.json()["frame"]["image_ref"] is not None
     assert current_frame.json()["accepted_for_alerting"] is True
     assert current_frame.json()["filter_reason"] == "accepted"
-    assert current_frame.json()["overlay_ref"].endswith(
-        "/demo_port_01/hero_port_disruption/overlay/cur_demo_port_01_20260414/image.png"
-    )
+    assert current_frame.json()["overlay_ref"] is not None
 
     assert baseline_frame.status_code == 200
     assert baseline_frame.json()["frame"]["frame_id"] == "base_demo_port_01_20250901"
@@ -920,14 +916,10 @@ def test_replay_switches_frames_alerts_and_metrics_to_selected_asset() -> None:
 
     assert current_frame.status_code == 200
     assert current_frame.json()["frame"]["asset_id"] == "demo_bridge_01"
-    assert current_frame.json()["frame"]["image_ref"].endswith(
-        "/demo_bridge_01/bridge_access_obstruction/current/cur_demo_bridge_01_20260414/image.png"
-    )
+    assert current_frame.json()["frame"]["image_ref"] is not None
     assert current_frame.json()["accepted_for_alerting"] is True
     assert current_frame.json()["filter_reason"] == "accepted"
-    assert current_frame.json()["overlay_ref"].endswith(
-        "/demo_bridge_01/bridge_access_obstruction/overlay/cur_demo_bridge_01_20260414/image.png"
-    )
+    assert current_frame.json()["overlay_ref"] is not None
 
     assert baseline_frame.status_code == 200
     assert baseline_frame.json()["frame"]["frame_id"] == "base_demo_bridge_01_20251012"
@@ -1063,9 +1055,7 @@ def test_api_uses_configured_sentinel_adapters_through_replay_switch(tmp_path, m
     )
     assert current_frame.json()["accepted_for_alerting"] is True
     assert current_frame.json()["filter_reason"] == "accepted"
-    assert current_frame.json()["overlay_ref"].endswith(
-        "/demo_bridge_01/bridge_access_obstruction/overlay/cur_demo_bridge_01_20260414/image.png"
-    )
+    assert current_frame.json()["overlay_ref"] == ("fixtures/demo_bridge_01/overlay-2026-04-14.png")
     assert current_frame.json()["frame"]["image_ref"] is not None
     assert baseline_frame.json()["frame"]["image_ref"] is not None
     assert alerts.status_code == 200
@@ -1194,9 +1184,7 @@ def test_api_uses_baseline_transport_payload_with_baseline_only_endpoint(
 
     assert baseline_frame.status_code == 200
     assert baseline_frame.json()["frame"]["frame_id"] == "live_base_demo_port_01_20250901"
-    assert baseline_frame.json()["frame"]["image_ref"].endswith(
-        "/demo_port_01/hero_port_disruption/baseline/live_base_demo_port_01_20250901/image.png"
-    )
+    assert baseline_frame.json()["frame"]["image_ref"] == "live/demo_port_01/baseline.png"
     assert baseline_frame.json()["frame"]["source"] == (
         "https://example.test/sentinel/baseline"
         "?asset_id=demo_port_01&scenario_id=hero_port_disruption&mode=baseline"
@@ -1238,9 +1226,7 @@ def test_api_falls_back_from_malformed_current_transport_payload(tmp_path, monke
     )
     assert current_frame.json()["accepted_for_alerting"] is True
     assert current_frame.json()["filter_reason"] == "accepted"
-    assert current_frame.json()["overlay_ref"].endswith(
-        "/demo_bridge_01/bridge_access_obstruction/overlay/cur_demo_bridge_01_20260414/image.png"
-    )
+    assert current_frame.json()["overlay_ref"] == ("fixtures/demo_bridge_01/overlay-2026-04-14.png")
 
 
 def test_api_falls_back_from_malformed_baseline_transport_payload(tmp_path, monkeypatch) -> None:
@@ -1276,8 +1262,8 @@ def test_api_falls_back_from_malformed_baseline_transport_payload(tmp_path, monk
         "https://example.test/sentinel/baseline"
         "?asset_id=demo_bridge_01&scenario_id=bridge_access_obstruction&mode=baseline"
     )
-    assert baseline_frame.json()["frame"]["image_ref"].endswith(
-        "/demo_bridge_01/bridge_access_obstruction/baseline/base_demo_bridge_01_20251012/image.png"
+    assert baseline_frame.json()["frame"]["image_ref"] == (
+        "fixtures/demo_bridge_01/baseline-2025-10-12.png"
     )
 
 
@@ -1328,12 +1314,8 @@ def test_api_can_opt_in_current_http_transport(tmp_path, monkeypatch) -> None:
         "https://example.test/sentinel/current"
         "?asset_id=demo_bridge_01&scenario_id=bridge_access_obstruction&mode=current"
     )
-    assert current_frame.json()["frame"]["image_ref"].endswith(
-        "/demo_bridge_01/bridge_access_obstruction/current/live_cur_demo_bridge_01_20260415/image.png"
-    )
-    assert current_frame.json()["overlay_ref"].endswith(
-        "/demo_bridge_01/bridge_access_obstruction/overlay/live_cur_demo_bridge_01_20260415/image.png"
-    )
+    assert current_frame.json()["frame"]["image_ref"] == "live/demo_bridge_01/current.png"
+    assert current_frame.json()["overlay_ref"] == "live/demo_bridge_01/overlay.png"
     assert baseline_frame.status_code == 200
     assert baseline_frame.json()["frame"]["frame_id"] == "base_demo_bridge_01_20251012"
     assert baseline_frame.json()["frame"]["source"] == "sentinel_baseline_stub"
@@ -1385,9 +1367,7 @@ def test_api_can_opt_in_baseline_http_transport(tmp_path, monkeypatch) -> None:
         "https://example.test/sentinel/baseline"
         "?asset_id=demo_bridge_01&scenario_id=bridge_access_obstruction&mode=baseline"
     )
-    assert baseline_frame.json()["frame"]["image_ref"].endswith(
-        "/demo_bridge_01/bridge_access_obstruction/baseline/live_base_demo_bridge_01_20251013/image.png"
-    )
+    assert baseline_frame.json()["frame"]["image_ref"] == "live/demo_bridge_01/baseline.png"
 
 
 def test_api_can_opt_in_both_http_transports_together(tmp_path, monkeypatch) -> None:
@@ -1446,20 +1426,14 @@ def test_api_can_opt_in_both_http_transports_together(tmp_path, monkeypatch) -> 
         "https://example.test/sentinel/current"
         "?asset_id=demo_bridge_01&scenario_id=bridge_access_obstruction&mode=current"
     )
-    assert current_frame.json()["frame"]["image_ref"].endswith(
-        "/demo_bridge_01/bridge_access_obstruction/current/live_cur_demo_bridge_01_20260416/image.png"
-    )
-    assert current_frame.json()["overlay_ref"].endswith(
-        "/demo_bridge_01/bridge_access_obstruction/overlay/live_cur_demo_bridge_01_20260416/image.png"
-    )
+    assert current_frame.json()["frame"]["image_ref"] == "live/demo_bridge_01/current.png"
+    assert current_frame.json()["overlay_ref"] == "live/demo_bridge_01/overlay.png"
     assert baseline_frame.json()["frame"]["frame_id"] == "live_base_demo_bridge_01_20251014"
     assert baseline_frame.json()["frame"]["source"] == (
         "https://example.test/sentinel/baseline"
         "?asset_id=demo_bridge_01&scenario_id=bridge_access_obstruction&mode=baseline"
     )
-    assert baseline_frame.json()["frame"]["image_ref"].endswith(
-        "/demo_bridge_01/bridge_access_obstruction/baseline/live_base_demo_bridge_01_20251014/image.png"
-    )
+    assert baseline_frame.json()["frame"]["image_ref"] == "live/demo_bridge_01/baseline.png"
     assert tmp_path.joinpath(
         ".cache",
         "frames",
@@ -1591,16 +1565,14 @@ def test_api_falls_back_when_both_http_transports_return_non_200(tmp_path, monke
         "https://example.test/sentinel/current"
         "?asset_id=demo_bridge_01&scenario_id=bridge_access_obstruction&mode=current"
     )
-    assert current_frame.json()["overlay_ref"].endswith(
-        "/demo_bridge_01/bridge_access_obstruction/overlay/cur_demo_bridge_01_20260414/image.png"
-    )
+    assert current_frame.json()["overlay_ref"] == ("fixtures/demo_bridge_01/overlay-2026-04-14.png")
     assert baseline_frame.json()["frame"]["frame_id"] == "base_demo_bridge_01_20251012"
     assert baseline_frame.json()["frame"]["source"] == (
         "https://example.test/sentinel/baseline"
         "?asset_id=demo_bridge_01&scenario_id=bridge_access_obstruction&mode=baseline"
     )
-    assert baseline_frame.json()["frame"]["image_ref"].endswith(
-        "/demo_bridge_01/bridge_access_obstruction/baseline/base_demo_bridge_01_20251012/image.png"
+    assert baseline_frame.json()["frame"]["image_ref"] == (
+        "fixtures/demo_bridge_01/baseline-2025-10-12.png"
     )
     assert tmp_path.joinpath(
         ".cache",
@@ -1667,16 +1639,14 @@ def test_api_falls_back_when_both_http_transports_raise_url_error(tmp_path, monk
         "https://example.test/sentinel/current"
         "?asset_id=demo_bridge_01&scenario_id=bridge_access_obstruction&mode=current"
     )
-    assert current_frame.json()["overlay_ref"].endswith(
-        "/demo_bridge_01/bridge_access_obstruction/overlay/cur_demo_bridge_01_20260414/image.png"
-    )
+    assert current_frame.json()["overlay_ref"] == ("fixtures/demo_bridge_01/overlay-2026-04-14.png")
     assert baseline_frame.json()["frame"]["frame_id"] == "base_demo_bridge_01_20251012"
     assert baseline_frame.json()["frame"]["source"] == (
         "https://example.test/sentinel/baseline"
         "?asset_id=demo_bridge_01&scenario_id=bridge_access_obstruction&mode=baseline"
     )
-    assert baseline_frame.json()["frame"]["image_ref"].endswith(
-        "/demo_bridge_01/bridge_access_obstruction/baseline/base_demo_bridge_01_20251012/image.png"
+    assert baseline_frame.json()["frame"]["image_ref"] == (
+        "fixtures/demo_bridge_01/baseline-2025-10-12.png"
     )
     assert tmp_path.joinpath(
         ".cache",

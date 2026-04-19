@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from shutil import copyfile
 from typing import Mapping, Protocol
 
 from app.schemas.frame import FrameEnvelope
@@ -73,6 +74,7 @@ class CachedFrameClient:
         materialized = self._materialize_envelope(
             envelope=envelope, request=request, variant=variant
         )
+        metadata_path.parent.mkdir(parents=True, exist_ok=True)
         metadata_path.write_text(materialized.model_dump_json(indent=2), encoding="utf-8")
         return materialized
 
@@ -98,7 +100,10 @@ class CachedFrameClient:
         )
         cached_image_ref = None
         if image_ref:
-            cached_image_ref = self._touch(self._cache_layout.image_path(cache_key))
+            cached_image_ref = self._materialize_ref(
+                source_ref=image_ref,
+                target_path=self._cache_layout.image_path(cache_key),
+            )
 
         cached_overlay_ref = None
         if overlay_ref:
@@ -108,7 +113,10 @@ class CachedFrameClient:
                 frame_id=envelope.frame.frame_id,
                 variant="overlay",
             )
-            cached_overlay_ref = self._touch(self._cache_layout.image_path(overlay_key))
+            cached_overlay_ref = self._materialize_ref(
+                source_ref=overlay_ref,
+                target_path=self._cache_layout.image_path(overlay_key),
+            )
 
         return envelope.model_copy(
             update={
@@ -117,7 +125,15 @@ class CachedFrameClient:
             }
         )
 
-    def _touch(self, path: Path) -> str:
-        path.parent.mkdir(parents=True, exist_ok=True)
-        path.touch(exist_ok=True)
-        return str(path)
+    def _materialize_ref(self, *, source_ref: str, target_path: Path) -> str:
+        source_path = Path(source_ref)
+        if not source_path.is_file():
+            return source_ref
+
+        suffix = source_path.suffix or target_path.suffix or ".png"
+        materialized_path = (
+            target_path if target_path.suffix == suffix else target_path.with_suffix(suffix)
+        )
+        materialized_path.parent.mkdir(parents=True, exist_ok=True)
+        copyfile(source_path, materialized_path)
+        return str(materialized_path)

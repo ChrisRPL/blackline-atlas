@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+from dataclasses import replace
+from pathlib import Path
+
 from app.core.config import Settings
 from app.schemas.asset import Asset
 from app.services.frame_cache import FrameCacheLayout
@@ -22,28 +25,14 @@ def test_cached_frame_client_persists_current_frame_metadata_and_paths(tmp_path)
 
     envelope = client.get_current_frame(request)
 
-    assert envelope.frame.image_ref is not None
-    assert envelope.overlay_ref is not None
+    assert envelope.frame.image_ref == "fixtures/demo_port_01/current-2026-04-14.png"
+    assert envelope.overlay_ref == "fixtures/demo_port_01/overlay-2026-04-14.png"
     assert tmp_path.joinpath(
         "demo_port_01",
         "hero_port_disruption",
         "current",
         "cur_demo_port_01_20260414",
         "metadata.json",
-    ).exists()
-    assert tmp_path.joinpath(
-        "demo_port_01",
-        "hero_port_disruption",
-        "current",
-        "cur_demo_port_01_20260414",
-        "image.png",
-    ).exists()
-    assert tmp_path.joinpath(
-        "demo_port_01",
-        "hero_port_disruption",
-        "overlay",
-        "cur_demo_port_01_20260414",
-        "image.png",
     ).exists()
 
 
@@ -93,7 +82,7 @@ def test_cached_frame_client_materializes_baseline_adapter_output(tmp_path) -> N
         "https://example.test/sentinel/baseline"
         "?asset_id=demo_bridge_01&scenario_id=bridge_access_obstruction&mode=baseline"
     )
-    assert envelope.frame.image_ref is not None
+    assert envelope.frame.image_ref == "fixtures/demo_bridge_01/baseline-2025-10-12.png"
     assert tmp_path.joinpath(
         "demo_bridge_01",
         "bridge_access_obstruction",
@@ -101,13 +90,53 @@ def test_cached_frame_client_materializes_baseline_adapter_output(tmp_path) -> N
         "base_demo_bridge_01_20251012",
         "metadata.json",
     ).exists()
-    assert tmp_path.joinpath(
-        "demo_bridge_01",
-        "bridge_access_obstruction",
-        "baseline",
-        "base_demo_bridge_01_20251012",
-        "image.png",
-    ).exists()
+
+
+def test_cached_frame_client_copies_real_frame_bytes_into_cache(tmp_path) -> None:
+    source_dir = tmp_path / "source"
+    source_dir.mkdir()
+    current_image = source_dir / "current.png"
+    overlay_image = source_dir / "overlay.png"
+    baseline_image = source_dir / "baseline.png"
+    current_image.write_bytes(b"current-bytes")
+    overlay_image.write_bytes(b"overlay-bytes")
+    baseline_image.write_bytes(b"baseline-bytes")
+
+    scenarios = _scenarios()
+    scenario = scenarios["hero_port_disruption"]
+    scenarios["hero_port_disruption"] = replace(
+        scenario,
+        current_frame=scenario.current_frame.model_copy(
+            update={
+                "frame": scenario.current_frame.frame.model_copy(
+                    update={"image_ref": str(current_image)}
+                ),
+                "overlay_ref": str(overlay_image),
+            }
+        ),
+        baseline_frame=scenario.baseline_frame.model_copy(
+            update={
+                "frame": scenario.baseline_frame.frame.model_copy(
+                    update={"image_ref": str(baseline_image)}
+                )
+            }
+        ),
+    )
+    client = CachedFrameClient(
+        delegate=FixtureFrameClient(scenarios),
+        cache_layout=FrameCacheLayout(tmp_path / "cache"),
+    )
+    request = FrameRequest(asset_id="demo_port_01", scenario_id="hero_port_disruption")
+
+    current = client.get_current_frame(request)
+    baseline = client.get_baseline_frame(request)
+
+    assert current.frame.image_ref is not None
+    assert baseline.frame.image_ref is not None
+    assert current.overlay_ref is not None
+    assert Path(current.frame.image_ref).read_bytes() == b"current-bytes"
+    assert Path(current.overlay_ref).read_bytes() == b"overlay-bytes"
+    assert Path(baseline.frame.image_ref).read_bytes() == b"baseline-bytes"
 
 
 def _scenarios():
