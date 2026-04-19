@@ -4,6 +4,8 @@ from pathlib import Path
 from shutil import copyfile
 from typing import Mapping, Protocol
 
+from pydantic import ValidationError
+
 from app.schemas.frame import FrameEnvelope
 from app.services.frame_cache import FrameCacheKey, FrameCacheLayout
 from app.services.frame_types import FrameRequest
@@ -68,8 +70,13 @@ class CachedFrameClient:
         metadata_path = self._cache_layout.metadata_path(cache_key)
 
         if metadata_path.exists():
-            cached = FrameEnvelope.model_validate_json(metadata_path.read_text(encoding="utf-8"))
-            if self._cached_envelope_usable(cached):
+            try:
+                cached = FrameEnvelope.model_validate_json(
+                    metadata_path.read_text(encoding="utf-8")
+                )
+            except ValidationError:
+                cached = None
+            if cached is not None and self._cached_envelope_usable(cached):
                 return cached
 
         envelope = loader(request)

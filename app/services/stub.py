@@ -1057,6 +1057,9 @@ class StubAtlasService:
             if not self._query_mentions_category(request.query or "", category):
                 category = None
         site_id = plan.site_id if self._find_asset(plan.site_id) is not None else None
+        anchor_asset = self._planner_anchor_asset(request=request, plan=plan, site_id=site_id)
+        if anchor_asset is not None and area not in {anchor_asset.asset_name, anchor_asset.region}:
+            area = None
         alert_id = plan.alert_id if request.alert_id else None
         return plan.model_copy(
             update={
@@ -1066,6 +1069,17 @@ class StubAtlasService:
                 "alert_id": alert_id,
             }
         )
+
+    def _planner_anchor_asset(
+        self,
+        *,
+        request: AtlasAgentQueryRequest,
+        plan: AtlasAgentPlan,
+        site_id: str | None,
+    ) -> Asset | None:
+        if plan.tool not in {"site_compare", "explain_alert"}:
+            return None
+        return self._find_asset(request.selected_asset_id or request.site_id or site_id)
 
     def _canonical_area(self, area: str | None) -> str | None:
         if not area:

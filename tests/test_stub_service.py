@@ -1020,6 +1020,66 @@ def test_stub_service_drops_spurious_live_planner_category_filter(
     assert response.resolved.category is None
 
 
+def test_stub_service_drops_spurious_live_planner_area_on_selected_site(
+    tmp_path: Path, monkeypatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+
+    def fake_urlopen(request, timeout: float):
+        _ = request
+        _ = timeout
+        return _FakeHTTPResponse(
+            body=json.dumps(
+                {
+                    "choices": [
+                        {
+                            "message": {
+                                "content": json.dumps(
+                                    {
+                                        "tool": "explain_alert",
+                                        "area": "Bahrain",
+                                        "category": None,
+                                        "site_id": "arbaat_dam_01",
+                                        "alert_id": None,
+                                    }
+                                )
+                            }
+                        }
+                    ]
+                }
+            ).encode("utf-8")
+        )
+
+    monkeypatch.setattr("app.services.model_gateway.urlopen", fake_urlopen)
+    service = StubAtlasService(
+        Settings(
+            app_env="test",
+            app_port=8000,
+            model_version="lfm2.5-vl-450m-prompted",
+            simsat_current_endpoint=None,
+            simsat_baseline_endpoint=None,
+            mapbox_token_present=False,
+            watchlist_path=None,
+            agent_model_version="hf.co/LiquidAI/LFM2.5-1.2B-Instruct-GGUF",
+            agent_endpoint="http://127.0.0.1:11434/v1/chat/completions",
+            agent_http_enabled=True,
+            agent_provider="openai_chat_completions_http",
+        )
+    )
+
+    response = service.run_agent_query(
+        AtlasAgentQueryRequest(query="why is this flagged", selected_asset_id="arbaat_dam_01"),
+    )
+
+    assert response.tool == "explain_alert"
+    assert response.planner.mode == "live"
+    assert response.focus_asset_id == "arbaat_dam_01"
+    assert response.focus_alert_id == "blk_nd_00011"
+    assert response.resolved.area is None
+    assert response.resolved.site_id == "arbaat_dam_01"
+    assert response.resolved.selected_asset_id == "arbaat_dam_01"
+
+
 def test_stub_service_reports_agent_planner_http_fallback(tmp_path: Path, monkeypatch) -> None:
     monkeypatch.chdir(tmp_path)
 
