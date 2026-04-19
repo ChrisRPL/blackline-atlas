@@ -17,7 +17,7 @@ Purpose:
 - strongest current inland repo lead:
   - `Saudi Teaching Maternal Hospital`, `El Fasher`
   - exact parcel locked
-  - still needs a defendable hospital-only Sentinel read
+  - still not promotion-ready
 
 Rule:
 - aid next should be:
@@ -262,17 +262,18 @@ Reject:
   - current parcel anchor:
     - `13.6299070, 25.3298850`
 - status:
-  - `active_exact_lead_needs_honest_bbox_review`
+  - `hold_exact_parcel_signal_too_mixed`
 - next action:
   - bounded local SimSat pass returned a usable pre/post pair on the exact parcel:
     - baseline request `2024-07-15T08:00:00Z` -> returned `2024-07-14T08:56:32Z` with `17.404674` cloud
     - current request `2024-08-20T08:00:00Z` -> returned `2024-08-18T08:56:29Z` with `9.6509` cloud
-  - exact parcel truth is now stronger than `El Obeid`
-  - do one bounded bbox review only
-  - keep only if the read stays hospital-compound-specific, not generalized front-line urban damage
+  - bounded bbox review failed the honesty bar:
+    - parcel-level mean change stayed lower than the surrounding ring
+    - visible disruption reads broader urban/front-line context, not hospital-compound-specific damage
+  - exact parcel truth is stronger than `El Obeid`, but the Sentinel signal is still too mixed for promotion
   - caution:
     - AP reports the hospital sits just north of El Fasher airport and near the front lines
-    - if that proximity makes the interpretation feel tactical or too mixed, downgrade fast
+    - that proximity increases the risk of reading generalized siege damage as hospital-specific disruption
 - sources:
   - [MSF on repeated attacks on Saudi hospital in El Fasher](https://www.msf.org.za/news-and-resources/latest-news/hospitals-are-damaged-and-closed-el-fasher-fighting-rages)
   - [MSF on shelling that damaged the hospital pharmacy](https://www.msf-me.org/media-centre/news-and-stories/sudan-fighting-el-fasher-remains-incessant-despite-unsc-resolution)
@@ -328,12 +329,12 @@ Reject:
 
 ## Immediate next work order
 
-1. do one bounded bbox review on `aid_09` `Saudi Teaching Maternal Hospital`
+1. keep `aid_09` `Saudi Teaching Maternal Hospital` as evidence-only unless a tighter hospital-only read emerges
 2. keep `aid_01` `El Obeid` frozen until the ABS complex itself becomes publicly mappable
 3. keep `aid_02` `Lankien` and `aid_03` `Tyre` as evidence-only, not active parcel hunts
 4. keep `aid_07` `Taiz`, `aid_08` `Kunduz`, `aid_10` `Urum`, and `aid_11` `Abs` as archive-blocked retrospective leads only
 5. `UNHCR Baghdad` and `Mosul Medical City` are now the exact aid / medical-aid control anchors
-6. if `aid_09` still feels too mixed or too soft, reopen inland `food` before adding more aid notes
+6. reopen inland `food` before adding more aid notes
 
 ## Stop rules
 

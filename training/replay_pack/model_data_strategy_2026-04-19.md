@@ -124,10 +124,10 @@ If planner fine-tuning is ever revisited later:
 
 ## Next data order
 
-1. bounded inland aid review on the current exact lead
+1. inland food positive/control expansion
 2. planner eval expansion
 3. second water positive only when archive / parcel truth is real
-4. more controls only as support work
+4. new inland aid lead search only if a parcel-tight candidate appears
 
 ## Current recommendation
 
