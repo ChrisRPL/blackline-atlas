@@ -11,20 +11,20 @@ Purpose:
 ### VLM / image-lane truth
 
 - `hero_eval.jsonl`: `2`
-- `non_demo_eval.jsonl`: `12`
-- overall annotated rows: `14`
+- `non_demo_eval.jsonl`: `13`
+- overall annotated rows: `15`
 - non-demo positives: `5`
   - `food`: `2`
   - `aid`: `1`
   - `mobility`: `1`
   - `water`: `1`
-- non-demo controls / stress: `7`
+- non-demo controls / stress: `8`
   - `water`: `3`
-  - `food`: `2`
+  - `food`: `3`
   - `aid`: `2`
 - split shape:
   - `holdout_geo`: `4`
-  - `holdout_stress`: `7`
+  - `holdout_stress`: `8`
   - `dev`: `1`
   - `train`: `0`
 
@@ -42,15 +42,16 @@ Implication:
   - `site_compare`
   - `explain_alert`
 - current frozen planner eval rows:
-  - `training/replay_pack/agent_command_eval.jsonl`: `10`
+  - `training/replay_pack/agent_command_eval.jsonl`: `30`
 - current watchlist assets:
-  - `14`
+  - `15`
 
 Implication:
 
 - planner lane already has deterministic fallback and sanitization
 - planner fine-tuning is not the right next move
-- planner eval breadth is the real gap
+- planner eval breadth is now strong enough for the current watchlist
+- next pressure moves back to VLM data growth, not planner training
 
 ## What the VLM still needs
 
@@ -66,13 +67,13 @@ First gold-set target stays:
 
 Current gap against that target:
 
-- total missing rows: `10`
+- total missing rows: `9`
 - missing positives: `7`
   - `food`: `2`
   - `water`: `2`
   - `aid`: `2`
   - `mobility`: `1`
-- missing controls / stress: `3`
+- missing controls / stress: `2`
 
 Most important missing pieces:
 
@@ -93,7 +94,7 @@ Reason:
 
 What is needed now instead:
 
-- expand `agent_command_eval.jsonl` from `10` rows to roughly `60-120`
+- expand `agent_command_eval.jsonl` from `30` rows to roughly `60-120`
 - keep the current `AgentCommandEvalCase` schema
 - score routing correctness, not prose quality
 
@@ -124,10 +125,10 @@ If planner fine-tuning is ever revisited later:
 
 ## Next data order
 
-1. inland food positive expansion around `Novus Logistics Center`
-2. planner eval expansion
-3. second water positive only when archive / parcel truth is real
-4. new inland aid lead search only if a parcel-tight candidate appears
+1. inland food positive expansion around `Novus Logistics Center` only if a clear post-strike window appears
+2. second water positive only when archive / parcel truth is real
+3. new inland aid lead search only if a parcel-tight candidate appears
+4. planner eval expansion only after watchlist/query breadth grows again
 
 ## Current recommendation
 

@@ -673,6 +673,7 @@ def test_stub_service_default_watchlist_includes_real_civilian_sites() -> None:
     assert "unhcr_baghdad_01" in asset_ids
     assert "mosul_medical_city_01" in asset_ids
     assert "gedaref_silos_01" in asset_ids
+    assert "manbij_silos_01" in asset_ids
     assert asset_by_id["demo_port_01"].evidence_state == "live_demo"
     assert asset_by_id["beirut_port_01"].evidence_state == "reference_event"
     assert asset_by_id["arbaat_dam_01"].evidence_state == "reference_event"
@@ -681,6 +682,7 @@ def test_stub_service_default_watchlist_includes_real_civilian_sites() -> None:
     assert asset_by_id["bahri_water_01"].evidence_state == "reference_control"
     assert asset_by_id["mosul_medical_city_01"].evidence_state == "reference_control"
     assert asset_by_id["gedaref_silos_01"].evidence_state == "reference_control"
+    assert asset_by_id["manbij_silos_01"].evidence_state == "reference_control"
 
 
 def test_stub_service_keeps_water_category_when_query_mentions_dam(

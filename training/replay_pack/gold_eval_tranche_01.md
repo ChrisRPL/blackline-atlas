@@ -128,6 +128,7 @@ Do in parallel with positive cases:
 - same-class no-event controls
 - prefer same facility family where possible
 - `Gedaref Grain Silos` now fills one exact inland food no-event control slot
+- `Manbij Grain Silo Complex` now fills a second exact inland food no-event control slot
 
 ### `control_weather_01` to `control_weather_02`
 - cloud-heavy or haze-heavy frames
@@ -152,7 +153,7 @@ Do in parallel with positive cases:
 2. keep `Ayn al-Bayda Water Pumping Station` as the second-water lead only if archive baseline truth improves
 3. keep `Bahri Water Station` as the exact water control row for this tranche
 4. keep `aid_02` open only for a new parcel-tight inland depot or hospital campus
-5. expand planner eval before any agent-model fine-tune dataset work
+5. keep the planner eval pack stable at its current widened shape unless watchlist/query breadth grows again
 
 ## Stop rules
 

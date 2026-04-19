@@ -304,18 +304,21 @@ Primary buckets:
 - why:
   - food function is explicit and fixed-site
   - six-silo compound reads more cleanly than alias-conflicted mill leads
-  - archive coverage is usable enough to keep alive
-- status: `hold_search_ready_scope_sanity_needed`
+  - clean April/June archive is usable enough for an honest no-event control
+- status: `added_to_non_demo_eval_as_exact_control`
 - coordinates:
   - `36.507778, 37.961389`
 - notes:
-  - clean local archive exists on the exact clue:
-    - `2024-03-12T08:19:59Z` with `0.004497` cloud
-    - `2024-06-13T08:30:01Z` with `1.932094` cloud
-  - but this lane still needs one hard civilian-scope check before promotion:
-    - silo complex visibility is good
-    - conflict framing around Manbij can drift tactical faster than Kyiv food-distribution cases
-  - keep as a search-ready seed, not an active promotion row
+  - exact public parcel clue and food-storage function held up
+  - initial March return on the exact clue was too hazy to trust:
+    - request `2024-03-12T08:00:00Z` -> returned `2024-03-10T08:29:51Z` with `37.791413` cloud
+  - cleaner local pair on the same exact clue:
+    - baseline request `2024-04-05T08:00:00Z` -> returned `2024-04-04T08:29:52Z` with `12.025507` cloud
+    - current request `2024-06-13T08:00:00Z` -> returned `2024-06-10T08:20:05Z` with `0.003497` cloud
+  - result:
+    - no named civilian disruption event tied directly to the complex was found through `2026-04-19`
+    - the exact six-silo compound reads materially stable in the cleaner April/June pair
+    - this is now an exact conflict-adjacent food no-material-change control, not a positive row
 - sources:
   - [Wikimapia parcel clue](https://wikimapia.org/31562913/Manbij-Grain-Silo-Complex)
   - [North Press on the complex and capacity](https://npasyria.com/en/60094/)

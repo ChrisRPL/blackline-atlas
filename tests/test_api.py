@@ -815,6 +815,7 @@ def test_assets_endpoint_returns_seeded_assets() -> None:
         "unhcr_baghdad_01",
         "mosul_medical_city_01",
         "gedaref_silos_01",
+        "manbij_silos_01",
     } <= asset_ids
 
 
