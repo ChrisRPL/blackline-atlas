@@ -11,20 +11,20 @@ Purpose:
 ### VLM / image-lane truth
 
 - `hero_eval.jsonl`: `2`
-- `non_demo_eval.jsonl`: `11`
-- overall annotated rows: `13`
+- `non_demo_eval.jsonl`: `12`
+- overall annotated rows: `14`
 - non-demo positives: `5`
   - `food`: `2`
   - `aid`: `1`
   - `mobility`: `1`
   - `water`: `1`
-- non-demo controls / stress: `6`
+- non-demo controls / stress: `7`
   - `water`: `3`
-  - `food`: `1`
+  - `food`: `2`
   - `aid`: `2`
 - split shape:
   - `holdout_geo`: `4`
-  - `holdout_stress`: `6`
+  - `holdout_stress`: `7`
   - `dev`: `1`
   - `train`: `0`
 
@@ -44,7 +44,7 @@ Implication:
 - current frozen planner eval rows:
   - `training/replay_pack/agent_command_eval.jsonl`: `10`
 - current watchlist assets:
-  - `13`
+  - `14`
 
 Implication:
 
@@ -66,13 +66,13 @@ First gold-set target stays:
 
 Current gap against that target:
 
-- total missing rows: `11`
+- total missing rows: `10`
 - missing positives: `7`
   - `food`: `2`
   - `water`: `2`
   - `aid`: `2`
   - `mobility`: `1`
-- missing controls / stress: `4`
+- missing controls / stress: `3`
 
 Most important missing pieces:
 
@@ -124,7 +124,7 @@ If planner fine-tuning is ever revisited later:
 
 ## Next data order
 
-1. inland food positive/control expansion
+1. inland food positive expansion around `Novus Logistics Center`
 2. planner eval expansion
 3. second water positive only when archive / parcel truth is real
 4. new inland aid lead search only if a parcel-tight candidate appears

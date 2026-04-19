@@ -7,7 +7,7 @@ Use this to grow `training/replay_pack/non_demo_eval.jsonl` from a tiny demo-adj
 - demo/smoke rows:
   - `hero_eval.jsonl`: `2`
 - real/manual non-demo rows:
-  - `non_demo_eval.jsonl`: `11`
+  - `non_demo_eval.jsonl`: `12`
 - current real positive non-demo mix:
   - `food`: `2` (`Beirut Grain Silos`, `Silpo Kvitneve Distribution Center`)
   - `aid`: `1` (`Port Sudan Aid Hub`)
@@ -18,17 +18,18 @@ Use this to grow `training/replay_pack/non_demo_eval.jsonl` from a tiny demo-adj
     - `Ras Abu Jarjur`
     - `Doha West`
     - `Bahri Water Station`
-  - `food`: `1`
+  - `food`: `2`
     - `Vasyshcheve ATB Distribution Center`
+    - `Gedaref Grain Silos`
   - `aid`: `2`
     - `UNHCR Baghdad Warehouse`
     - `Mosul Medical City Hospital`
 - overall annotated rows:
-  - `13`
+  - `14`
 - current split shape:
   - `holdout_geo`: `4`
   - `dev`: `1`
-  - `holdout_stress`: `6`
+  - `holdout_stress`: `7`
   - `train`: `0`
 - train rows:
   - `0`
@@ -218,6 +219,9 @@ Do not count toward gold coverage:
 The next acquisition push should not chase more food-only cases blindly.
 
 Better order now:
+
+- keep `Novus Logistics Center` as the next inland food positive lead
+- count `Gedaref Grain Silos` as an exact food no-event anchor, not as a missing positive
 
 1. reopen `aid` only for a parcel-tight inland depot, not another soft warehouse guess
 2. keep `water` open only for a second exact positive, not more soft control churn

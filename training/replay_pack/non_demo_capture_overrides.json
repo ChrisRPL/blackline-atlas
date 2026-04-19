@@ -3,5 +3,10 @@
     "latitude": 50.528965,
     "longitude": 30.849714,
     "size_km": 0.5
+  },
+  "gedaref_grain_silos_no_material_change": {
+    "latitude": 14.026667,
+    "longitude": 35.365,
+    "size_km": 1.0
   }
 }

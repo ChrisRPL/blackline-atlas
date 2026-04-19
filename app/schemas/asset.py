@@ -6,6 +6,7 @@ from pydantic import BaseModel
 
 AssetType = Literal[
     "grain_port",
+    "grain_storage_complex",
     "container_port",
     "bridge",
     "water_infrastructure",

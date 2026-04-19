@@ -802,7 +802,7 @@ def test_assets_endpoint_returns_seeded_assets() -> None:
 
     assert response.status_code == 200
     payload = response.json()
-    assert len(payload) >= 13
+    assert len(payload) >= 14
     assert payload[0]["asset_id"] == "demo_port_01"
     asset_ids = {item["asset_id"] for item in payload}
     assert {
@@ -814,6 +814,7 @@ def test_assets_endpoint_returns_seeded_assets() -> None:
         "silpo_kvitneve_01",
         "unhcr_baghdad_01",
         "mosul_medical_city_01",
+        "gedaref_silos_01",
     } <= asset_ids
 
 

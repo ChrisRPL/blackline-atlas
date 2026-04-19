@@ -115,5 +115,14 @@
     "latitude": 36.357025,
     "longitude": 43.116703,
     "hero": false
+  },
+  {
+    "asset_id": "gedaref_silos_01",
+    "asset_name": "Gedaref Grain Silos",
+    "asset_type": "grain_storage_complex",
+    "region": "Gedaref, Sudan",
+    "latitude": 14.026667,
+    "longitude": 35.365,
+    "hero": false
   }
 ]

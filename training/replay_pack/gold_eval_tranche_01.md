@@ -127,6 +127,7 @@ Do in parallel with positive cases:
 ### `control_neg_01` to `control_neg_04`
 - same-class no-event controls
 - prefer same facility family where possible
+- `Gedaref Grain Silos` now fills one exact inland food no-event control slot
 
 ### `control_weather_01` to `control_weather_02`
 - cloud-heavy or haze-heavy frames
@@ -146,6 +147,8 @@ Do in parallel with positive cases:
 1. reopen inland `food` now that the current `aid_02` shortlist is still blocked
    - current search-ready lead:
      - `Novus Logistics Center`
+   - exact parcel / crop center now locked:
+     - `50.404419, 30.419830`
 2. keep `Ayn al-Bayda Water Pumping Station` as the second-water lead only if archive baseline truth improves
 3. keep `Bahri Water Station` as the exact water control row for this tranche
 4. keep `aid_02` open only for a new parcel-tight inland depot or hospital campus

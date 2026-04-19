@@ -242,26 +242,37 @@ Primary buckets:
   - user story is strong:
     - disruption near Kyiv
     - visible risk to grocery distribution, not just generic warehousing
-- status: `hold_search_ready_weather_blocked`
+- status: `active_exact_lead_weather_blocked`
 - coordinates:
-  - strongest current street/service anchor:
+  - recommended crop center:
+    - `50.404419, 30.419830`
+  - strongest street/service anchor:
     - `50.4043373, 30.4240833` (`Проектна, 3`)
 - notes:
   - MIGA project docs identify the site as the Novus logistics center between `вул. Якова Качури` and `вул. Миру` in Kyiv's Sviatoshynskyi district
   - the same EIA gives cadastral parcel `8000000000:75:199:0001`
-  - this is good enough to keep as the next food search lane, but not yet enough to claim a final warehouse-centered crop
+  - exact parcel is now publicly defensible, not just improving:
+    - the Kyiv construction registry
+    - the EIA
+    - MIGA / EBRD project pages
+    - and the named OSM footprint all converge on the same logistics-center parcel
+  - best current crop recommendation is a `640 m x 640 m` square centered on `50.404419, 30.419830`
   - bounded SimSat pass on the strongest current anchor was unusable on the strike windows:
     - `2025-11-10` -> `2025-11-09T09:06:42Z` with `99.992341` cloud
     - `2025-11-28` -> `2025-11-27T09:06:36Z` with `99.978232` cloud
     - `2025-12-10` -> `2025-12-07T09:06:35Z` with `99.998862` cloud
   - result:
     - exact product semantics: good
-    - exact parcel lock: improving
+    - exact parcel lock: good
     - current post-strike archive/weather truth: blocked
-  - keep as the next active food search lead if we can upgrade the parcel from street/cadastral clue to defendable crop center
+  - keep as the next active food positive lead if a clean post-strike Sentinel frame appears
 - sources:
-  - [MIGA project page for Novus Logistics Center](https://www.miga.org/project/novus-logistics-center-0)
-  - [MIGA EIA / site description via project attachments](https://www.miga.org/project/novus-logistics-center)
+  - [Kyiv construction registry / parcel permit](https://e-construction.gov.ua/document_detail/doc_id=3227146532302095948/optype=100)
+  - [Public cadastral map query](https://map.land.gov.ua/?cadnum=8000000000:75:199:0001)
+  - [MIGA project page for Novus Logistics Center](https://www.miga.org/project/novus-logistics-center)
+  - [MIGA EIA PDF](https://www.miga.org/sites/default/files/2025-02/Environmental%20Impact%20Assessment%20%28EIA%29_Ukranian.pdf)
+  - [EBRD Novus Retail and Logistics project](https://www.ebrd.com/home/work-with-us/projects/psd/51639.html)
+  - [OpenStreetMap footprint](https://www.openstreetmap.org/way/1211057658)
   - [Kyiv Independent on the strike](https://kyivindependent.com/ukrainian-supermarket-chain-torn-apart-by-russian-attack//)
 
 #### Gedaref Grain Silos
@@ -270,22 +281,21 @@ Primary buckets:
   - huge one-function inland grain-storage complex
   - better fixed-site food semantics than most mixed warehouse leads
   - strong control/search-seed value because parcel truth and archive coverage are both clean
-- status: `hold_search_ready_no_event_anchor`
+- status: `added_to_non_demo_eval_as_exact_food_control`
 - coordinates:
   - `14.026667, 35.365000`
 - notes:
-  - local SimSat archive is excellent on the exact clue:
-    - `2024-01-14T08:16:12Z` with `0` cloud
-    - `2024-03-14T08:16:11Z` with `0` cloud
-    - `2024-06-12T08:16:17Z` with `0.035345` cloud
-    - `2025-01-13T08:16:11Z` with `0.00007` cloud
-    - `2026-01-13T08:16:11Z` with `0` cloud
-  - best use right now:
-    - exact no-event food anchor
-    - or future positive only if one named disruption event ties directly to the silo complex
-  - do not promote as a conflict-positive row without a direct event and before/after story
+  - local SimSat archive is strong enough for a clean control pair:
+    - baseline `2024-01-09T08:16:09Z` with `0` cloud
+    - current `2024-06-07T08:16:19Z` with `0` cloud
+  - promoted as an exact food no-event control row
+  - no named civilian disruption event tied directly to the silo complex was found through `2026-04-19`
+  - keep the older west-shifted public pin as a caution:
+    - exact complex confidence is good enough for the control row
+    - but not tight enough to claim a positive event without direct source lock
 - sources:
-  - [Wikimapia parcel clue](https://wikimapia.org/6426389/Grain-Silos)
+  - [Wikimapia parcel clue](https://wikimapia.org/13505027/Gadarif-Grain-Silos-%D8%B5%D9%88%D9%85%D8%B9%D8%A9-%D8%A7%D9%84%D9%82%D8%B6%D8%A7%D8%B1%D9%81)
+  - [Alternate older pin](https://wikimapia.org/13985184/Grain-silos)
   - [FEWS NET on Gedaref as largest silo/storage area](https://fews.net/east-africa/sudan/alert/february-2024)
   - [WFP on grain-storage importance in Gedaref](https://www.wfp.org/stories/grain-binds)
 

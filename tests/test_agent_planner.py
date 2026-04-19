@@ -33,7 +33,8 @@ def test_agent_prompt_builder_targets_tool_plan_only() -> None:
     assert "biggest_disruptions" in prompt.system
     assert (
         "Allowed category values: aid_warehouse_cluster, bridge, container_port, "
-        "grain_port, logistics_hub, medical_aid_node, water_infrastructure."
+        "grain_port, grain_storage_complex, logistics_hub, medical_aid_node, "
+        "water_infrastructure."
     ) in prompt.system
     assert "site_id must be exactly one watchlist asset_id or null." in prompt.system
     assert "For site_compare, set site_id" in prompt.system

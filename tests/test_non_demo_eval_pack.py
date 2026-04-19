@@ -32,6 +32,7 @@ def test_non_demo_eval_pack_rows_parse() -> None:
         "arbaat_dam_collapse",
         "mosul_medical_city_broad_damage_ambiguity",
         "silpo_kvitneve_distribution_center_strike",
+        "gedaref_grain_silos_no_material_change",
     ]
     assert rows[0].split == "holdout_geo"
     assert rows[0].holdout_reason == "retrospective_food_security_anchor"
@@ -74,4 +75,9 @@ def test_non_demo_eval_pack_rows_parse() -> None:
     assert (
         by_case_id["silpo_kvitneve_distribution_center_strike"].holdout_reason
         == "current_conflict_inland_food_distribution_anchor"
+    )
+    assert by_case_id["gedaref_grain_silos_no_material_change"].split == "holdout_stress"
+    assert (
+        by_case_id["gedaref_grain_silos_no_material_change"].holdout_reason
+        == "exact_food_storage_control_no_macro_change"
     )

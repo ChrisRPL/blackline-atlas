@@ -1092,6 +1092,13 @@ class StubAtlasService:
         category_tokens = {
             "bridge": {"bridge"},
             "grain_port": {"grain port", "grain terminal", "port"},
+            "grain_storage_complex": {
+                "grain silo",
+                "grain silos",
+                "silo",
+                "silos",
+                "grain storage",
+            },
             "container_port": {"container port", "aid hub", "port"},
             "water_infrastructure": {
                 "water",
@@ -1140,6 +1147,11 @@ class StubAtlasService:
         for asset in self.assets:
             if asset.asset_type.replace("_", " ") in lowered or asset.asset_type in lowered:
                 return asset.asset_type
+        if any(
+            term in lowered
+            for term in ("grain silo", "grain silos", "grain storage", "silo", "silos")
+        ):
+            return "grain_storage_complex"
         if "bridge" in lowered:
             return "bridge"
         if "port" in lowered:

@@ -23,6 +23,19 @@ def test_asset_allows_water_infrastructure_type() -> None:
     assert asset.asset_type == "water_infrastructure"
 
 
+def test_asset_allows_grain_storage_complex_type() -> None:
+    asset = Asset(
+        asset_id="grain_storage_01",
+        asset_name="Demo Grain Silos",
+        asset_type="grain_storage_complex",
+        region="Gedaref",
+        latitude=14.026667,
+        longitude=35.365,
+    )
+
+    assert asset.asset_type == "grain_storage_complex"
+
+
 def test_asset_allows_aid_warehouse_cluster_type() -> None:
     asset = Asset(
         asset_id="aid_wh_01",
