@@ -144,6 +144,8 @@ Do in parallel with positive cases:
 ## Immediate next work order
 
 1. reopen inland `food` now that the current `aid_02` shortlist is still blocked
+   - current search-ready lead:
+     - `Novus Logistics Center`
 2. keep `Ayn al-Bayda Water Pumping Station` as the second-water lead only if archive baseline truth improves
 3. keep `Bahri Water Station` as the exact water control row for this tranche
 4. keep `aid_02` open only for a new parcel-tight inland depot or hospital campus

@@ -207,6 +207,7 @@ Primary buckets:
 - notes:
   - strongest public parcel clue so far is `3 Mykoly Shutia St, Pavlohrad`
   - exact parcel seed used: `48.542772, 35.883719`
+  - exact parcel clue is now reinforced by a direct map/address source, not just hiring-page context
   - keep only if the struck footprint is predominantly food storage, not mixed FMCG/logistics
   - best pre-strike baseline now pinned:
     - request `2026-04-07T08:47:00Z` -> returned `2026-04-05T08:46:43Z` with `0.652506` cloud
@@ -220,13 +221,94 @@ Primary buckets:
     - `2026-04-10/11/12` -> `2026-04-10T08:46:42Z` with `99.947125` cloud
     - `2026-04-13/14` -> `2026-04-12T08:47:04Z` with `77.931386` cloud
     - `2026-04-15/16/17` -> `2026-04-15T08:46:42Z` with `46.458131` cloud
+  - one final RGB-only check for `2026-04-16` through `2026-04-19` at `0.5 km`, `0.8 km`, and `1.0 km` still returned the same `2026-04-15T08:46:42Z` frame with `46.458131` cloud
   - result: exact parcel is solved, but weather still blocks an honest post-strike frame as of `2026-04-17`
   - if we ever get a clear post-strike frame, this becomes one of the better “something is wrong near my region” food cases
 - sources:
   - [Kyiv Post, 2026-04-08](https://www.kyivpost.com/post/73498)
   - [Star Grocery official site](https://stargrocery.com.ua/en/)
   - [Ukrinform, 2026-04-07](https://www.ukrinform.net/rubric-ato/4110088-russian-drones-strike-snack-manufacturers-warehouse-in-pavlohrad-overnight.html)
+  - [Visicom exact parcel clue](https://maps.visicom.ua/i/ADR3JRG76VJINYTJ1N)
   - [Work.ua address clue](https://www.work.ua/jobs/7221388/)
+
+#### Novus Logistics Center
+- asset type: `logistics_hub`
+- why:
+  - one of the clearest civilian food-distribution leads outside the current pack
+  - exact source trail is stronger than most new food candidates:
+    - single centralized grocery logistics center
+    - dry, cold, and deep-freeze storage
+    - built specifically for a major supermarket chain
+  - user story is strong:
+    - disruption near Kyiv
+    - visible risk to grocery distribution, not just generic warehousing
+- status: `hold_search_ready_weather_blocked`
+- coordinates:
+  - strongest current street/service anchor:
+    - `50.4043373, 30.4240833` (`Проектна, 3`)
+- notes:
+  - MIGA project docs identify the site as the Novus logistics center between `вул. Якова Качури` and `вул. Миру` in Kyiv's Sviatoshynskyi district
+  - the same EIA gives cadastral parcel `8000000000:75:199:0001`
+  - this is good enough to keep as the next food search lane, but not yet enough to claim a final warehouse-centered crop
+  - bounded SimSat pass on the strongest current anchor was unusable on the strike windows:
+    - `2025-11-10` -> `2025-11-09T09:06:42Z` with `99.992341` cloud
+    - `2025-11-28` -> `2025-11-27T09:06:36Z` with `99.978232` cloud
+    - `2025-12-10` -> `2025-12-07T09:06:35Z` with `99.998862` cloud
+  - result:
+    - exact product semantics: good
+    - exact parcel lock: improving
+    - current post-strike archive/weather truth: blocked
+  - keep as the next active food search lead if we can upgrade the parcel from street/cadastral clue to defendable crop center
+- sources:
+  - [MIGA project page for Novus Logistics Center](https://www.miga.org/project/novus-logistics-center-0)
+  - [MIGA EIA / site description via project attachments](https://www.miga.org/project/novus-logistics-center)
+  - [Kyiv Independent on the strike](https://kyivindependent.com/ukrainian-supermarket-chain-torn-apart-by-russian-attack//)
+
+#### Gedaref Grain Silos
+- asset type: `grain_storage_complex`
+- why:
+  - huge one-function inland grain-storage complex
+  - better fixed-site food semantics than most mixed warehouse leads
+  - strong control/search-seed value because parcel truth and archive coverage are both clean
+- status: `hold_search_ready_no_event_anchor`
+- coordinates:
+  - `14.026667, 35.365000`
+- notes:
+  - local SimSat archive is excellent on the exact clue:
+    - `2024-01-14T08:16:12Z` with `0` cloud
+    - `2024-03-14T08:16:11Z` with `0` cloud
+    - `2024-06-12T08:16:17Z` with `0.035345` cloud
+    - `2025-01-13T08:16:11Z` with `0.00007` cloud
+    - `2026-01-13T08:16:11Z` with `0` cloud
+  - best use right now:
+    - exact no-event food anchor
+    - or future positive only if one named disruption event ties directly to the silo complex
+  - do not promote as a conflict-positive row without a direct event and before/after story
+- sources:
+  - [Wikimapia parcel clue](https://wikimapia.org/6426389/Grain-Silos)
+  - [FEWS NET on Gedaref as largest silo/storage area](https://fews.net/east-africa/sudan/alert/february-2024)
+  - [WFP on grain-storage importance in Gedaref](https://www.wfp.org/stories/grain-binds)
+
+#### Manbij Grain Silo Complex
+- asset type: `grain_storage_complex`
+- why:
+  - food function is explicit and fixed-site
+  - six-silo compound reads more cleanly than alias-conflicted mill leads
+  - archive coverage is usable enough to keep alive
+- status: `hold_search_ready_scope_sanity_needed`
+- coordinates:
+  - `36.507778, 37.961389`
+- notes:
+  - clean local archive exists on the exact clue:
+    - `2024-03-12T08:19:59Z` with `0.004497` cloud
+    - `2024-06-13T08:30:01Z` with `1.932094` cloud
+  - but this lane still needs one hard civilian-scope check before promotion:
+    - silo complex visibility is good
+    - conflict framing around Manbij can drift tactical faster than Kyiv food-distribution cases
+  - keep as a search-ready seed, not an active promotion row
+- sources:
+  - [Wikimapia parcel clue](https://wikimapia.org/31562913/Manbij-Grain-Silo-Complex)
+  - [North Press on the complex and capacity](https://npasyria.com/en/60094/)
 
 #### Vasyshcheve ATB distribution center / Promyslova corridor
 - asset type: `logistics_hub`
