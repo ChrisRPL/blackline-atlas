@@ -1,8 +1,6 @@
 from __future__ import annotations
 
 from typing import Protocol
-from urllib.error import URLError
-from urllib.request import urlopen
 
 from app.schemas.asset import Asset
 from app.schemas.frame import FrameEnvelope
@@ -11,6 +9,7 @@ from app.schemas.model_payload import (
     CandidateRequestPayload,
     CandidateTextInput,
 )
+from app.services.model_gateway import ModelGateway
 from app.services.model_provider import HttpCandidateProvider
 from app.services.prompt_builder import CandidatePrompt, CandidatePromptBuilder
 from app.services.scenario_fixtures import ScenarioFixture
@@ -44,11 +43,12 @@ class HttpRawCandidateBackend:
         provider: HttpCandidateProvider,
         api_key: str | None = None,
         timeout_seconds: float = 10.0,
+        gateway: ModelGateway | None = None,
     ) -> None:
         self.endpoint = endpoint
         self.provider = provider
         self.api_key = api_key
-        self.timeout_seconds = timeout_seconds
+        self.gateway = gateway or ModelGateway(timeout_seconds=timeout_seconds)
 
     def generate(
         self,
@@ -56,21 +56,19 @@ class HttpRawCandidateBackend:
         payload: CandidateRequestPayload,
         scenario: ScenarioFixture,
     ) -> str:
-        request = self.provider.build_request(
+        result = self.gateway.invoke(
             endpoint=self.endpoint,
+            provider=self.provider,
             payload=payload,
             api_key=self.api_key,
+            fallback=scenario.model_output_text,
+            request_kind="candidate",
+            frame_ids=(
+                scenario.current_frame.frame.frame_id,
+                scenario.baseline_frame.frame.frame_id,
+            ),
         )
-
-        try:
-            with urlopen(request, timeout=self.timeout_seconds) as response:
-                if response.status != 200:
-                    return scenario.model_output_text
-                body = response.read().decode("utf-8")
-        except (OSError, URLError, UnicodeDecodeError):
-            return scenario.model_output_text
-
-        return self.provider.parse_response(body=body, fallback=scenario.model_output_text)
+        return result.output_text
 
 
 class PromptedCandidateModel:

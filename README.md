@@ -270,6 +270,25 @@ AGENT_PROVIDER=openai_chat_completions_http
 This app now sends `response_format={"type":"json_object"}` on the planner
 chat-completions path to improve strict JSON routing.
 
+## Model gateway
+
+Blackline now uses one small shared Python model gateway for both:
+- candidate inference
+- agent planning
+
+The gateway owns only:
+- provider request shaping
+- HTTP transport
+- in-memory prompt/frame cache
+- raw text result telemetry
+
+It does not own:
+- prompts
+- alert parsing/policy
+- planner sanitization/routing
+
+That is intentional. We want a thin product-owned seam, not a custom ML framework.
+
 To score the first frozen command flows against a running app:
 
 ```bash

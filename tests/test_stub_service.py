@@ -140,7 +140,7 @@ def test_stub_service_can_opt_in_model_http_backend(tmp_path: Path, monkeypatch)
             ).encode("utf-8")
         )
 
-    monkeypatch.setattr("app.services.model_wrapper.urlopen", fake_urlopen)
+    monkeypatch.setattr("app.services.model_gateway.urlopen", fake_urlopen)
     service = StubAtlasService(
         Settings(
             app_env="test",
@@ -191,7 +191,7 @@ def test_stub_service_can_opt_in_openai_responses_model_backend(
             ).encode("utf-8")
         )
 
-    monkeypatch.setattr("app.services.model_wrapper.urlopen", fake_urlopen)
+    monkeypatch.setattr("app.services.model_gateway.urlopen", fake_urlopen)
     service = StubAtlasService(
         Settings(
             app_env="test",
@@ -640,7 +640,7 @@ def test_stub_service_can_opt_in_http_agent_planner(tmp_path: Path, monkeypatch)
             ).encode("utf-8")
         )
 
-    monkeypatch.setattr("app.services.agent_planner.urlopen", fake_urlopen)
+    monkeypatch.setattr("app.services.model_gateway.urlopen", fake_urlopen)
     service = StubAtlasService(
         Settings(
             app_env="test",
@@ -696,7 +696,7 @@ def test_stub_service_can_opt_in_openai_chat_agent_planner(tmp_path: Path, monke
             ).encode("utf-8")
         )
 
-    monkeypatch.setattr("app.services.agent_planner.urlopen", fake_urlopen)
+    monkeypatch.setattr("app.services.model_gateway.urlopen", fake_urlopen)
     service = StubAtlasService(
         Settings(
             app_env="test",
@@ -755,7 +755,7 @@ def test_stub_service_resolves_missing_live_planner_site_id_from_query(
             ).encode("utf-8")
         )
 
-    monkeypatch.setattr("app.services.agent_planner.urlopen", fake_urlopen)
+    monkeypatch.setattr("app.services.model_gateway.urlopen", fake_urlopen)
     service = StubAtlasService(
         Settings(
             app_env="test",
@@ -812,7 +812,7 @@ def test_stub_service_sanitizes_invalid_live_planner_area_filter(
             ).encode("utf-8")
         )
 
-    monkeypatch.setattr("app.services.agent_planner.urlopen", fake_urlopen)
+    monkeypatch.setattr("app.services.model_gateway.urlopen", fake_urlopen)
     service = StubAtlasService(
         Settings(
             app_env="test",
@@ -870,7 +870,7 @@ def test_stub_service_drops_spurious_live_planner_category_filter(
             ).encode("utf-8")
         )
 
-    monkeypatch.setattr("app.services.agent_planner.urlopen", fake_urlopen)
+    monkeypatch.setattr("app.services.model_gateway.urlopen", fake_urlopen)
     service = StubAtlasService(
         Settings(
             app_env="test",
@@ -907,7 +907,7 @@ def test_stub_service_reports_agent_planner_http_fallback(tmp_path: Path, monkey
         _ = timeout
         raise URLError("offline")
 
-    monkeypatch.setattr("app.services.agent_planner.urlopen", fake_urlopen)
+    monkeypatch.setattr("app.services.model_gateway.urlopen", fake_urlopen)
     service = StubAtlasService(
         Settings(
             app_env="test",
@@ -942,7 +942,7 @@ def test_stub_service_reports_agent_planner_invalid_json_fallback(
         _ = timeout
         return _FakeHTTPResponse(body=b'{"output_text":"not-json"}')
 
-    monkeypatch.setattr("app.services.agent_planner.urlopen", fake_urlopen)
+    monkeypatch.setattr("app.services.model_gateway.urlopen", fake_urlopen)
     service = StubAtlasService(
         Settings(
             app_env="test",

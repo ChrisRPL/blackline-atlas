@@ -7,6 +7,7 @@ from urllib.error import URLError
 from app.core.config import Settings
 from app.schemas.asset import Asset
 from app.schemas.frame import FrameEnvelope, FrameRecord
+from app.services.model_gateway import ModelGateway
 from app.services.model_provider import (
     AtlasJsonHttpCandidateProvider,
     OpenAIResponsesCandidateProvider,
@@ -110,7 +111,7 @@ def test_prompted_candidate_model_exposes_prompt_build_step() -> None:
     assert prompt.render().startswith("You are Blackline Atlas candidate generation.")
 
 
-def test_http_raw_candidate_backend_posts_payload(monkeypatch) -> None:
+def test_http_raw_candidate_backend_posts_payload() -> None:
     captured = {}
 
     def fake_urlopen(request, timeout: float):
@@ -122,12 +123,12 @@ def test_http_raw_candidate_backend_posts_payload(monkeypatch) -> None:
             body=json.dumps({"output_text": '{"action":"defer"}'}).encode("utf-8")
         )
 
-    monkeypatch.setattr("app.services.model_wrapper.urlopen", fake_urlopen)
     backend = HttpRawCandidateBackend(
         endpoint="https://example.test/model",
         provider=AtlasJsonHttpCandidateProvider(),
         api_key="secret-token",
         timeout_seconds=7.0,
+        gateway=ModelGateway(timeout_seconds=7.0, opener=fake_urlopen),
     )
     model = PromptedCandidateModel(
         model_version="lfm2.5-vl-450m-prompted",
@@ -148,16 +149,16 @@ def test_http_raw_candidate_backend_posts_payload(monkeypatch) -> None:
     assert captured["timeout"] == 7.0
 
 
-def test_http_raw_candidate_backend_falls_back_to_fixture_text_on_failure(monkeypatch) -> None:
+def test_http_raw_candidate_backend_falls_back_to_fixture_text_on_failure() -> None:
     def fake_urlopen(request, timeout: float):
         _ = request
         _ = timeout
         raise URLError("offline")
 
-    monkeypatch.setattr("app.services.model_wrapper.urlopen", fake_urlopen)
     backend = HttpRawCandidateBackend(
         endpoint="https://example.test/model",
         provider=AtlasJsonHttpCandidateProvider(),
+        gateway=ModelGateway(opener=fake_urlopen),
     )
     model = PromptedCandidateModel(
         model_version="lfm2.5-vl-450m-prompted",
@@ -175,7 +176,7 @@ def test_http_raw_candidate_backend_falls_back_to_fixture_text_on_failure(monkey
     assert raw_text == scenario.model_output_text
 
 
-def test_http_raw_candidate_backend_uses_provider_contract(monkeypatch) -> None:
+def test_http_raw_candidate_backend_uses_provider_contract() -> None:
     calls = []
 
     class _Provider:
@@ -193,7 +194,6 @@ def test_http_raw_candidate_backend_uses_provider_contract(monkeypatch) -> None:
         calls.append(("open", request.full_url, timeout))
         return _FakeHTTPResponse(body=b'{"ignored":true}')
 
-    monkeypatch.setattr("app.services.model_wrapper.urlopen", fake_urlopen)
     scenario = _scenario()
     model = PromptedCandidateModel(
         model_version="lfm2.5-vl-450m-prompted",
@@ -202,6 +202,7 @@ def test_http_raw_candidate_backend_uses_provider_contract(monkeypatch) -> None:
             provider=_Provider(),
             api_key="api-key",
             timeout_seconds=4.0,
+            gateway=ModelGateway(timeout_seconds=4.0, opener=fake_urlopen),
         ),
     )
 

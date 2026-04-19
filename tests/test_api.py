@@ -1769,7 +1769,7 @@ def test_api_uses_openai_provider_model_backend_smoke_path(tmp_path, monkeypatch
             ).encode("utf-8")
         )
 
-    monkeypatch.setattr("app.services.model_wrapper.urlopen", fake_urlopen)
+    monkeypatch.setattr("app.services.model_gateway.urlopen", fake_urlopen)
     model_client = build_api_client(
         monkeypatch,
         simsat_current_endpoint=None,
@@ -1807,7 +1807,7 @@ def test_api_openai_provider_model_backend_falls_back_to_fixture_output(
         _ = timeout
         raise URLError("offline")
 
-    monkeypatch.setattr("app.services.model_wrapper.urlopen", fake_urlopen)
+    monkeypatch.setattr("app.services.model_gateway.urlopen", fake_urlopen)
     model_client = build_api_client(
         monkeypatch,
         simsat_current_endpoint=None,

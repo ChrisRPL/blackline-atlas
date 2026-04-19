@@ -15,6 +15,7 @@ from app.services.agent_provider import (
     OpenAIChatCompletionsAgentPlannerProvider,
     OpenAIResponsesAgentPlannerProvider,
 )
+from app.services.model_gateway import ModelGateway
 from app.services.watchlist_loader import load_watchlist_assets
 
 
@@ -77,7 +78,7 @@ def test_prompted_agent_planner_falls_back_on_invalid_json() -> None:
     assert decision.reason == "planner_invalid_json"
 
 
-def test_http_agent_planner_backend_posts_payload(monkeypatch) -> None:
+def test_http_agent_planner_backend_posts_payload() -> None:
     captured = {}
 
     def fake_urlopen(request, timeout: float):
@@ -91,12 +92,12 @@ def test_http_agent_planner_backend_posts_payload(monkeypatch) -> None:
             ).encode("utf-8")
         )
 
-    monkeypatch.setattr("app.services.agent_planner.urlopen", fake_urlopen)
     backend = HttpAgentPlannerBackend(
         endpoint="https://example.test/planner",
         provider=AtlasJsonHttpAgentPlannerProvider(),
         api_key="planner-key",
         timeout_seconds=6.0,
+        gateway=ModelGateway(timeout_seconds=6.0, opener=fake_urlopen),
     )
 
     result = backend.generate(
@@ -119,16 +120,16 @@ def test_http_agent_planner_backend_posts_payload(monkeypatch) -> None:
     assert captured["timeout"] == 6.0
 
 
-def test_http_agent_planner_backend_falls_back_on_failure(monkeypatch) -> None:
+def test_http_agent_planner_backend_falls_back_on_failure() -> None:
     def fake_urlopen(request, timeout: float):
         _ = request
         _ = timeout
         raise URLError("offline")
 
-    monkeypatch.setattr("app.services.agent_planner.urlopen", fake_urlopen)
     backend = HttpAgentPlannerBackend(
         endpoint="https://example.test/planner",
         provider=AtlasJsonHttpAgentPlannerProvider(),
+        gateway=ModelGateway(opener=fake_urlopen),
     )
     fallback = AtlasAgentPlan(tool="latest_alerts", area="Black Sea")
 

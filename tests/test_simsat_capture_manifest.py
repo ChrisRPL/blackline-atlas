@@ -95,6 +95,7 @@ def test_write_simsat_capture_manifest_materializes_case_pair(tmp_path: Path, mo
 def test_capture_main_requires_historical_endpoint(tmp_path: Path, monkeypatch) -> None:
     monkeypatch.chdir(tmp_path)
     monkeypatch.delenv("SIMSAT_BASELINE_ENDPOINT", raising=False)
+    capture_simsat_manifest.get_settings.cache_clear()
 
     try:
         capture_simsat_manifest.main([])
