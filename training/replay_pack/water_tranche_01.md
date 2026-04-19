@@ -59,6 +59,9 @@ Rule:
     - request `2024-09-05T08:00:00Z` -> returned `2024-08-31T08:14:44Z` with `13.812824` cloud
     - request `2024-09-12T08:00:00Z` -> returned `2024-09-10T08:14:44Z` with `38.68123` cloud
     - request `2024-09-20T08:00:00Z` -> returned `2024-09-15T08:14:41Z` with `6.886818` cloud
+  - tighter breach-centered follow-up:
+    - `1.5 km` crop on the same baseline / best post pair still read through atmospheric haze
+    - `1.0 km` crop did not recover a defensible breach signature either
   - result:
     - exact facility lead is good
     - immediate post-event frames are still too cloud / atmosphere compromised over the breach to promote honestly
@@ -66,7 +69,8 @@ Rule:
   - `active_exact_lead_weather_blocked`
 - next action:
   - keep as the first live water-positive probe
-  - one tighter breach-centered crop next, then stop if signal still does not clear
+  - bounded tighter-crop pass is now done
+  - stop here until a cleaner post-event frame appears
 - sources:
   - [World Bank on Arbaat critical water source](https://documents1.worldbank.org/curated/en/650011609914976904/pdf/Management-of-Critical-Water-Supply-Sources-near-Port-Sudan-Sudan-Arbaat-Dam-and-Well-Fields-at-Arbaat-and-Moj.pdf)
   - [UNDP on Port Sudan dependence on Arbaat](https://www.undp.org/stories/restoring-water)
@@ -86,9 +90,22 @@ Rule:
   - exact public lead:
     - `36.224362, 37.566329`
 - status:
-  - `active_exact_lead_unprobed`
+  - `hold_pre_event_archive_blocked`
 - next action:
-  - first bounded SimSat pair
+  - bounded SimSat pass was run on the exact public lead
+  - pre-event side failed the hard gate:
+    - request `2016-10-15T08:00:00Z` -> no image
+    - request `2016-11-10T08:00:00Z` -> returned `2016-11-09T08:17:59Z` with `81.460319` cloud
+    - request `2016-12-05T08:00:00Z` -> returned `2016-12-02T08:23:15Z` with `48.905083` cloud
+    - wider pre sweep:
+      - `2016-06-15`, `2016-07-10`, `2016-08-15`, `2016-09-10` -> no image
+      - `2017-01-10` -> returned `2017-01-08T08:13:13Z` with `57.327253` cloud
+  - post side was readable:
+    - request `2017-02-20T08:00:00Z` -> returned `2017-02-17T08:15:12Z` with `4.672619` cloud
+    - request `2017-04-05T08:00:00Z` -> returned `2017-03-29T08:16:03Z` with `1.179413` cloud
+  - result:
+    - exact lead is good
+    - no honest baseline pair exists yet in the local archive lane
   - keep crop on the station only, not surrounding pipeline politics
 - sources:
   - [UNICEF June 2025 sitrep](https://www.unicef.org/syria/media/20661/file/Syria-Humanitarian-situation-report-June-2025.pdf)
@@ -108,10 +125,18 @@ Rule:
 - parcel state:
   - best current public lead remains around `36.1839511, 38.0086273`
 - status:
-  - `retrospective_reopen_only`
+  - `retrospective_archive_unavailable`
 - next action:
   - do not reopen as a fresh `2025` hit
-  - only use a retrospective structural-damage pass if the tighter parcel lock gets better
+  - retrospective archive check on the current parcel lock failed:
+    - request `2015-10-20T08:00:00Z` -> no image
+    - request `2015-11-10T08:00:00Z` -> no image
+    - request `2015-12-05T08:00:00Z` -> no image
+    - request `2015-12-20T08:00:00Z` -> no image
+    - request `2016-01-10T08:00:00Z` -> no image
+  - result:
+    - keep as morphology evidence only
+    - not currently actionable in the local SimSat archive lane
 
 ## Promotion candidates
 

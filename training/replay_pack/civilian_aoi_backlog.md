@@ -105,11 +105,41 @@ Primary buckets:
 - notes:
   - exact lead is good
   - immediate post-event frames still keep too much cloud / atmospheric interference over the breach to promote honestly
-  - next try should be one tighter breach-centered crop only
+  - tighter `1.5 km` and `1.0 km` breach-centered crops still did not recover a defensible breach signature
+  - stop here until a cleaner post-event frame appears
 - sources:
   - [World Bank on Arbaat critical water source](https://documents1.worldbank.org/curated/en/650011609914976904/pdf/Management-of-Critical-Water-Supply-Sources-near-Port-Sudan-Sudan-Arbaat-Dam-and-Well-Fields-at-Arbaat-and-Moj.pdf)
   - [UNDP on Port Sudan dependence on Arbaat](https://www.undp.org/stories/restoring-water)
   - [UN Geneva / OCHA on the collapse](https://www.ungeneva.org/en/news-media/news/2024/08/96844/flooding-sudan-dam-collapse-worsens-humanitarian-crisis)
+
+#### Ayn al-Bayda Water Pumping Station
+- asset type: `water_infrastructure`
+- why:
+  - direct civilian drinking-water source for al-Bab and nearby towns
+  - exact public geolocation exists
+  - fixed pumping-station semantics are cleaner than pipeline/outage stories
+- coordinates:
+  - `36.224362, 37.566329`
+- bounded probe:
+  - pre side failed:
+    - `2016-10-15` -> no image
+    - `2016-11-10` -> `2016-11-09T08:17:59Z` with `81.460319` cloud
+    - `2016-12-05` -> `2016-12-02T08:23:15Z` with `48.905083` cloud
+    - wider pre sweep `2016-06` through `2016-09` -> no image
+    - `2017-01-10` -> `2017-01-08T08:13:13Z` with `57.327253` cloud
+  - post side usable:
+    - `2017-02-20` -> `2017-02-17T08:15:12Z` with `4.672619` cloud
+    - `2017-04-05` -> `2017-03-29T08:16:03Z` with `1.179413` cloud
+- status:
+  - `hold_pre_event_archive_blocked`
+- notes:
+  - exact lead is good
+  - local archive lane does not yet give an honest pre-event baseline
+  - do not promote until a real baseline exists
+- sources:
+  - [UNICEF June 2025 sitrep](https://www.unicef.org/syria/media/20661/file/Syria-Humanitarian-situation-report-June-2025.pdf)
+  - [Syrians for Truth and Justice geolocated station report](https://stj-sy.org/en/al-babs-thirsty-is-the-syrian-government-using-dehydration-as-a-punishment/)
+  - [UN statement on damage and rehabilitation context](https://www.un.org/sg/en/content/highlight/2024-12-27.html)
 
 #### Chornomorsk Grain Port
 - asset type: `grain_port`
