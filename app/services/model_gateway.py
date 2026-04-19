@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import json
 from dataclasses import dataclass
+from datetime import UTC, datetime
 from time import monotonic
 from typing import Any, Callable, Protocol
 from urllib.error import URLError
@@ -34,6 +35,7 @@ class ModelGatewayTelemetry:
     latency_ms: int
     parse_ok: bool
     cache_hit: bool
+    seen_at: datetime
     fallback_reason: str | None = None
 
 
@@ -175,6 +177,7 @@ class ModelGateway:
             latency_ms=latency_ms,
             parse_ok=parse_ok,
             cache_hit=cache_hit,
+            seen_at=datetime.now(tz=UTC),
             fallback_reason=fallback_reason,
         )
         if self.telemetry_sink is not None:

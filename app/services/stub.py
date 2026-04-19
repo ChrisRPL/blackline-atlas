@@ -21,7 +21,13 @@ from app.schemas.agent import (
 from app.schemas.alert import Alert
 from app.schemas.asset import Asset
 from app.schemas.frame import FrameEnvelope
-from app.schemas.health import HealthConfig, HealthDependency, HealthResponse
+from app.schemas.health import (
+    HealthConfig,
+    HealthDebug,
+    HealthDependency,
+    HealthGatewayRecent,
+    HealthResponse,
+)
 from app.schemas.metrics import Metrics
 from app.schemas.replay import ReplayStartRequest, ReplayState
 from app.services.agent_planner import (
@@ -39,6 +45,7 @@ from app.services.frame_cache import FrameCacheLayout
 from app.services.frame_client import CachedFrameClient, FixtureFrameClient
 from app.services.frame_filters import FrameFilterPolicy
 from app.services.frame_types import FrameRequest
+from app.services.model_gateway import ModelGateway, ModelGatewayTelemetry
 from app.services.model_provider import resolve_http_candidate_provider
 from app.services.model_wrapper import (
     FixtureRawCandidateBackend,
@@ -88,6 +95,8 @@ _SEVERITY_ORDER = {"high": 3, "medium": 2, "low": 1}
 class StubAtlasService:
     def __init__(self, settings: Settings) -> None:
         self.settings = settings
+        self._model_gateway_events: list[ModelGatewayTelemetry] = []
+        self._agent_gateway_events: list[ModelGatewayTelemetry] = []
         self.assets = load_watchlist_assets(settings.watchlist_path)
         self.reference_cases = load_reference_cases()
         self.scenarios = build_stub_scenarios(
@@ -163,6 +172,7 @@ class StubAtlasService:
                 agent_http_enabled=self.settings.agent_http_enabled,
                 agent_provider=self.settings.agent_provider,
             ),
+            debug=self._health_debug(),
         )
 
     def list_assets(self) -> list[Asset]:
@@ -630,6 +640,7 @@ class StubAtlasService:
                 endpoint=self.settings.model_endpoint,
                 provider=provider,
                 api_key=self.settings.model_api_key,
+                gateway=ModelGateway(telemetry_sink=self._model_gateway_events),
             )
         return FixtureRawCandidateBackend()
 
@@ -644,8 +655,33 @@ class StubAtlasService:
                 endpoint=self.settings.agent_endpoint,
                 provider=provider,
                 api_key=self.settings.agent_api_key,
+                gateway=ModelGateway(telemetry_sink=self._agent_gateway_events),
             )
         return FixtureAgentPlannerBackend()
+
+    def _health_debug(self) -> HealthDebug | None:
+        model_recent = self._recent_gateway_event(self._model_gateway_events)
+        agent_recent = self._recent_gateway_event(self._agent_gateway_events)
+        if model_recent is None and agent_recent is None:
+            return None
+        return HealthDebug(model_recent=model_recent, agent_recent=agent_recent)
+
+    def _recent_gateway_event(
+        self,
+        events: list[ModelGatewayTelemetry],
+    ) -> HealthGatewayRecent | None:
+        if not events:
+            return None
+        recent = events[-1]
+        return HealthGatewayRecent(
+            model_version=recent.model_version,
+            provider_id=recent.provider_id,
+            latency_ms=recent.latency_ms,
+            cache_hit=recent.cache_hit,
+            parse_ok=recent.parse_ok,
+            seen_at=recent.seen_at,
+            fallback_reason=recent.fallback_reason,
+        )
 
     def _evaluate_active_scenario(self):
         scenario = self._active_scenario()

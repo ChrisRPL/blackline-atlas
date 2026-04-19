@@ -270,6 +270,26 @@ AGENT_PROVIDER=openai_chat_completions_http
 This app now sends `response_format={"type":"json_object"}` on the planner
 chat-completions path to improve strict JSON routing.
 
+Optional candidate-model envs:
+
+```bash
+MODEL_VERSION=lfm2.5-vl-450m-prompted
+MODEL_ENDPOINT=
+MODEL_HTTP_ENABLED=
+MODEL_API_KEY=
+MODEL_PROVIDER=atlas_json_http
+```
+
+For a shared OpenAI-compatible multimodal candidate lane, including `vLLM` behind
+the endpoint, use:
+
+```bash
+MODEL_VERSION=LiquidAI/LFM2.5-VL-450M
+MODEL_ENDPOINT=https://your-vllm-or-liquid-host/v1/chat/completions
+MODEL_HTTP_ENABLED=true
+MODEL_PROVIDER=openai_chat_completions_http
+```
+
 ## Model gateway
 
 Blackline now uses one small shared Python model gateway for both:
@@ -288,6 +308,9 @@ It does not own:
 - planner sanitization/routing
 
 That is intentional. We want a thin product-owned seam, not a custom ML framework.
+
+`/health` now also exposes a tiny `debug` block with the last model/planner gateway
+event per lane. This is last-event status only, not a rolling trace.
 
 To score the first frozen command flows against a running app:
 

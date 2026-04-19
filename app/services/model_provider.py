@@ -11,6 +11,7 @@ from app.schemas.model_payload import CandidateRequestPayload, CandidateResponse
 
 DEFAULT_MODEL_PROVIDER = "atlas_json_http"
 OPENAI_RESPONSES_PROVIDER = "openai_responses_http"
+OPENAI_CHAT_COMPLETIONS_PROVIDER = "openai_chat_completions_http"
 
 
 class HttpCandidateProvider(Protocol):
@@ -84,11 +85,47 @@ class OpenAIResponsesCandidateProvider:
         return extracted or fallback
 
 
+class OpenAIChatCompletionsCandidateProvider:
+    provider_id = OPENAI_CHAT_COMPLETIONS_PROVIDER
+
+    def build_request(
+        self,
+        *,
+        endpoint: str,
+        payload: CandidateRequestPayload,
+        api_key: str | None,
+    ) -> Request:
+        return Request(
+            endpoint,
+            data=json.dumps(
+                {
+                    "model": payload.model_version,
+                    "messages": _build_openai_chat_messages(payload),
+                    "temperature": 0,
+                    "max_tokens": 256,
+                    "response_format": {"type": "json_object"},
+                }
+            ).encode("utf-8"),
+            headers=_headers(api_key),
+            method="POST",
+        )
+
+    def parse_response(self, *, body: str, fallback: str) -> str:
+        try:
+            payload = json.loads(body)
+        except json.JSONDecodeError:
+            return fallback
+        extracted = _extract_chat_completions_output_text(payload)
+        return extracted or fallback
+
+
 def resolve_http_candidate_provider(provider_id: str) -> HttpCandidateProvider | None:
     if provider_id == DEFAULT_MODEL_PROVIDER:
         return AtlasJsonHttpCandidateProvider()
     if provider_id == OPENAI_RESPONSES_PROVIDER:
         return OpenAIResponsesCandidateProvider()
+    if provider_id == OPENAI_CHAT_COMPLETIONS_PROVIDER:
+        return OpenAIChatCompletionsCandidateProvider()
     return None
 
 
@@ -141,6 +178,36 @@ def _build_openai_input(payload: CandidateRequestPayload) -> list[dict[str, obje
     return messages
 
 
+def _build_openai_chat_messages(payload: CandidateRequestPayload) -> list[dict[str, object]]:
+    system_chunks: list[dict[str, object]] = []
+    user_chunks: list[dict[str, object]] = []
+
+    for item in payload.inputs:
+        if item.type == "input_text" and item.role == "system":
+            system_chunks.append({"type": "text", "text": item.text})
+            continue
+        if item.type == "input_text":
+            user_chunks.append({"type": "text", "text": item.text})
+            continue
+
+        image_chunk = _openai_chat_image_content(item.image_ref)
+        if image_chunk is not None:
+            user_chunks.append(image_chunk)
+        else:
+            user_chunks.append(
+                {
+                    "type": "text",
+                    "text": f"{item.role}_image_ref unavailable to provider: {item.image_ref}",
+                }
+            )
+
+    messages: list[dict[str, object]] = []
+    if system_chunks:
+        messages.append({"role": "system", "content": system_chunks})
+    messages.append({"role": "user", "content": user_chunks})
+    return messages
+
+
 def _openai_image_content(image_ref: str) -> dict[str, str] | None:
     if image_ref.startswith(("http://", "https://", "data:")):
         return {
@@ -159,6 +226,19 @@ def _openai_image_content(image_ref: str) -> dict[str, str] | None:
         "type": "input_image",
         "image_url": f"data:{mime_type};base64,{encoded}",
         "detail": "low",
+    }
+
+
+def _openai_chat_image_content(image_ref: str) -> dict[str, object] | None:
+    image_item = _openai_image_content(image_ref)
+    if image_item is None:
+        return None
+    return {
+        "type": "image_url",
+        "image_url": {
+            "url": image_item["image_url"],
+            "detail": image_item["detail"],
+        },
     }
 
 
@@ -187,6 +267,37 @@ def _extract_openai_output_text(payload: object) -> str | None:
             text = part.get("text")
             if isinstance(text, str) and text.strip():
                 chunks.append(text.strip())
+
+    if not chunks:
+        return None
+    return "\n".join(chunks)
+
+
+def _extract_chat_completions_output_text(payload: object) -> str | None:
+    if not isinstance(payload, dict):
+        return None
+
+    choices = payload.get("choices")
+    if not isinstance(choices, list) or not choices:
+        return None
+
+    message = choices[0].get("message") if isinstance(choices[0], dict) else None
+    if not isinstance(message, dict):
+        return None
+
+    content = message.get("content")
+    if isinstance(content, str) and content.strip():
+        return content.strip()
+    if not isinstance(content, list):
+        return None
+
+    chunks: list[str] = []
+    for item in content:
+        if not isinstance(item, dict):
+            continue
+        text = item.get("text")
+        if isinstance(text, str) and text.strip():
+            chunks.append(text.strip())
 
     if not chunks:
         return None

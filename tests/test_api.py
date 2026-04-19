@@ -696,6 +696,107 @@ def test_health_endpoint_exposes_openai_provider_backend_mode(tmp_path, monkeypa
     get_settings.cache_clear()
 
 
+def test_health_endpoint_exposes_openai_chat_candidate_backend_mode(tmp_path, monkeypatch) -> None:
+    monkeypatch.chdir(tmp_path)
+    model_client = build_api_client(
+        monkeypatch,
+        simsat_current_endpoint=None,
+        simsat_baseline_endpoint=None,
+        model_endpoint="https://liquid.example/v1/chat/completions",
+        model_http_enabled=True,
+        model_provider="openai_chat_completions_http",
+    )
+    model_response = model_client.get("/health")
+
+    assert model_response.status_code == 200
+    assert model_response.json()["model_backend"]["status"] == "ready"
+    assert model_response.json()["model_backend"]["detail"] == (
+        "lfm2.5-vl-450m-prompted (openai_chat_completions_http http backend)"
+    )
+    assert model_response.json()["config"]["model_provider"] == "openai_chat_completions_http"
+    assert model_response.json()["debug"] is None
+    get_settings.cache_clear()
+
+
+def test_health_endpoint_exposes_gateway_debug_after_model_and_agent_calls(
+    tmp_path, monkeypatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+
+    def fake_urlopen(request, timeout: float):
+        _ = timeout
+        if request.full_url == "https://liquid.example/v1/chat/completions":
+            return _FakeHTTPResponse(
+                body=json.dumps(
+                    {
+                        "choices": [
+                            {
+                                "message": {
+                                    "content": (
+                                        '{"event_type":"probable_large_scale_disruption","severity":"high",'
+                                        '"confidence":0.9,"bbox":[0.19,0.26,0.73,0.84],'
+                                        '"civilian_impact":"shipping_or_aid_disruption",'
+                                        '"why":"Gateway model lane ok.","action":"downlink_now"}'
+                                    )
+                                }
+                            }
+                        ]
+                    }
+                ).encode("utf-8")
+            )
+        if request.full_url == "https://agent.example/v1/chat/completions":
+            return _FakeHTTPResponse(
+                body=json.dumps(
+                    {
+                        "choices": [
+                            {
+                                "message": {
+                                    "content": json.dumps(
+                                        {
+                                            "tool": "latest_alerts",
+                                            "area": "Black Sea",
+                                            "category": None,
+                                            "site_id": None,
+                                            "alert_id": None,
+                                        }
+                                    )
+                                }
+                            }
+                        ]
+                    }
+                ).encode("utf-8")
+            )
+        raise AssertionError(f"unexpected url: {request.full_url}")
+
+    monkeypatch.setattr("app.services.model_gateway.urlopen", fake_urlopen)
+    api_client = build_api_client(
+        monkeypatch,
+        simsat_current_endpoint=None,
+        simsat_baseline_endpoint=None,
+        model_endpoint="https://liquid.example/v1/chat/completions",
+        model_http_enabled=True,
+        model_provider="openai_chat_completions_http",
+        agent_endpoint="https://agent.example/v1/chat/completions",
+        agent_http_enabled=True,
+        agent_provider="openai_chat_completions_http",
+    )
+
+    alerts = api_client.get("/alerts")
+    agent = api_client.post("/agent/query", json={"query": "show latest alerts"})
+    health = api_client.get("/health")
+
+    assert alerts.status_code == 200
+    assert agent.status_code == 200
+    assert health.status_code == 200
+    assert health.json()["debug"]["model_recent"]["provider_id"] == "openai_chat_completions_http"
+    assert health.json()["debug"]["model_recent"]["parse_ok"] is True
+    assert health.json()["debug"]["agent_recent"]["provider_id"] == "openai_chat_completions_http"
+    assert health.json()["debug"]["agent_recent"]["parse_ok"] is True
+    assert health.json()["debug"]["model_recent"]["seen_at"]
+    assert health.json()["debug"]["agent_recent"]["seen_at"]
+    get_settings.cache_clear()
+
+
 def test_assets_endpoint_returns_seeded_assets() -> None:
     response = client.get("/assets")
 

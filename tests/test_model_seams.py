@@ -10,6 +10,7 @@ from app.schemas.frame import FrameEnvelope, FrameRecord
 from app.services.model_gateway import ModelGateway
 from app.services.model_provider import (
     AtlasJsonHttpCandidateProvider,
+    OpenAIChatCompletionsCandidateProvider,
     OpenAIResponsesCandidateProvider,
 )
 from app.services.model_wrapper import HttpRawCandidateBackend, PromptedCandidateModel
@@ -273,6 +274,56 @@ def test_openai_responses_provider_parses_output_from_response_body() -> None:
     )
 
     assert text == '{"action":"defer","severity":"medium"}'
+
+
+def test_openai_chat_completions_provider_builds_multimodal_request(tmp_path) -> None:
+    image_path = tmp_path / "frame.png"
+    image_path.write_bytes(base64.b64decode(_PNG_1X1_BASE64))
+    provider = OpenAIChatCompletionsCandidateProvider()
+    payload = PromptedCandidateModel(
+        model_version="LiquidAI/LFM2.5-VL-450M",
+        backend=_RecordingBackend(raw_text="{}"),
+    ).build_payload(
+        asset=_asset(),
+        scenario=_scenario(),
+        current=_current_frame_with_image(str(image_path)),
+        baseline=_baseline_frame_with_image("https://example.test/baseline.png"),
+    )
+
+    request = provider.build_request(
+        endpoint="https://liquid.example/v1/chat/completions",
+        payload=payload,
+        api_key="liquid-key",
+    )
+    body = json.loads(request.data.decode("utf-8"))
+
+    assert request.full_url == "https://liquid.example/v1/chat/completions"
+    assert request.get_header("Authorization") == "Bearer liquid-key"
+    assert body["model"] == "LiquidAI/LFM2.5-VL-450M"
+    assert body["messages"][0]["role"] == "system"
+    assert body["messages"][1]["role"] == "user"
+    assert body["messages"][1]["content"][0]["type"] == "text"
+    assert body["messages"][1]["content"][1]["type"] == "image_url"
+    assert body["messages"][1]["content"][1]["image_url"]["url"].startswith(
+        "data:image/png;base64,"
+    )
+    assert (
+        body["messages"][1]["content"][2]["image_url"]["url"] == "https://example.test/baseline.png"
+    )
+    assert body["response_format"] == {"type": "json_object"}
+
+
+def test_openai_chat_completions_provider_parses_response_body() -> None:
+    provider = OpenAIChatCompletionsCandidateProvider()
+
+    text = provider.parse_response(
+        body=json.dumps(
+            {"choices": [{"message": {"content": '{"action":"downlink_now","severity":"high"}'}}]}
+        ),
+        fallback="fallback",
+    )
+
+    assert text == '{"action":"downlink_now","severity":"high"}'
 
 
 class _RecordingBackend:

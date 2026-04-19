@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import datetime
 from typing import Literal
 
 from pydantic import BaseModel
@@ -23,6 +24,21 @@ class HealthConfig(BaseModel):
     agent_provider: str
 
 
+class HealthGatewayRecent(BaseModel):
+    model_version: str
+    provider_id: str
+    latency_ms: int
+    cache_hit: bool
+    parse_ok: bool
+    seen_at: datetime
+    fallback_reason: str | None = None
+
+
+class HealthDebug(BaseModel):
+    model_recent: HealthGatewayRecent | None = None
+    agent_recent: HealthGatewayRecent | None = None
+
+
 class HealthResponse(BaseModel):
     status: Literal["ok"]
     app_env: str
@@ -32,3 +48,4 @@ class HealthResponse(BaseModel):
     simsat_baseline: HealthDependency
     mapbox: HealthDependency
     config: HealthConfig
+    debug: HealthDebug | None = None
