@@ -135,3 +135,9 @@ If planner fine-tuning is ever revisited later:
 - VLM: data-first
 - planner: eval-first
 - both: no fine-tune rush
+
+## External reference
+
+For external datasets, cross-model cohort, and benchmark structure:
+
+- see [external_benchmark_research_2026-04-19.md](./external_benchmark_research_2026-04-19.md)
