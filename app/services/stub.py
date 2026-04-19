@@ -1093,7 +1093,14 @@ class StubAtlasService:
             "bridge": {"bridge"},
             "grain_port": {"grain port", "grain terminal", "port"},
             "container_port": {"container port", "aid hub", "port"},
-            "water_infrastructure": {"water", "desalination", "treatment plant"},
+            "water_infrastructure": {
+                "water",
+                "desalination",
+                "treatment plant",
+                "pumping station",
+                "dam",
+                "reservoir",
+            },
             "logistics_hub": {"logistics", "distribution", "warehouse"},
             "aid_warehouse_cluster": {"aid", "warehouse", "unhcr", "wfp", "red cross"},
             "medical_aid_node": {

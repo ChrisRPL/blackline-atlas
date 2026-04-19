@@ -47,7 +47,7 @@ probable_access_obstruction | no_event
 Allowed severity: low | medium | high
 Allowed civilian_impact:
 shipping_or_aid_disruption | logistics_delay | trade_disruption |
-public_mobility_disruption | no_material_impact
+public_mobility_disruption | water_service_disruption | no_material_impact
 Allowed action: discard | defer | downlink_now
 
 Required JSON keys only:

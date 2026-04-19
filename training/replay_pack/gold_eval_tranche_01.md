@@ -6,7 +6,7 @@ Purpose:
 - stop ad hoc scouting
 - fill the biggest coverage gaps first
 
-## Tranche target
+## Tranche composition
 
 Open `8` near-term slots:
 
@@ -43,29 +43,29 @@ It is the first acquisition batch with the best chance of moving coverage, not j
 ### Water
 
 #### `water_01`
-- target type:
-  - pure treatment plant
-- current lead quality:
-  - still the biggest category gap after the `2026-04-18` prompted-baseline gate
-  - working memo:
-    - `training/replay_pack/water_tranche_01.md`
-- next action:
-  - source `3` exact-site candidates with clear civilian service role
-  - reject mixed power+water unless water-first and macro-visible
+- target:
+  - `Arbaat Dam`
+- role:
+  - already landed
+  - current-conflict civilian water-source anchor
+- status:
+  - `done`
 
 #### `water_02`
 - target type:
   - pumping station or reservoir compound
 - current lead quality:
-  - `Bahri Water Station` now landed as an exact water control
+  - `Ayn al-Bayda Water Pumping Station` is the cleanest exact next lead
+  - blocker is still missing honest pre-event archive coverage
 - next action:
-  - prioritize the next water candidate only if it has obvious basins / tanks / service compounds visible in Sentinel
+  - reopen only if a real pre-event baseline appears
 
 #### `water_03`
 - target type:
   - desalination plant only if clearly water-first
 - current lead quality:
-  - category seed exists, but exact promoted row does not
+  - category now has one exact positive and three exact controls
+  - second positive row does not exist yet
   - working memo: `training/replay_pack/water_tranche_01.md`
 - next action:
   - use only if plant identity is exact and visual disruption is honest
@@ -92,7 +92,7 @@ It is the first acquisition batch with the best chance of moving coverage, not j
 - next action:
   - prefer inland WFP / UN / NGO / MSF aid compounds first
   - probe `Tyre Red Cross center` only if compound scale looks real enough
-  - keep behind `water_01` until a parcel-tight inland depot reappears
+  - this is now the next open positive gap once a parcel-tight inland depot reappears
   - `Mosul Medical City Hospital` now fills one exact inland medical-aid control slot, but not the missing positive slot
 
 ### Mobility
@@ -140,15 +140,9 @@ Do in parallel with positive cases:
 
 ## Immediate next work order
 
-1. reopen `water_01` after both:
-   - the prompted baseline undercalled all `4` real positive anchors
-   - the live local Liquid-VL smoke still collapsed catastrophic positives to `no_event`
-   - active probe order now:
-     - `Arbaat Dam`
-     - `Ayn al-Bayda Water Pumping Station`
-     - `Al-Khafsa` retrospective reopen only
-2. keep `Bahri Water Station` as the exact water control row for this tranche
-3. hold `aid_02` behind water until a parcel-tight inland depot appears
+1. reopen `aid_02` now that the first exact water positive exists
+2. keep `Ayn al-Bayda Water Pumping Station` as the second-water lead only if archive baseline truth improves
+3. keep `Bahri Water Station` as the exact water control row for this tranche
 4. add one more inland food positive/control pair before more prompt churn
 5. expand planner eval before any agent-model fine-tune dataset work
 

@@ -668,15 +668,74 @@ def test_stub_service_default_watchlist_includes_real_civilian_sites() -> None:
     assert "port_sudan_01" in asset_ids
     assert "ras_abu_jarjur_01" in asset_ids
     assert "bahri_water_01" in asset_ids
+    assert "arbaat_dam_01" in asset_ids
     assert "silpo_kvitneve_01" in asset_ids
     assert "unhcr_baghdad_01" in asset_ids
     assert "mosul_medical_city_01" in asset_ids
     assert asset_by_id["demo_port_01"].evidence_state == "live_demo"
     assert asset_by_id["beirut_port_01"].evidence_state == "reference_event"
+    assert asset_by_id["arbaat_dam_01"].evidence_state == "reference_event"
     assert asset_by_id["silpo_kvitneve_01"].evidence_state == "reference_event"
     assert asset_by_id["ras_abu_jarjur_01"].evidence_state == "reference_control"
     assert asset_by_id["bahri_water_01"].evidence_state == "reference_control"
     assert asset_by_id["mosul_medical_city_01"].evidence_state == "reference_control"
+
+
+def test_stub_service_keeps_water_category_when_query_mentions_dam(
+    tmp_path: Path, monkeypatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+
+    def fake_urlopen(request, timeout: float):
+        _ = request
+        _ = timeout
+        return _FakeHTTPResponse(
+            body=json.dumps(
+                {
+                    "choices": [
+                        {
+                            "message": {
+                                "content": json.dumps(
+                                    {
+                                        "tool": "latest_alerts",
+                                        "area": "Arbaat, Red Sea State",
+                                        "category": "water_infrastructure",
+                                        "site_id": None,
+                                        "alert_id": None,
+                                    }
+                                )
+                            }
+                        }
+                    ]
+                }
+            ).encode("utf-8")
+        )
+
+    monkeypatch.setattr("app.services.model_gateway.urlopen", fake_urlopen)
+    service = StubAtlasService(
+        Settings(
+            app_env="test",
+            app_port=8000,
+            model_version="lfm2.5-vl-450m-prompted",
+            simsat_current_endpoint=None,
+            simsat_baseline_endpoint=None,
+            mapbox_token_present=False,
+            watchlist_path=None,
+            agent_model_version="hf.co/LiquidAI/LFM2.5-1.2B-Instruct-GGUF",
+            agent_endpoint="http://127.0.0.1:11434/v1/chat/completions",
+            agent_http_enabled=True,
+            agent_provider="openai_chat_completions_http",
+        )
+    )
+
+    response = service.run_agent_query(
+        AtlasAgentQueryRequest(query="show latest dam alerts near Arbaat, Red Sea State"),
+    )
+
+    assert response.tool == "latest_alerts"
+    assert response.planner.mode == "live"
+    assert response.resolved.area == "Arbaat, Red Sea State"
+    assert response.resolved.category == "water_infrastructure"
 
 
 def test_stub_service_can_opt_in_http_agent_planner(tmp_path: Path, monkeypatch) -> None:

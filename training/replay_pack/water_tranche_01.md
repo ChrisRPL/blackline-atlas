@@ -16,10 +16,12 @@ Prompted-baseline gate, `2026-04-18`:
   - false positives: `0`
 - important read:
   - all `4` real positive anchors were still discarded
-  - water remains the biggest civilian-usefulness gap
-  - next tranche should reopen one exact water positive, not more control-only growth
+  - water was the biggest civilian-usefulness gap
+  - the lane now has its first exact positive, but still needs a second positive before it is meaningfully covered
 
-- promoted water rows: `0`
+- promoted water rows: `1`
+- exact promoted water row:
+  - `Arbaat Dam`
 - exact water controls:
   - `Ras Abu Jarjur`
   - `Doha West`
@@ -51,7 +53,7 @@ Rule:
 - parcel state:
   - exact public lead:
     - `19.833554, 36.941204`
-- first bounded SimSat truth:
+- final SimSat truth:
   - baseline request `2024-07-20T08:00:00Z` -> returned `2024-07-17T08:14:43Z` with `13.07416` cloud
   - post sweep:
     - request `2024-08-24T08:00:00Z` -> returned `2024-08-21T08:14:42Z` with `75.901413` cloud
@@ -59,18 +61,16 @@ Rule:
     - request `2024-09-05T08:00:00Z` -> returned `2024-08-31T08:14:44Z` with `13.812824` cloud
     - request `2024-09-12T08:00:00Z` -> returned `2024-09-10T08:14:44Z` with `38.68123` cloud
     - request `2024-09-20T08:00:00Z` -> returned `2024-09-15T08:14:41Z` with `6.886818` cloud
-  - tighter breach-centered follow-up:
-    - `1.5 km` crop on the same baseline / best post pair still read through atmospheric haze
-    - `1.0 km` crop did not recover a defensible breach signature either
+    - request `2024-10-05T08:00:00Z` -> returned `2024-09-30T08:14:43Z` with `0.018271` cloud
+    - request `2024-10-20T08:00:00Z` -> returned `2024-10-15T08:14:42Z` with `2.463562` cloud
   - result:
     - exact facility lead is good
-    - immediate post-event frames are still too cloud / atmosphere compromised over the breach to promote honestly
+    - later clean post-event frames show a defendable drained-reservoir / breach morphology at Sentinel scale
 - status:
-  - `active_exact_lead_weather_blocked`
+  - `added_to_non_demo_eval_as_reference_event`
 - next action:
-  - keep as the first live water-positive probe
-  - bounded tighter-crop pass is now done
-  - stop here until a cleaner post-event frame appears
+  - keep as the first exact water positive anchor
+  - no more probe churn needed unless a tighter crop is needed in capture overrides
 - sources:
   - [World Bank on Arbaat critical water source](https://documents1.worldbank.org/curated/en/650011609914976904/pdf/Management-of-Critical-Water-Supply-Sources-near-Port-Sudan-Sudan-Arbaat-Dam-and-Well-Fields-at-Arbaat-and-Moj.pdf)
   - [UNDP on Port Sudan dependence on Arbaat](https://www.undp.org/stories/restoring-water)

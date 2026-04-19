@@ -18,6 +18,7 @@ CivilianImpact = Literal[
     "logistics_delay",
     "trade_disruption",
     "public_mobility_disruption",
+    "water_service_disruption",
     "no_material_impact",
 ]
 Action = Literal["discard", "defer", "downlink_now"]

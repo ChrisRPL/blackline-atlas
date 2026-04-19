@@ -72,6 +72,15 @@
     "hero": false
   },
   {
+    "asset_id": "arbaat_dam_01",
+    "asset_name": "Arbaat Dam",
+    "asset_type": "water_infrastructure",
+    "region": "Arbaat, Red Sea State",
+    "latitude": 19.833554,
+    "longitude": 36.941204,
+    "hero": false
+  },
+  {
     "asset_id": "vasyshcheve_atb_01",
     "asset_name": "Vasyshcheve ATB Distribution Center",
     "asset_type": "logistics_hub",

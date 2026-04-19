@@ -7,12 +7,12 @@ Use this to grow `training/replay_pack/non_demo_eval.jsonl` from a tiny demo-adj
 - demo/smoke rows:
   - `hero_eval.jsonl`: `2`
 - real/manual non-demo rows:
-  - `non_demo_eval.jsonl`: `10`
+  - `non_demo_eval.jsonl`: `11`
 - current real positive non-demo mix:
   - `food`: `2` (`Beirut Grain Silos`, `Silpo Kvitneve Distribution Center`)
   - `aid`: `1` (`Port Sudan Aid Hub`)
   - `mobility`: `1` (`Baltimore Bridge`)
-  - `water`: `0`
+  - `water`: `1` (`Arbaat Dam`)
 - current non-demo controls / stress rows:
   - `water`: `3`
     - `Ras Abu Jarjur`
@@ -24,9 +24,9 @@ Use this to grow `training/replay_pack/non_demo_eval.jsonl` from a tiny demo-adj
     - `UNHCR Baghdad Warehouse`
     - `Mosul Medical City Hospital`
 - overall annotated rows:
-  - `12`
+  - `13`
 - current split shape:
-  - `holdout_geo`: `3`
+  - `holdout_geo`: `4`
   - `dev`: `1`
   - `holdout_stress`: `6`
   - `train`: `0`
@@ -98,7 +98,7 @@ Why second:
 
 - very high civilian value
 - strong public-interest framing
-- fills the biggest current gap
+- fills one of the biggest current gaps
 
 ### Aid
 
@@ -204,6 +204,7 @@ Counts toward the future gold set:
 - `Silpo Kvitneve Distribution Center`
 - `Port Sudan Aid Hub`
 - `Baltimore Bridge`
+- `Arbaat Dam`
 
 Do not count toward gold coverage:
 
@@ -219,6 +220,6 @@ The next acquisition push should not chase more food-only cases blindly.
 Better order now:
 
 1. reopen `aid` only for a parcel-tight inland depot, not another soft warehouse guess
-2. keep `water` positive hunting paused until a clearly structural facility case appears
+2. keep `water` open only for a second exact positive, not more soft control churn
 3. use already-scouted ambiguity and weather cases to widen control coverage while positive rows remain blocked
 4. keep `mobility` narrow

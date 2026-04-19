@@ -11,19 +11,19 @@ Purpose:
 ### VLM / image-lane truth
 
 - `hero_eval.jsonl`: `2`
-- `non_demo_eval.jsonl`: `10`
-- overall annotated rows: `12`
-- non-demo positives: `4`
+- `non_demo_eval.jsonl`: `11`
+- overall annotated rows: `13`
+- non-demo positives: `5`
   - `food`: `2`
   - `aid`: `1`
   - `mobility`: `1`
-  - `water`: `0`
+  - `water`: `1`
 - non-demo controls / stress: `6`
   - `water`: `3`
   - `food`: `1`
   - `aid`: `2`
 - split shape:
-  - `holdout_geo`: `3`
+  - `holdout_geo`: `4`
   - `holdout_stress`: `6`
   - `dev`: `1`
   - `train`: `0`
@@ -44,7 +44,7 @@ Implication:
 - current frozen planner eval rows:
   - `training/replay_pack/agent_command_eval.jsonl`: `10`
 - current watchlist assets:
-  - `12`
+  - `13`
 
 Implication:
 
@@ -66,17 +66,17 @@ First gold-set target stays:
 
 Current gap against that target:
 
-- total missing rows: `12`
-- missing positives: `8`
+- total missing rows: `11`
+- missing positives: `7`
   - `food`: `2`
-  - `water`: `3`
+  - `water`: `2`
   - `aid`: `2`
   - `mobility`: `1`
 - missing controls / stress: `4`
 
 Most important missing pieces:
 
-1. one exact water positive
+1. one second exact water positive
 2. one second aid positive with inland parcel lock
 3. more exact positive anchors before any adapter prep
 4. first real train split after the gold eval set is no longer tiny
@@ -124,9 +124,9 @@ If planner fine-tuning is ever revisited later:
 
 ## Next data order
 
-1. `water` positive acquisition
+1. inland aid positive acquisition
 2. planner eval expansion
-3. inland aid positive retry only when parcel-tight
+3. second water positive only when archive / parcel truth is real
 4. more controls only as support work
 
 ## Current recommendation
