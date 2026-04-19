@@ -402,4 +402,4 @@ Rule:
    - exact named public parcel or polygon
    - clean pre/post pair
    - defendable plant-scale structural change
-4. shift the next tranche slot to `aid_02` exact-site acquisition or another non-water control
+4. shift the next tranche slot to a new `aid_02` inland lead search or another non-water control

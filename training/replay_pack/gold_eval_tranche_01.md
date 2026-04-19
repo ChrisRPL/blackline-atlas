@@ -88,11 +88,12 @@ It is the first acquisition batch with the best chance of moving coverage, not j
   - working board:
     - `training/replay_pack/aid_tranche_01.md`
 - blocker:
-  - current Lebanon lead may be too small for honest Sentinel labeling
+  - no current in-repo inland aid lead is promotion-ready
 - next action:
-  - prefer inland WFP / UN / NGO / MSF aid compounds first
-  - probe `Tyre Red Cross center` only if compound scale looks real enough
-  - this is now the next open positive gap once a parcel-tight inland depot reappears
+  - search a new inland WFP / UN / NGO / MSF aid compound first
+  - keep `El Obeid` blocked unless the ABS complex itself becomes publicly mappable
+  - keep `Tyre Red Cross center` as evidence-only unless compound scale becomes obviously warehouse-yard sized
+  - this stays the next open positive gap once a parcel-tight inland depot reappears
   - `Mosul Medical City Hospital` now fills one exact inland medical-aid control slot, but not the missing positive slot
 
 ### Mobility
@@ -140,7 +141,7 @@ Do in parallel with positive cases:
 
 ## Immediate next work order
 
-1. reopen `aid_02` now that the first exact water positive exists
+1. search a new `aid_02` lead now that the current in-repo aid board is blocked
 2. keep `Ayn al-Bayda Water Pumping Station` as the second-water lead only if archive baseline truth improves
 3. keep `Bahri Water Station` as the exact water control row for this tranche
 4. add one more inland food positive/control pair before more prompt churn

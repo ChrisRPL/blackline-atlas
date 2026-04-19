@@ -14,8 +14,9 @@ Purpose:
 - exact aid / medical-aid controls:
   - `UNHCR Baghdad Warehouse`
   - `Mosul Medical City Hospital`
-- strongest current positive repo lead:
+- strongest current inland repo lead:
   - `WFP El Obeid logistics base / Agricultural Bank of Sudan warehouse complex`
+  - still `blocked-but-alive`, not promotion-ready
 
 Rule:
 - aid next should be:
@@ -64,9 +65,10 @@ Reject:
     - `5 km` outside town
     - `10 km` from airport
 - status:
-  - `hold_exact_complex_not_yet_pinned`
+  - `hard_hold_exact_complex_not_yet_pinned`
 - next action:
   - first public-map pass pinned `El Obeid Airport` at `13.1500332, 30.2317358`, but did not isolate the ABS warehouse complex itself
+  - second bounded review still did not produce a direct parcel clue for the ABS complex
   - do not probe until one public map clue or polygon names the warehouse complex directly
   - keep only if the compound can be isolated as a humanitarian warehouse campus, not a corridor/logistics-routing story
 - sources:
@@ -117,6 +119,7 @@ Reject:
   - `hold_scale_risk`
 - next action:
   - keep only if compound scale looks warehouse-yard sized, not office/clinic sized
+  - one bounded Sentinel pair on the exact Tyre clue still read too small / too weather-limited for a defendable aid row
   - otherwise drop in favor of a larger inland aid depot
 - sources:
   - [Reuters pickup on strike at Tyre Red Cross center](https://wsau.com/2026/04/13/red-cross-calls-consecutive-strikes-in-lebanon-gravely-concerning/)
@@ -199,16 +202,62 @@ Reject:
 - sources:
   - [Airwars on Mosul Medical City Hospital strike](https://airwars.org/civilian-casualties/ci463-february-17-2017/)
 
+### `aid_07` MSF Mother and Child Hospital, Taiz
+
+- country:
+  - `Yemen`
+- type:
+  - `medical_aid_node`
+- why:
+  - exact named humanitarian medical facility
+  - direct civilian-health framing
+  - useful retrospective medical-aid benchmark if archive truth exists
+- parcel state:
+  - exact incident documentation publishes facility location
+  - current working coordinates:
+    - `13.609017, 44.096997`
+- status:
+  - `hold_archive_not_available`
+- next action:
+  - bounded local SimSat pass on the exact parcel across `2015-11` to `2016-01` returned no usable historical images
+  - keep only if archive coverage broadens; do not spend more time on parcel-hunting
+- sources:
+  - [MSF Taiz incident report](https://www.msf.org/sites/default/files/taiz_airstrike_clinic.pdf)
+  - [MSF on the Taiz clinic attack](https://www.msf.org/yemen-nine-wounded-saudi-led-coalition-airstrike-msf-clinic-taiz)
+
+### `aid_08` MSF Kunduz Trauma Centre
+
+- country:
+  - `Afghanistan`
+- type:
+  - `medical_aid_node`
+- why:
+  - exact iconic destroyed hospital
+  - useful retrospective medical-aid benchmark if archive truth exists
+- parcel state:
+  - exact MSF-published coordinates:
+    - `36.71803, 68.86221`
+- status:
+  - `hold_archive_not_available`
+- next action:
+  - bounded local SimSat pass across `2015-09` to `2016-01` returned no usable historical images
+  - keep only if archive coverage broadens; do not spend more time on this lead now
+- sources:
+  - [MSF published Kunduz coordinates](https://www.msf.org/kunduz-afghanistan-36%C2%B043%E2%80%99491%E2%80%99%E2%80%99n-68%C2%B051%E2%80%994396%E2%80%99%E2%80%99)
+  - [MSF on the Kunduz hospital attack](https://www.msf.org/kunduz-hospital-attack)
+
 ## Immediate next work order
 
-1. keep `aid_01` `El Obeid` on hold unless the ABS complex itself becomes publicly mappable
-2. keep `aid_02` `Lankien` as evidence only unless a larger hospital-support warehouse campus is publicly pinned
-3. keep `Tyre` only if scale permits
+1. freeze `aid_01` `El Obeid` until the ABS complex itself becomes publicly mappable
+2. keep `aid_02` `Lankien` and `aid_03` `Tyre` as evidence-only, not active parcel hunts
+3. keep `aid_07` `Taiz` and `aid_08` `Kunduz` as archive-blocked retrospective leads only
 4. `UNHCR Baghdad` and `Mosul Medical City` are now the exact aid / medical-aid control anchors
-5. if no inland aid positive survives, reopen inland `food` before adding more aid notes
+5. next active aid work should be a new inland named depot / warehouse campus, not another `El Obeid` or `Tyre` pass
+6. if no inland aid positive survives, reopen inland `food` before adding more aid notes
 
 ## Stop rules
 
 - one hard map/geocode pass only per candidate before downgrade
 - do not promote any aid node whose value depends on route, convoy, or corridor analysis
+- do not keep retrying archive-blocked retrospective sites unless the archive source changes
 - if no inland parcel-tight aid lead survives, stop and reopen inland food before adding more aid notes
