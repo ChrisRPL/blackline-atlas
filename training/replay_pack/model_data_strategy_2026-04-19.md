@@ -11,10 +11,10 @@ Purpose:
 ### VLM / image-lane truth
 
 - `hero_eval.jsonl`: `2`
-- `non_demo_eval.jsonl`: `14`
-- overall annotated rows: `16`
-- non-demo positives: `6`
-  - `food`: `2`
+- `non_demo_eval.jsonl`: `15`
+- overall annotated rows: `17`
+- non-demo positives: `7`
+  - `food`: `3`
   - `aid`: `2`
   - `mobility`: `1`
   - `water`: `1`
@@ -44,7 +44,7 @@ Implication:
 - current frozen planner eval rows:
   - `training/replay_pack/agent_command_eval.jsonl`: `30`
 - current watchlist assets:
-  - `16`
+  - `17`
 
 Implication:
 
@@ -67,11 +67,11 @@ First gold-set target stays:
 
 Current gap against that target:
 
-- total missing rows: `9`
-- missing positives: `7`
-  - `food`: `2`
+- total missing rows: `7`
+- missing positives: `5`
+  - `food`: `1`
   - `water`: `2`
-  - `aid`: `2`
+  - `aid`: `1`
   - `mobility`: `1`
 - missing controls / stress: `2`
 
@@ -125,14 +125,14 @@ If planner fine-tuning is ever revisited later:
 
 ## Next data order
 
-1. keep `Novus Logistics Center` on hold unless a clearly better post-strike frame appears
-2. keep `Okhmatdyt Children's Hospital` as the new inland medical-aid anchor
-3. keep `Roshen Yahotyn logistics center` as the best new inland food lead; exact parcel is solved, but the pre side is still not defendable enough against the clear March post
-4. keep `Veggy Trend Invest` on hold; the Soborna `111/111A` campus is still too mixed for a defendable parcel read
-5. keep `Wad Medani main water treatment plant` as exact water evidence, but not as a second water positive until the signal is honest
-6. keep `Ayn al-Bayda Water Pumping Station` reopened as evidence, but not as a second water positive until the signal is honest
-7. keep `Trostianets City Hospital` as the strongest inland medical backup board
-8. keep `Bashtanka Multiprofile Hospital` as a secondary inland medical backup, but not a promotion-ready row
+1. count `Roshen Yahotyn Logistics Center` as the new third inland food positive and stop spending time on it
+2. keep `Okhmatdyt Children's Hospital` as the inland medical-aid anchor
+3. keep `Wad Medani main water treatment plant` as exact water evidence, but not as a second water positive until the signal is honest
+4. keep `Ayn al-Bayda Water Pumping Station` reopened as evidence, but not as a second water positive until the signal is honest
+5. keep `Trostianets City Hospital` as the strongest inland medical backup board
+6. keep `Bashtanka Multiprofile Hospital` as a secondary inland medical backup, but not a promotion-ready row
+7. keep `Veggy Trend Invest` on hold; the Soborna `111/111A` campus is still too mixed for a defendable parcel read
+8. keep `Novus Logistics Center` on hold unless a clearly better post-strike frame appears
 9. planner eval expansion only after watchlist/query breadth grows again
 
 ## Current recommendation

@@ -326,7 +326,7 @@ Primary buckets:
   - exact finished-goods food logistics campus
   - much cleaner semantics than mixed industrial parks
   - direct civilian-supply relevance
-- status: `hold_exact_parcel_pre_still_blocked`
+- status: `added_to_non_demo_eval_as_exact_inland_food_anchor`
 - coordinates:
   - Roshen public map marker:
     - `50.245008, 31.814647`
@@ -334,12 +334,14 @@ Primary buckets:
   - exact public address:
     - `Filatova 112-B, Yahotyn, Kyiv Oblast`
   - Roshen's own site exposes an exact map marker for the logistics center
-  - bounded local SimSat pass improved the site truth:
-    - clean post now exists:
+  - bounded local SimSat passes finally produced an honest event pair:
+    - clean pre:
+      - `2025-08-31T09:06:35Z` with `0.001755` cloud
+    - clean post:
       - `2026-03-14T08:56:26Z` with `1.198145` cloud
-    - partial clear pre exists but still fails honesty:
-      - `2026-01-16T09:06:21Z` with `0.169406` cloud, but snow dominates the parcel read
-      - `2025-11-14T08:56:33Z` with `32.921478` cloud, but cloud still obscures the parcel too much
+  - earlier blockers are still useful context:
+    - `2026-01-16T09:06:21Z` was clean but snow-dominated
+    - `2025-11-14T08:56:33Z` still obscured too much of the parcel
   - earlier and later checks were mostly unusable:
     - `2026-02-07T08:56:18Z` with `99.993944` cloud
     - `2026-02-17T08:56:20Z` with `99.962109` cloud
@@ -349,7 +351,7 @@ Primary buckets:
   - result:
     - parcel truth is strong
     - event semantics are strong
-    - no honest row yet because the pre side still is not defendable enough against the clear March post
+    - promoted into `non_demo_eval.jsonl` as a real inland food-distribution positive
 - sources:
   - [Roshen logistics center page](https://www.roshen.com/ua/uk/kontakty/logistychnyy-kompleks)
   - [Mercor project page for the Roshen logistics center](https://mercor.com.ua/project/logistychnyj-czentr-roshen/)

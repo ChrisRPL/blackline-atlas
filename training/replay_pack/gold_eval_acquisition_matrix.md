@@ -7,9 +7,9 @@ Use this to grow `training/replay_pack/non_demo_eval.jsonl` from a tiny demo-adj
 - demo/smoke rows:
   - `hero_eval.jsonl`: `2`
 - real/manual non-demo rows:
-  - `non_demo_eval.jsonl`: `14`
+  - `non_demo_eval.jsonl`: `15`
 - current real positive non-demo mix:
-  - `food`: `2` (`Beirut Grain Silos`, `Silpo Kvitneve Distribution Center`)
+  - `food`: `3` (`Beirut Grain Silos`, `Silpo Kvitneve Distribution Center`, `Roshen Yahotyn Logistics Center`)
   - `aid`: `2` (`Port Sudan Aid Hub`, `Okhmatdyt Children's Hospital`)
   - `mobility`: `1` (`Baltimore Bridge`)
   - `water`: `1` (`Arbaat Dam`)
@@ -26,9 +26,9 @@ Use this to grow `training/replay_pack/non_demo_eval.jsonl` from a tiny demo-adj
     - `UNHCR Baghdad Warehouse`
     - `Mosul Medical City Hospital`
 - overall annotated rows:
-  - `16`
+  - `17`
 - current split shape:
-  - `holdout_geo`: `5`
+  - `holdout_geo`: `6`
   - `dev`: `1`
   - `holdout_stress`: `8`
   - `train`: `0`
@@ -204,6 +204,7 @@ Counts toward the future gold set:
 
 - `Beirut Grain Silos`
 - `Silpo Kvitneve Distribution Center`
+- `Roshen Yahotyn Logistics Center`
 - `Port Sudan Aid Hub`
 - `Baltimore Bridge`
 - `Arbaat Dam`
@@ -221,10 +222,10 @@ The next acquisition push should not chase more food-only cases blindly.
 
 Better order now:
 
-- keep `Novus Logistics Center` as the next inland food positive lead
+- count `Roshen Yahotyn Logistics Center` as the current third food/event anchor
 - count `Gedaref Grain Silos` as an exact food no-event anchor, not as a missing positive
 
-1. reopen `aid` only for a parcel-tight inland depot, not another soft warehouse guess
+1. reopen `aid` only for a parcel-tight inland depot or hospital campus, not another soft warehouse guess
 2. keep `water` open only for a second exact positive, not more soft control churn
-3. use already-scouted ambiguity and weather cases to widen control coverage while positive rows remain blocked
+3. keep `Novus Logistics Center` as opportunistic food follow-up only if a clearly better weather window appears
 4. keep `mobility` narrow

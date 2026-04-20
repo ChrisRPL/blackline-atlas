@@ -166,14 +166,14 @@ Current read:
 
 They are not replacements for the internal tranche below.
 
-1. keep `Roshen Yahotyn logistics center` as the best new inland food lead; exact parcel is solved, but the pre side is still not defendable enough against the clear March post
-2. keep `Veggy Trend Invest` on hold; the `Soborna 111/111A` campus still reads too mixed for another probe
-3. keep `Novus Logistics Center` on hold unless a clearly better post-strike frame appears than the current January/March pair
-4. keep `Wad Medani main water treatment plant` as an exact water evidence lead, but not a promotion until plant-scale change is defendable
-5. keep `Ayn al-Bayda Water Pumping Station` reopened as exact evidence, but not as `water_02` until plant-scale damage is defendable
-6. use `Okhmatdyt Children's Hospital` as the inland medical-aid anchor while the next aid-positive search runs in parallel
-7. keep `Trostianets City Hospital` as the strongest inland medical backup board
-8. keep `Bashtanka Multiprofile Hospital` as a second inland medical backup, but not a promotion-ready row
+1. count `Roshen Yahotyn Logistics Center` as a landed inland food-distribution anchor
+2. keep `Wad Medani main water treatment plant` as an exact water evidence lead, but not a promotion until plant-scale change is defendable
+3. keep `Ayn al-Bayda Water Pumping Station` reopened as exact evidence, but not as `water_02` until plant-scale damage is defendable
+4. use `Okhmatdyt Children's Hospital` as the inland medical-aid anchor while the next aid-positive search runs in parallel
+5. keep `Trostianets City Hospital` as the strongest inland medical backup board
+6. keep `Bashtanka Multiprofile Hospital` as a second inland medical backup, but not a promotion-ready row
+7. keep `Veggy Trend Invest` on hold; the `Soborna 111/111A` campus still reads too mixed for another probe
+8. keep `Novus Logistics Center` on hold unless a clearly better post-strike frame appears than the current January/March pair
 9. keep `Bahri Water Station` as the exact water control row for this tranche
 10. keep the planner eval pack stable at its current widened shape unless watchlist/query breadth grows again
 

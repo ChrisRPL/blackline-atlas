@@ -18,5 +18,10 @@
     "latitude": 50.451172,
     "longitude": 30.479935,
     "size_km": 0.5
+  },
+  "roshen_yahotyn_logistics_center_strike": {
+    "latitude": 50.245008,
+    "longitude": 31.814647,
+    "size_km": 0.5
   }
 }

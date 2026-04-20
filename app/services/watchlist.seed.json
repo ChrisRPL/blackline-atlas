@@ -142,5 +142,14 @@
     "latitude": 50.451172,
     "longitude": 30.479935,
     "hero": false
+  },
+  {
+    "asset_id": "roshen_yahotyn_01",
+    "asset_name": "Roshen Yahotyn Logistics Center",
+    "asset_type": "logistics_hub",
+    "region": "Yahotyn, Kyiv Oblast",
+    "latitude": 50.245008,
+    "longitude": 31.814647,
+    "hero": false
   }
 ]
