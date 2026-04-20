@@ -61,6 +61,8 @@ class SimSatCorpusSidecar(BaseModel):
 class BlacklineCandidateEvalRecord(BaseModel):
     case_id: str
     split: CorpusSplit
+    benchmark_source: str | None = None
+    benchmark_case_id: str | None = None
     asset: Asset
     current_image_path: str
     baseline_image_path: str

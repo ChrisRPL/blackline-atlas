@@ -47,7 +47,8 @@ probable_access_obstruction | no_event
 Allowed severity: low | medium | high
 Allowed civilian_impact:
 shipping_or_aid_disruption | logistics_delay | trade_disruption |
-public_mobility_disruption | water_service_disruption | no_material_impact
+civilian_facility_disruption | public_mobility_disruption |
+water_service_disruption | no_material_impact
 Allowed action: discard | defer | downlink_now
 
 Required JSON keys only:
@@ -67,7 +68,8 @@ Event guidance:
   probable_large_scale_disruption even if the exact sub-facility name is unclear
 - examples of probable_large_scale_disruption:
   grain silos destroyed, warehouse block burned, port terminal apron scarred,
-  or a large water-plant treatment block destroyed
+  a large water-plant treatment block destroyed,
+  or a civilian building cluster heavily damaged after disaster
 - probable_access_obstruction: bridge, berth, road, or access path
   materially blocked while the wider facility mostly remains
 - no_event: no clear macro-visible civilian disruption, weak signal, or weather-limited read

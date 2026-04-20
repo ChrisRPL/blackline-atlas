@@ -207,6 +207,10 @@ Benchmark notes:
   - `BLACKLINE_SMOLVLM2_ENDPOINT`
   - `BLACKLINE_QWEN25VL3B_ENDPOINT`
   - `BLACKLINE_INTERNVL25_4B_ENDPOINT`
+- external slice normalizers:
+  - `python3 training/scripts/normalize_xbd_slice.py --seed-dataset ...`
+  - `python3 training/scripts/normalize_spacenet8_slice.py --seed-dataset ...`
+  - notes: [training/external_benchmarks/README.md](training/external_benchmarks/README.md)
 
 Candidate selection rule:
 

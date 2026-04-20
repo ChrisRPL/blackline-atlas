@@ -49,6 +49,32 @@ def test_asset_allows_aid_warehouse_cluster_type() -> None:
     assert asset.asset_type == "aid_warehouse_cluster"
 
 
+def test_asset_allows_civilian_building_cluster_type() -> None:
+    asset = Asset(
+        asset_id="civilian_cluster_01",
+        asset_name="Demo Civilian Building Cluster",
+        asset_type="civilian_building_cluster",
+        region="xBD AOI",
+        latitude=18.0,
+        longitude=-72.0,
+    )
+
+    assert asset.asset_type == "civilian_building_cluster"
+
+
+def test_asset_allows_road_access_corridor_type() -> None:
+    asset = Asset(
+        asset_id="road_corridor_01",
+        asset_name="Demo Road Corridor",
+        asset_type="road_access_corridor",
+        region="SpaceNet8 AOI",
+        latitude=29.0,
+        longitude=-90.0,
+    )
+
+    assert asset.asset_type == "road_access_corridor"
+
+
 def test_asset_allows_medical_aid_node_type() -> None:
     asset = Asset(
         asset_id="medical_aid_01",

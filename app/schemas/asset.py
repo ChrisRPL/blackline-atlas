@@ -9,6 +9,8 @@ AssetType = Literal[
     "grain_storage_complex",
     "container_port",
     "bridge",
+    "civilian_building_cluster",
+    "road_access_corridor",
     "water_infrastructure",
     "logistics_hub",
     "rail_yard",

@@ -17,6 +17,7 @@ CivilianImpact = Literal[
     "shipping_or_aid_disruption",
     "logistics_delay",
     "trade_disruption",
+    "civilian_facility_disruption",
     "public_mobility_disruption",
     "water_service_disruption",
     "no_material_impact",
