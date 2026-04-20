@@ -17,6 +17,9 @@ from app.schemas.model_benchmark import (  # noqa: E402
     BenchmarkModelConfig,
     BenchmarkSliceConfig,
 )
+from training.scripts.materialize_internal_benchmark_slice import (  # noqa: E402
+    materialize_internal_benchmark_slice,
+)
 from training.scripts.run_lfm25_vl_prompted_eval import (  # noqa: E402
     HttpCandidateTextRunner,
     TransformersLfm25Runner,
@@ -264,7 +267,7 @@ def _run_single_slice(
     if not slice_config.dataset_path:
         raise SkipBenchmarkRun("slice dataset path missing")
 
-    dataset_path = (ROOT / slice_config.dataset_path).resolve()
+    dataset_path = _resolve_dataset_path(slice_config=slice_config, output_dir=output_dir)
     if not dataset_path.exists():
         raise SkipBenchmarkRun(f"dataset missing: {dataset_path}")
 
@@ -311,6 +314,43 @@ def _build_generator(model: BenchmarkModelConfig):
 
 def _pct(value: float) -> str:
     return f"{value * 100:.1f}%"
+
+
+def _resolve_dataset_path(
+    *,
+    slice_config: BenchmarkSliceConfig,
+    output_dir: Path,
+) -> Path:
+    raw_path = Path(slice_config.dataset_path or "")
+    dataset_path = raw_path if raw_path.is_absolute() else (ROOT / raw_path)
+    dataset_path = dataset_path.resolve()
+
+    if slice_config.tier != "internal":
+        return dataset_path
+
+    try:
+        return materialize_internal_benchmark_slice(
+            annotated_dataset_path=dataset_path,
+            output_dir=output_dir / "_prepared" / slice_config.slice_id,
+            capture_manifest_path=_env_path("BLACKLINE_INTERNAL_BENCHMARK_CAPTURE_MANIFEST"),
+            historical_endpoint=(
+                os.getenv("BLACKLINE_INTERNAL_BENCHMARK_HISTORICAL_ENDPOINT")
+                or os.getenv("SIMSAT_BASELINE_ENDPOINT")
+            ),
+            capture_overrides_path=(
+                _env_path("BLACKLINE_INTERNAL_BENCHMARK_CAPTURE_OVERRIDES")
+                or (ROOT / "training" / "replay_pack" / "non_demo_capture_overrides.json").resolve()
+            ),
+        )
+    except ValueError as exc:
+        raise SkipBenchmarkRun(str(exc)) from exc
+
+
+def _env_path(name: str) -> Path | None:
+    value = os.getenv(name)
+    if not value:
+        return None
+    return Path(value).resolve()
 
 
 def main(argv: list[str] | None = None) -> int:
