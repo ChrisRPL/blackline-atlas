@@ -58,6 +58,16 @@
       "notes": "Primary exact-schema benchmark."
     },
     {
+      "slice_id": "xbd_public_seed_v0",
+      "title": "xBD public seed",
+      "tier": "external_task_fit",
+      "status": "ready",
+      "dataset_path": "training/external_benchmarks/xbd_public_seed/blackline_candidate_eval.jsonl",
+      "source_label": "xBD / xView2",
+      "source_url": "https://huggingface.co/datasets/WayBob/Disaster_Recognition_RemoteSense_EN_CN_JA",
+      "notes": "Checked-in public xBD seed with 3 positive cases and 1 real no-damage control."
+    },
+    {
       "slice_id": "xbd_damage_slice_v1",
       "title": "xBD normalized damage slice",
       "tier": "external_task_fit",

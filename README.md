@@ -211,6 +211,9 @@ Benchmark notes:
   - `python3 training/scripts/normalize_xbd_slice.py --seed-dataset ...`
   - `python3 training/scripts/normalize_spacenet8_slice.py --seed-dataset ...`
   - notes: [training/external_benchmarks/README.md](training/external_benchmarks/README.md)
+- first ready external slice:
+  - [training/external_benchmarks/xbd_public_seed](training/external_benchmarks/xbd_public_seed)
+  - runnable now through `xbd_public_seed_v0`
 
 Candidate selection rule:
 

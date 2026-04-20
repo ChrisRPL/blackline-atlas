@@ -11,6 +11,15 @@ Current normalizers:
 - `python3 training/scripts/normalize_xbd_slice.py`
 - `python3 training/scripts/normalize_spacenet8_slice.py`
 
+Ready slice:
+
+- `training/external_benchmarks/xbd_public_seed`
+  - checked-in xBD public seed
+  - 4 cases
+  - 3 positive damage cases
+  - 1 real no-damage control
+  - notes: `training/external_benchmarks/xbd_public_seed/README.md`
+
 Input style:
 
 - each normalizer expects a small curated seed JSONL
