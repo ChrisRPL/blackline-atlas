@@ -377,15 +377,49 @@ Reject:
   - public address clue:
     - `3 Yuvileina St, Bashtanka`
 - status:
-  - `hold_weather_blocked`
+  - `hold_exact_pair_signal_soft`
 - next action:
-  - first bounded local SimSat pass found the immediate event window too clouded:
+  - broader local SimSat pass eventually found one honest clean pre/post pair:
+    - `2022-02-23T08:57:09Z` with `0.000956` cloud
+    - `2023-10-11T08:57:09Z` with `0.018155` cloud
+  - earlier event-window probes were heavily clouded:
     - `2022-04-04T08:57:08Z` with `75.286746` cloud
     - `2022-04-19T08:57:02Z` with `97.595614` cloud
     - `2022-05-19T08:57:07Z` with `43.381408` cloud
     - `2022-06-23T08:57:19Z` with `96.213681` cloud
-  - keep only as a backup exact inland medical campus unless a later clear post-event window appears
+  - result:
+    - parcel truth is good
+    - weather is no longer the main blocker
+    - bounded clean-pair review still does not show a defendable hospital-compound scar at Sentinel scale
 - sources:
+  - [PHR on Russia’s assault on Ukraine’s health-care system](https://phr.org/our-work/resources/russias-assault-on-ukraines-health-care-system/)
+
+### `aid_14` Trostianets City Hospital
+
+- country:
+  - `Ukraine`
+- type:
+  - `medical_aid_node`
+- why:
+  - exact inland hospital campus with cleaner parcel truth than most current backups
+  - repeated direct attacks make the civilian-health framing strong
+- parcel state:
+  - official address clue:
+    - `vul. Neskuchanska, 7, Trostianets, Sumy Oblast`
+  - exact OSM hospital campus relation center:
+    - `50.4745388, 34.9228822`
+- status:
+  - `hold_exact_pair_signal_soft`
+- next action:
+  - local SimSat now has an honest clean pre/post pair:
+    - `2021-09-13T08:46:20Z` with `4.521637` cloud
+    - `2022-10-08T08:46:25Z` with `0.000229` cloud
+  - result:
+    - exact campus truth is good
+    - archive is no longer the blocker
+    - bounded review still does not show a defendable hospital-compound disruption strong enough for promotion
+- sources:
+  - [Trostianets hospital contacts](https://trostyanecka.crl.org.ua/feedback/)
   - [PHR on Russia’s assault on Ukraine’s health-care system](https://phr.org/our-work/resources/russias-assault-on-ukraines-health-care-system/)
 
 ## Immediate next work order
@@ -396,8 +430,9 @@ Reject:
 4. keep `aid_07` `Taiz`, `aid_08` `Kunduz`, `aid_10` `Urum`, and `aid_11` `Abs` as archive-blocked retrospective leads only
 5. `UNHCR Baghdad` and `Mosul Medical City` are now the exact aid / medical-aid control anchors
 6. `aid_12` `Okhmatdyt` now fills the missing inland medical-aid positive slot
-7. `aid_13` `Bashtanka` is the cleanest new inland medical backup, but it is weather-blocked today
-8. next aid move should be a second exact inland aid positive only if it beats `Okhmatdyt` on parcel truth and readability
+7. `aid_14` `Trostianets` is now the strongest inland medical backup board
+8. `aid_13` `Bashtanka` stays as a second exact inland medical backup, but not a promotion-ready row
+9. next aid move should be a second exact inland aid positive only if it beats `Okhmatdyt` on parcel truth and readability
 
 ## Stop rules
 

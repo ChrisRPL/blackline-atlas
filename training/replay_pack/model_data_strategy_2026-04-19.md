@@ -127,12 +127,13 @@ If planner fine-tuning is ever revisited later:
 
 1. keep `Novus Logistics Center` on hold unless a clearly better post-strike frame appears
 2. keep `Okhmatdyt Children's Hospital` as the new inland medical-aid anchor
-3. keep `Roshen Yahotyn logistics center` as the best new inland food lead; exact parcel is solved, but the post-strike window is still cloud-blocked
+3. keep `Roshen Yahotyn logistics center` as the best new inland food lead; exact parcel is solved, but the pre side is still not defendable enough against the clear March post
 4. keep `Veggy Trend Invest` on hold; the Soborna `111/111A` campus is still too mixed for a defendable parcel read
 5. keep `Wad Medani main water treatment plant` as exact water evidence, but not as a second water positive until the signal is honest
 6. keep `Ayn al-Bayda Water Pumping Station` reopened as evidence, but not as a second water positive until the signal is honest
-7. keep `Bashtanka Multiprofile Hospital` as a weather-blocked inland medical backup
-8. planner eval expansion only after watchlist/query breadth grows again
+7. keep `Trostianets City Hospital` as the strongest inland medical backup board
+8. keep `Bashtanka Multiprofile Hospital` as a secondary inland medical backup, but not a promotion-ready row
+9. planner eval expansion only after watchlist/query breadth grows again
 
 ## Current recommendation
 
