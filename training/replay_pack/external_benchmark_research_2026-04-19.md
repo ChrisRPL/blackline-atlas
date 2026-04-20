@@ -19,6 +19,16 @@ Implication:
 - internal benchmark is still too small to stand alone as the only story
 - external benchmarks should support, not replace, Blackline-specific eval
 
+Current ready external slices:
+
+- `xbd_public_seed_v0`
+- `spacenet8_public_seed_v0`
+
+Rule:
+
+- use these for frozen baseline, cross-model comparison, and transfer research
+- do not treat them as replacements for Blackline lifeline labels
+
 ## What we should benchmark
 
 Three layers:

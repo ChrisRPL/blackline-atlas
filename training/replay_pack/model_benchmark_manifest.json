@@ -68,6 +68,16 @@
       "notes": "Checked-in public xBD seed with 3 positive cases and 1 real no-damage control."
     },
     {
+      "slice_id": "spacenet8_public_seed_v0",
+      "title": "SpaceNet 8 public seed",
+      "tier": "external_task_fit",
+      "status": "ready",
+      "dataset_path": "training/external_benchmarks/spacenet8_public_seed/blackline_candidate_eval.jsonl",
+      "source_label": "SpaceNet 8",
+      "source_url": "https://spacenet.ai/sn8-challenge/",
+      "notes": "Checked-in public SN8 seed with 2 flooded positives and 2 clean controls."
+    },
+    {
       "slice_id": "xbd_damage_slice_v1",
       "title": "xBD normalized damage slice",
       "tier": "external_task_fit",

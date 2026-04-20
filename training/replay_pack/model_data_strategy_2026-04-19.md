@@ -141,3 +141,14 @@ If planner fine-tuning is ever revisited later:
 For external datasets, cross-model cohort, and benchmark structure:
 
 - see [external_benchmark_research_2026-04-19.md](./external_benchmark_research_2026-04-19.md)
+
+External-ready slices now:
+
+- `xbd_public_seed_v0`
+- `spacenet8_public_seed_v0`
+
+Rule:
+
+- external slices help eval, transfer research, and hackathon storytelling
+- they do not increase the internal Blackline gold-row count
+- they should not be mixed into the core gold metrics without explicit remapping

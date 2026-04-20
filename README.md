@@ -214,6 +214,12 @@ Benchmark notes:
 - first ready external slice:
   - [training/external_benchmarks/xbd_public_seed](training/external_benchmarks/xbd_public_seed)
   - runnable now through `xbd_public_seed_v0`
+- second ready external slice:
+  - [training/external_benchmarks/spacenet8_public_seed](training/external_benchmarks/spacenet8_public_seed)
+  - runnable now through `spacenet8_public_seed_v0`
+- for heavier cohort runs or cross-model sweeps:
+  - prefer Hugging Face Jobs over long local runs
+  - keep the internal Blackline slice as the primary scorecard
 
 Candidate selection rule:
 

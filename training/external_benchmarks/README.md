@@ -19,6 +19,12 @@ Ready slice:
   - 3 positive damage cases
   - 1 real no-damage control
   - notes: `training/external_benchmarks/xbd_public_seed/README.md`
+- `training/external_benchmarks/spacenet8_public_seed`
+  - checked-in SpaceNet 8 public seed
+  - 4 cases
+  - 2 flooded positives
+  - 2 clean controls
+  - notes: `training/external_benchmarks/spacenet8_public_seed/README.md`
 
 Input style:
 

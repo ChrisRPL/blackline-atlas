@@ -145,6 +145,19 @@ Do in parallel with positive cases:
 
 ## Immediate next work order
 
+External benchmark seeds now exist:
+
+- `xbd_public_seed_v0`
+- `spacenet8_public_seed_v0`
+
+They are useful for:
+
+- frozen baseline research
+- cross-model comparison
+- hackathon materials
+
+They are not replacements for the internal tranche below.
+
 1. reopen inland `food` now that the current `aid_02` shortlist is still blocked
    - current search-ready lead:
      - `Novus Logistics Center`
