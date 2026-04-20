@@ -8,8 +8,8 @@ Purpose:
 
 ## Current repo truth
 
-- internal non-demo eval rows: `13`
-- internal positives: `5`
+- internal non-demo eval rows: `14`
+- internal positives: `6`
 - internal controls / stress: `8`
 - planner eval rows: `30`
 

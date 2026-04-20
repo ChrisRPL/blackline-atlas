@@ -7,10 +7,10 @@ Use this to grow `training/replay_pack/non_demo_eval.jsonl` from a tiny demo-adj
 - demo/smoke rows:
   - `hero_eval.jsonl`: `2`
 - real/manual non-demo rows:
-  - `non_demo_eval.jsonl`: `13`
+  - `non_demo_eval.jsonl`: `14`
 - current real positive non-demo mix:
   - `food`: `2` (`Beirut Grain Silos`, `Silpo Kvitneve Distribution Center`)
-  - `aid`: `1` (`Port Sudan Aid Hub`)
+  - `aid`: `2` (`Port Sudan Aid Hub`, `Okhmatdyt Children's Hospital`)
   - `mobility`: `1` (`Baltimore Bridge`)
   - `water`: `1` (`Arbaat Dam`)
 - current non-demo controls / stress rows:
@@ -26,9 +26,9 @@ Use this to grow `training/replay_pack/non_demo_eval.jsonl` from a tiny demo-adj
     - `UNHCR Baghdad Warehouse`
     - `Mosul Medical City Hospital`
 - overall annotated rows:
-  - `15`
+  - `16`
 - current split shape:
-  - `holdout_geo`: `4`
+  - `holdout_geo`: `5`
   - `dev`: `1`
   - `holdout_stress`: `8`
   - `train`: `0`

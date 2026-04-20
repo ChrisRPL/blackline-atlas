@@ -100,6 +100,24 @@ def test_agent_query_site_compare_returns_reference_event_evidence() -> None:
     assert "reference event evidence" in payload["summary"]
 
 
+def test_agent_query_site_compare_returns_reference_event_evidence_for_medical_aid_site() -> None:
+    client = TestClient(create_app())
+
+    response = client.post(
+        "/agent/query",
+        json={"tool": "site_compare", "site_id": "okhmatdyt_01"},
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["tool"] == "site_compare"
+    assert payload["status"] == "ok"
+    assert payload["focus_asset_id"] == "okhmatdyt_01"
+    assert payload["focus_alert_id"] == "blk_nd_00014"
+    assert payload["compare"]["asset_id"] == "okhmatdyt_01"
+    assert payload["compare"]["current_frame"]["accepted_for_alerting"] is True
+
+
 def test_agent_query_site_compare_returns_reference_control_evidence() -> None:
     client = TestClient(create_app())
 

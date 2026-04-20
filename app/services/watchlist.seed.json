@@ -133,5 +133,14 @@
     "latitude": 36.507778,
     "longitude": 37.961389,
     "hero": false
+  },
+  {
+    "asset_id": "okhmatdyt_01",
+    "asset_name": "Okhmatdyt Children's Hospital",
+    "asset_type": "medical_aid_node",
+    "region": "Kyiv",
+    "latitude": 50.451172,
+    "longitude": 30.479935,
+    "hero": false
   }
 ]

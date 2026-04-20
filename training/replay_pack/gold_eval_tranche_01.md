@@ -56,9 +56,9 @@ It is the first acquisition batch with the best chance of moving coverage, not j
   - pumping station or reservoir compound
 - current lead quality:
   - `Ayn al-Bayda Water Pumping Station` is the cleanest exact next lead
-  - blocker is still missing honest pre-event archive coverage
+  - archive blocker is resolved, but plant-scale structural signal is still too soft
 - next action:
-  - reopen only if a real pre-event baseline appears
+  - keep as evidence unless a tighter plant-only disruption signal becomes defendable
 
 #### `water_03`
 - target type:
@@ -167,10 +167,11 @@ Current read:
 They are not replacements for the internal tranche below.
 
 1. keep `Novus Logistics Center` on hold unless a clearly better post-strike frame appears than the current January/March pair
-2. keep `Ayn al-Bayda Water Pumping Station` reopened as an exact evidence lead, but not a `water_02` promotion until plant-scale damage is defendable
-3. keep `Bahri Water Station` as the exact water control row for this tranche
-4. reopen `aid_02` with `Okhmatdyt Children's Hospital` as the next parcel-tight inland aid lead
-5. keep the planner eval pack stable at its current widened shape unless watchlist/query breadth grows again
+2. keep `Ayn al-Bayda Water Pumping Station` reopened as exact evidence, but not as `water_02` until plant-scale damage is defendable
+3. use `Okhmatdyt Children's Hospital` as the inland medical-aid anchor while the next aid-positive search runs in parallel
+4. search fresh parcel-tight food / water / aid leads in parallel instead of overworking the same soft boards
+5. keep `Bahri Water Station` as the exact water control row for this tranche
+6. keep the planner eval pack stable at its current widened shape unless watchlist/query breadth grows again
 
 ## Stop rules
 

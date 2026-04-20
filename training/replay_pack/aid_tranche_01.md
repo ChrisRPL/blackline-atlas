@@ -8,9 +8,10 @@ Purpose:
 
 ## Current aid truth
 
-- promoted aid rows: `1`
+- promoted aid rows: `2`
   - `Port Sudan Aid Hub`
-- inland aid positives: `0`
+  - `Okhmatdyt Children's Hospital`
+- inland aid positives: `1`
 - exact aid / medical-aid controls:
   - `UNHCR Baghdad Warehouse`
   - `Mosul Medical City Hospital`
@@ -344,18 +345,17 @@ Reject:
   - current centroid anchor:
     - `50.451172, 30.479935`
 - status:
-  - `active_exact_lead_weather_limited`
+  - `added_to_non_demo_eval_as_reference_event`
 - next action:
   - bounded local SimSat pass on the campus anchor:
     - pre request `2024-07-01T08:00:00Z` -> returned `2024-06-30T09:06:31Z` with `7.950252` cloud
     - strike-day request `2024-07-08T12:00:00Z` -> returned `2024-07-08T09:16:27Z` with `86.164784` cloud
     - first post request `2024-07-12T08:00:00Z` -> returned `2024-07-10T09:06:29Z` with `20.704573` cloud
+    - cleaner post request `2024-07-15T08:00:00Z` -> returned `2024-07-13T09:16:26Z` with `0.132813` cloud
   - result:
     - exact campus is strong enough to keep
-    - first post-event frame is still too cloud-obscured for promotion
-  - next move:
-    - one tighter post-event weather check only
-    - if still obscured, keep as evidence-only and stop
+    - cleaner post-event frame clears the weather blocker
+    - tighter campus review is now strong enough for a real inland medical-aid event row
 - sources:
   - [Okhmatdyt official site](https://ohmatdyt.com.ua/en/)
   - [HRW on the July 8, 2024 attack](https://www.hrw.org/news/2024/07/11/russias-july-8-attack-childrens-hospital-ukraine)
@@ -368,8 +368,8 @@ Reject:
 3. keep `aid_02` `Lankien` and `aid_03` `Tyre` as evidence-only, not active parcel hunts
 4. keep `aid_07` `Taiz`, `aid_08` `Kunduz`, `aid_10` `Urum`, and `aid_11` `Abs` as archive-blocked retrospective leads only
 5. `UNHCR Baghdad` and `Mosul Medical City` are now the exact aid / medical-aid control anchors
-6. use `aid_12` `Okhmatdyt` as the next bounded inland aid pass
-7. if `Okhmatdyt` stays weather-limited, stop and reopen inland food before adding more aid notes
+6. `aid_12` `Okhmatdyt` now fills the missing inland medical-aid positive slot
+7. next aid move should be a second exact inland aid positive only if it beats `Okhmatdyt` on parcel truth and readability
 
 ## Stop rules
 

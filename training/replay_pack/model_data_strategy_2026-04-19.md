@@ -11,11 +11,11 @@ Purpose:
 ### VLM / image-lane truth
 
 - `hero_eval.jsonl`: `2`
-- `non_demo_eval.jsonl`: `13`
-- overall annotated rows: `15`
-- non-demo positives: `5`
+- `non_demo_eval.jsonl`: `14`
+- overall annotated rows: `16`
+- non-demo positives: `6`
   - `food`: `2`
-  - `aid`: `1`
+  - `aid`: `2`
   - `mobility`: `1`
   - `water`: `1`
 - non-demo controls / stress: `8`
@@ -23,7 +23,7 @@ Purpose:
   - `food`: `3`
   - `aid`: `2`
 - split shape:
-  - `holdout_geo`: `4`
+  - `holdout_geo`: `5`
   - `holdout_stress`: `8`
   - `dev`: `1`
   - `train`: `0`
@@ -44,7 +44,7 @@ Implication:
 - current frozen planner eval rows:
   - `training/replay_pack/agent_command_eval.jsonl`: `30`
 - current watchlist assets:
-  - `15`
+  - `16`
 
 Implication:
 
@@ -126,9 +126,10 @@ If planner fine-tuning is ever revisited later:
 ## Next data order
 
 1. keep `Novus Logistics Center` on hold unless a clearly better post-strike frame appears
-2. reopen inland aid on `Okhmatdyt Children's Hospital` as the next parcel-tight exact lead
+2. keep `Okhmatdyt Children's Hospital` as the new inland medical-aid anchor
 3. keep `Ayn al-Bayda Water Pumping Station` reopened as evidence, but not as a second water positive until the signal is honest
-4. planner eval expansion only after watchlist/query breadth grows again
+4. search fresh parcel-tight food / water / aid leads in parallel instead of overworking the same soft boards
+5. planner eval expansion only after watchlist/query breadth grows again
 
 ## Current recommendation
 
@@ -166,4 +167,4 @@ Net:
 
 - benchmark lane is now useful for research and hackathon proof
 - core Blackline priority does not change
-- next core move remains `Novus Logistics Center`
+- next core move is fresh gold-row acquisition, not more benchmark churn

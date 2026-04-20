@@ -13,5 +13,10 @@
     "latitude": 36.507778,
     "longitude": 37.961389,
     "size_km": 0.8
+  },
+  "okhmatdyt_hospital_strike": {
+    "latitude": 50.451172,
+    "longitude": 30.479935,
+    "size_km": 0.5
   }
 }
