@@ -17,11 +17,12 @@ Prompted-baseline gate, `2026-04-18`:
 - important read:
   - all `4` real positive anchors were still discarded
   - water was the biggest civilian-usefulness gap
-  - the lane now has its first exact positive, but still needs a second positive before it is meaningfully covered
+  - the lane now has its second exact positive, but still needs a third positive before it is meaningfully covered
 
-- promoted water rows: `1`
-- exact promoted water row:
+- promoted water rows: `2`
+- exact promoted water rows:
   - `Arbaat Dam`
+  - `Kakhovka Dam`
 - exact water controls:
   - `Ras Abu Jarjur`
   - `Doha West`
@@ -210,6 +211,40 @@ Rule:
   - [UNICEF on the February 2024 strike and four-day outage](https://www.unicef.org/ukraine/en/stories/keeping-water-flowing-despite-attacks)
   - [Detector Media on the 2024-02-20 filtration-station destruction claim](https://en.detector.media/post/state-terrorism-why-does-russia-resort-to-the-tactics-of-pure-terror-against-ukraine)
   - [OSM parcel](https://www.openstreetmap.org/way/105507934)
+
+### `water_12` Kakhovka Dam
+
+- country:
+  - `Ukraine`
+- type:
+  - dam / reservoir water source
+- why:
+  - macro-visible breach and reservoir drainage are unambiguous at Sentinel scale
+  - strong civilian water-supply consequences are explicitly documented in public humanitarian reporting
+  - fast, high-confidence second water positive anchor
+- parcel state:
+  - exact public clue:
+    - `OSM dam ways 1478535993 / 1478535994`
+  - capture center:
+    - `46.776336, 33.371477`
+- bounded probe truth:
+  - clean pre-event frame:
+    - `2023-06-04T08:00:00Z` -> `2023-06-03T08:57:21Z` with `3.621003` cloud
+  - clean post-event frame:
+    - `2023-07-05T08:00:00Z` -> `2023-07-03T08:57:22Z` with `8.647124` cloud
+  - result:
+    - exact site is good
+    - breach and drained-reservoir morphology are obvious
+    - mixed hydro semantics are real, but the row is still defensible as civilian water-infrastructure disruption
+- status:
+  - `added_to_non_demo_eval_as_reference_event`
+- next action:
+  - keep as a retrospective major water-source anchor
+  - no more bounded review needed unless we later want a tighter crop override
+- sources:
+  - [AP on the 2023-06-06 breach](https://apnews.com/article/russia-ukraine-war-dam-collapse-kakhovka-kherson-daacdc431f42912dfb91548794f03a3c)
+  - [WHO on water-supply disruption after the breach](https://www.who.int/europe/news/item/13-06-2023-who-steps-up-its-humanitarian-response-in-southern-ukraine-following-the-destruction-of-the-kakhovka-dam)
+  - [Global Energy Observatory facility clue](https://globalenergyobservatory.org/geoid/43018)
 
 ## Promotion candidates
 

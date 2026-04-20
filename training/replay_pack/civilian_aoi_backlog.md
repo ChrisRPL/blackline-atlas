@@ -552,6 +552,30 @@ Primary buckets:
   - [Detector Media on Kramatorsk filtration station](https://en.detector.media/post/state-terrorism-why-does-russia-resort-to-the-tactics-of-pure-terror-against-ukraine)
   - [OSM water-works parcel](https://www.openstreetmap.org/way/105507934)
 
+#### Kakhovka Dam
+- asset type: `water_infrastructure`
+- why:
+  - huge public civilian water-source event
+  - breach morphology is immediately legible at Sentinel scale
+  - strong benchmark value for water-service disruption
+- coordinates:
+  - `46.776336, 33.371477`
+- bounded probe:
+  - clean pre:
+    - `2023-06-04` -> `2023-06-03T08:57:21Z` with `3.621003` cloud
+  - clean post:
+    - `2023-07-05` -> `2023-07-03T08:57:22Z` with `8.647124` cloud
+- status:
+  - `added_to_non_demo_eval_as_reference_event`
+- notes:
+  - exact site is good
+  - breach and drained-reservoir change are obvious
+  - mixed hydro / water semantics are real, but the row is still defensible on civilian water-supply impact
+- sources:
+  - [AP on the 2023-06-06 breach](https://apnews.com/article/russia-ukraine-war-dam-collapse-kakhovka-kherson-daacdc431f42912dfb91548794f03a3c)
+  - [WHO on water-supply disruption](https://www.who.int/europe/news/item/13-06-2023-who-steps-up-its-humanitarian-response-in-southern-ukraine-following-the-destruction-of-the-kakhovka-dam)
+  - [Global Energy Observatory facility clue](https://globalenergyobservatory.org/geoid/43018)
+
 #### Maisat / Wazzani Water Project
 - asset type: `water_infrastructure`
 - why:

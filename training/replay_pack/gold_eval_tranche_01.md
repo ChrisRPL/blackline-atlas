@@ -8,7 +8,7 @@ Purpose:
 
 ## Tranche composition
 
-Open `8` near-term slots:
+Original `8`-slot tranche:
 
 - `food`: `2`
 - `water`: `3`
@@ -52,21 +52,20 @@ It is the first acquisition batch with the best chance of moving coverage, not j
   - `done`
 
 #### `water_02`
-- target type:
-  - pumping station or reservoir compound
-- current lead quality:
-  - `Ayn al-Bayda Water Pumping Station` is the cleanest exact next lead
-  - archive blocker is resolved, but plant-scale structural signal is still too soft
-- next action:
-  - keep as evidence unless a tighter plant-only disruption signal becomes defendable
+- target:
+  - `Kakhovka Dam`
+- role:
+  - retrospective major water-source anchor
+- status:
+  - `done`
 
 #### `water_03`
 - target type:
   - desalination plant only if clearly water-first
 - current lead quality:
-  - category now has one exact positive and four exact controls
+  - category now has two exact positives and four exact controls
   - `Kramatorsk Filtration Station` now fills the last missing control slot as an exact stress row
-  - second positive row does not exist yet
+  - one more positive row is still missing
   - working memo: `training/replay_pack/water_tranche_01.md`
 - next action:
   - use only if plant identity is exact and visual disruption is honest

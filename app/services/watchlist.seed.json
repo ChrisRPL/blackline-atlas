@@ -169,5 +169,14 @@
     "latitude": 48.731001,
     "longitude": 37.601078,
     "hero": false
+  },
+  {
+    "asset_id": "kakhovka_dam_01",
+    "asset_name": "Kakhovka Dam",
+    "asset_type": "water_infrastructure",
+    "region": "Nova Kakhovka, Kherson Oblast",
+    "latitude": 46.776336,
+    "longitude": 33.371477,
+    "hero": false
   }
 ]

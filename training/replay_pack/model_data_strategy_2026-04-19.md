@@ -11,19 +11,19 @@ Purpose:
 ### VLM / image-lane truth
 
 - `hero_eval.jsonl`: `2`
-- `non_demo_eval.jsonl`: `17`
-- overall annotated rows: `19`
-- non-demo positives: `7`
+- `non_demo_eval.jsonl`: `18`
+- overall annotated rows: `20`
+- non-demo positives: `8`
   - `food`: `3`
   - `aid`: `2`
   - `mobility`: `1`
-  - `water`: `1`
+  - `water`: `2`
 - non-demo controls / stress: `10`
   - `water`: `4`
   - `food`: `3`
   - `aid`: `3`
 - split shape:
-  - `holdout_geo`: `6`
+  - `holdout_geo`: `7`
   - `holdout_stress`: `10`
   - `dev`: `1`
   - `train`: `0`
@@ -44,7 +44,7 @@ Implication:
 - current frozen planner eval rows:
   - `training/replay_pack/agent_command_eval.jsonl`: `30`
 - current watchlist assets:
-  - `19`
+  - `20`
 
 Implication:
 
@@ -67,19 +67,19 @@ First gold-set target stays:
 
 Current gap against that target:
 
-- total missing rows: `5`
-- missing positives: `5`
+- total missing rows: `4`
+- missing positives: `4`
   - `food`: `1`
-  - `water`: `2`
+  - `water`: `1`
   - `aid`: `1`
   - `mobility`: `1`
 - missing controls / stress: `0`
 
 Most important missing pieces:
 
-1. one second exact water positive
+1. one more exact water positive
 2. one second aid positive with inland parcel lock
-3. more exact positive anchors before any adapter prep
+3. one more exact food or mobility positive before adapter prep
 4. first real train split after the gold eval set is no longer tiny
 
 ## What the agent model still needs
