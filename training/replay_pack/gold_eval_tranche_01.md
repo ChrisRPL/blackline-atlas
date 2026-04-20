@@ -147,6 +147,7 @@ Do in parallel with positive cases:
 
 External benchmark seeds now exist:
 
+- `internal_public_seed_v0`
 - `xbd_public_seed_v0`
 - `spacenet8_public_seed_v0`
 
@@ -155,6 +156,13 @@ They are useful for:
 - frozen baseline research
 - cross-model comparison
 - hackathon materials
+- first real Liquid cohort proof
+
+Current read:
+
+- internal public seed is benchmark-only, not the full internal slice
+- first real Liquid cohort still collapsed on all three ready slices
+- that does not change the core tranche order below
 
 They are not replacements for the internal tranche below.
 

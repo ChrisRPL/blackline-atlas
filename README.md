@@ -192,7 +192,9 @@ python3 training/scripts/run_lfm25_vl_prompted_eval.py \
 
 python3 training/scripts/run_model_benchmark.py \
   --manifest training/replay_pack/model_benchmark_manifest.json \
-  --slice-id internal_non_demo
+  --slice-id internal_public_seed_v0 \
+  --slice-id xbd_public_seed_v0 \
+  --slice-id spacenet8_public_seed_v0
 ```
 
 Benchmark notes:
@@ -201,6 +203,8 @@ Benchmark notes:
   [training/replay_pack/external_benchmark_research_2026-04-19.md](training/replay_pack/external_benchmark_research_2026-04-19.md)
 - runnable cohort/slice config lives in
   [training/replay_pack/model_benchmark_manifest.json](training/replay_pack/model_benchmark_manifest.json)
+- tiny checked-in internal research seed lives in
+  [training/internal_benchmarks/blackline_public_seed](training/internal_benchmarks/blackline_public_seed)
 - default benchmark output lands in `training/eval_runs/model-benchmark/`
 - HTTP benchmark models are activated by envs such as:
   - `BLACKLINE_LIQUID_BENCHMARK_ENDPOINT`
@@ -217,6 +221,12 @@ Benchmark notes:
 - second ready external slice:
   - [training/external_benchmarks/spacenet8_public_seed](training/external_benchmarks/spacenet8_public_seed)
   - runnable now through `spacenet8_public_seed_v0`
+- full internal non-demo benchmark remains the primary target, but it still needs
+  frozen SimSat bytes:
+  - materializer: `python3 training/scripts/materialize_internal_benchmark_slice.py`
+  - env path for auto-materialization inside the runner:
+    - `BLACKLINE_INTERNAL_BENCHMARK_CAPTURE_MANIFEST`
+    - or `BLACKLINE_INTERNAL_BENCHMARK_HISTORICAL_ENDPOINT`
 - for heavier cohort runs or cross-model sweeps:
   - prefer Hugging Face Jobs over long local runs
   - keep the internal Blackline slice as the primary scorecard
@@ -233,7 +243,7 @@ hf jobs uv run \
   --repo-url https://github.com/ChrisRPL/blackline-atlas.git \
   --ref "$(git rev-parse HEAD)" \
   --model-key liquid_lfm25_vl_450m_http \
-  --slice-id internal_non_demo \
+  --slice-id internal_public_seed_v0 \
   --slice-id xbd_public_seed_v0 \
   --slice-id spacenet8_public_seed_v0
 ```

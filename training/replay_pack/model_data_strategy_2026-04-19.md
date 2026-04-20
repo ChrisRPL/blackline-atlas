@@ -144,6 +144,7 @@ For external datasets, cross-model cohort, and benchmark structure:
 
 External-ready slices now:
 
+- `internal_public_seed_v0`
 - `xbd_public_seed_v0`
 - `spacenet8_public_seed_v0`
 
@@ -152,3 +153,17 @@ Rule:
 - external slices help eval, transfer research, and hackathon storytelling
 - they do not increase the internal Blackline gold-row count
 - they should not be mixed into the core gold metrics without explicit remapping
+- the tiny internal public seed is benchmark-only, not the full internal non-demo benchmark
+
+First real cohort result:
+
+- see [liquid_benchmark_cohort_2026-04-20.md](./liquid_benchmark_cohort_2026-04-20.md)
+- summary:
+  - internal public seed: schema-valid but recall-collapsed
+  - `xBD` and `SpaceNet 8`: transfer outputs malformed under the frozen prompt contract
+
+Net:
+
+- benchmark lane is now useful for research and hackathon proof
+- core Blackline priority does not change
+- next core move remains `Novus Logistics Center`

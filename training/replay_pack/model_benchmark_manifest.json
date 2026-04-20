@@ -49,13 +49,22 @@
   ],
   "slices": [
     {
+      "slice_id": "internal_public_seed_v0",
+      "title": "Blackline internal public seed",
+      "tier": "internal",
+      "status": "ready",
+      "dataset_path": "training/internal_benchmarks/blackline_public_seed/blackline_candidate_eval.jsonl",
+      "source_label": "Blackline Atlas",
+      "notes": "Tiny checked-in internal benchmark seed derived from a published comparison artifact. Use for immediate cohort runs only."
+    },
+    {
       "slice_id": "internal_non_demo",
       "title": "Blackline internal non-demo",
       "tier": "internal",
       "status": "ready",
       "dataset_path": "training/replay_pack/non_demo_eval.jsonl",
       "source_label": "Blackline Atlas",
-      "notes": "Primary exact-schema benchmark."
+      "notes": "Primary internal benchmark target. Auto-materialize from frozen SimSat captures via materialize_internal_benchmark_slice.py when capture source is available."
     },
     {
       "slice_id": "xbd_public_seed_v0",
