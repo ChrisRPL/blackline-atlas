@@ -409,7 +409,7 @@ Reject:
   - exact OSM hospital campus relation center:
     - `50.4745388, 34.9228822`
 - status:
-  - `hold_exact_pair_signal_soft`
+  - `added_to_non_demo_eval_as_exact_medical_control`
 - next action:
   - local SimSat now has an honest clean pre/post pair:
     - `2021-09-13T08:46:20Z` with `4.521637` cloud
@@ -418,6 +418,7 @@ Reject:
     - exact campus truth is good
     - archive is no longer the blocker
     - bounded review still does not show a defendable hospital-compound disruption strong enough for promotion
+    - promoted into `non_demo_eval.jsonl` as an exact inland medical-aid signal-soft control
 - sources:
   - [Trostianets hospital contacts](https://trostyanecka.crl.org.ua/feedback/)
   - [PHR on Russia’s assault on Ukraine’s health-care system](https://phr.org/our-work/resources/russias-assault-on-ukraines-health-care-system/)
@@ -428,10 +429,10 @@ Reject:
 2. keep `aid_01` `El Obeid` frozen until the ABS complex itself becomes publicly mappable
 3. keep `aid_02` `Lankien` and `aid_03` `Tyre` as evidence-only, not active parcel hunts
 4. keep `aid_07` `Taiz`, `aid_08` `Kunduz`, `aid_10` `Urum`, and `aid_11` `Abs` as archive-blocked retrospective leads only
-5. `UNHCR Baghdad` and `Mosul Medical City` are now the exact aid / medical-aid control anchors
+5. `UNHCR Baghdad`, `Mosul Medical City`, and `Trostianets` are now the exact aid / medical-aid control anchors
 6. `aid_12` `Okhmatdyt` now fills the missing inland medical-aid positive slot
-7. `aid_14` `Trostianets` is now the strongest inland medical backup board
-8. `aid_13` `Bashtanka` stays as a second exact inland medical backup, but not a promotion-ready row
+7. `aid_13` `Bashtanka` is now the strongest exact inland medical backup board
+8. `aid_14` `Trostianets` no longer needs more probe churn unless a tighter future crop changes the read
 9. next aid move should be a second exact inland aid positive only if it beats `Okhmatdyt` on parcel truth and readability
 
 ## Stop rules

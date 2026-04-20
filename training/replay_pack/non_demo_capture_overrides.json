@@ -23,5 +23,10 @@
     "latitude": 50.245008,
     "longitude": 31.814647,
     "size_km": 0.5
+  },
+  "trostianets_city_hospital_signal_soft": {
+    "latitude": 50.474539,
+    "longitude": 34.922882,
+    "size_km": 0.5
   }
 }

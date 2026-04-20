@@ -170,8 +170,8 @@ They are not replacements for the internal tranche below.
 2. keep `Wad Medani main water treatment plant` as an exact water evidence lead, but not a promotion until plant-scale change is defendable
 3. keep `Ayn al-Bayda Water Pumping Station` reopened as exact evidence, but not as `water_02` until plant-scale damage is defendable
 4. use `Okhmatdyt Children's Hospital` as the inland medical-aid anchor while the next aid-positive search runs in parallel
-5. keep `Trostianets City Hospital` as the strongest inland medical backup board
-6. keep `Bashtanka Multiprofile Hospital` as a second inland medical backup, but not a promotion-ready row
+5. count `Trostianets City Hospital` as an exact inland medical signal-soft control
+6. keep `Bashtanka Multiprofile Hospital` as the strongest remaining inland medical backup board, but not a promotion-ready row
 7. keep `Veggy Trend Invest` on hold; the `Soborna 111/111A` campus still reads too mixed for another probe
 8. keep `Novus Logistics Center` on hold unless a clearly better post-strike frame appears than the current January/March pair
 9. keep `Bahri Water Station` as the exact water control row for this tranche

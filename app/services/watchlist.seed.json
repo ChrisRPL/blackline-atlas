@@ -151,5 +151,14 @@
     "latitude": 50.245008,
     "longitude": 31.814647,
     "hero": false
+  },
+  {
+    "asset_id": "trostianets_hospital_01",
+    "asset_name": "Trostianets City Hospital",
+    "asset_type": "medical_aid_node",
+    "region": "Trostianets, Sumy Oblast",
+    "latitude": 50.474539,
+    "longitude": 34.922882,
+    "hero": false
   }
 ]

@@ -676,6 +676,7 @@ def test_stub_service_default_watchlist_includes_real_civilian_sites() -> None:
     assert "manbij_silos_01" in asset_ids
     assert "okhmatdyt_01" in asset_ids
     assert "roshen_yahotyn_01" in asset_ids
+    assert "trostianets_hospital_01" in asset_ids
     assert asset_by_id["demo_port_01"].evidence_state == "live_demo"
     assert asset_by_id["beirut_port_01"].evidence_state == "reference_event"
     assert asset_by_id["arbaat_dam_01"].evidence_state == "reference_event"
@@ -687,6 +688,7 @@ def test_stub_service_default_watchlist_includes_real_civilian_sites() -> None:
     assert asset_by_id["manbij_silos_01"].evidence_state == "reference_control"
     assert asset_by_id["okhmatdyt_01"].evidence_state == "reference_event"
     assert asset_by_id["roshen_yahotyn_01"].evidence_state == "reference_event"
+    assert asset_by_id["trostianets_hospital_01"].evidence_state == "reference_control"
 
 
 def test_stub_service_keeps_water_category_when_query_mentions_dam(
@@ -1309,6 +1311,32 @@ def test_stub_service_site_compare_returns_reference_event_for_seeded_food_site_
     assert response.compare is not None
     assert response.compare.current_frame.accepted_for_alerting is True
     assert "reference event evidence" in response.summary
+
+
+def test_stub_service_site_compare_returns_reference_control_for_seeded_medical_soft_site() -> None:
+    service = StubAtlasService(
+        Settings(
+            app_env="test",
+            app_port=8000,
+            model_version="lfm2.5-vl-450m-prompted",
+            simsat_current_endpoint=None,
+            simsat_baseline_endpoint=None,
+            mapbox_token_present=False,
+            watchlist_path=None,
+        )
+    )
+
+    response = service.run_agent_query(
+        AtlasAgentQueryRequest(tool="site_compare", site_id="trostianets_hospital_01"),
+    )
+
+    assert response.status == "ok"
+    assert response.tool == "site_compare"
+    assert response.focus_asset_id == "trostianets_hospital_01"
+    assert response.focus_alert_id is None
+    assert response.compare is not None
+    assert response.compare.current_frame.accepted_for_alerting is False
+    assert response.alerts == []
 
 
 class _FakeHTTPResponse:
