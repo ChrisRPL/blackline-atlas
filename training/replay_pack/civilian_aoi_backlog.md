@@ -286,6 +286,37 @@ Primary buckets:
   - [OpenStreetMap footprint](https://www.openstreetmap.org/way/1211057658)
   - [Kyiv Independent on the strike](https://kyivindependent.com/ukrainian-supermarket-chain-torn-apart-by-russian-attack//)
 
+#### Veggy Trend Invest vegetable storehouse
+- asset type: `logistics_hub`
+- why:
+  - single-function inland food-storage site
+  - strong civilian story for Kyiv-region fresh-food supply
+  - cleaner semantics than mixed logistics parks
+- status: `hold_address_anchor_parcel_not_locked`
+- coordinates:
+  - strongest current address-zone clue:
+    - `50.595098, 30.857445`
+- notes:
+  - public company sources place the storehouse at `Soborna St. 111, Velyka Dymerka`
+  - source trail says the complex includes:
+    - vegetable storehouse
+    - weigh-house
+    - substation
+    - open reservoir
+    - pumping-station premises
+  - first wide local SimSat scout on the strongest current road-segment clue was not enough:
+    - pre `2022-03-08T09:06:16Z` with `81.201971` cloud
+    - post `2022-04-07T09:06:13Z` with `38.7281` cloud
+    - later post `2022-04-22T09:06:07Z` with `99.042356` cloud
+  - result:
+    - semantics are promising
+    - address truth is good
+    - parcel lock is still not good enough for a real row
+    - only reopen after one better parcel clue appears inside the Soborna 111 industrial campus
+- sources:
+  - [The Page dossier on Veggy Trend Invest](https://en.thepage.ua/dossier/vegi-trend)
+  - [UACRISIS note on the warehouse burning during shelling](https://uacrisis.org/en/march-2022/10)
+
 #### Gedaref Grain Silos
 - asset type: `grain_storage_complex`
 - why:

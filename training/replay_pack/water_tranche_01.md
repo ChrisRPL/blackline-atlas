@@ -141,6 +141,39 @@ Rule:
     - keep as morphology evidence only
     - not currently actionable in the local SimSat archive lane
 
+### `water_10` Wad Medani main water treatment plant
+
+- country:
+  - `Sudan`
+- type:
+  - pure treatment plant
+- why:
+  - exact public parcel clue exists
+  - strong civilian dependence in Aj Jazirah
+  - low tactical drift compared with mixed utility sites
+- parcel state:
+  - OSM way clue:
+    - `585752244`
+  - centroid:
+    - `14.318616, 33.583363`
+- bounded probe truth:
+  - exact parcel requests returned readable clean windows:
+    - `2024-11-20T08:00:00Z` -> `2024-11-17T08:26:15Z` with `0.00006` cloud
+    - `2024-12-20T08:00:00Z` -> `2024-12-17T08:26:09Z` with `0.00113` cloud
+    - `2025-01-05T08:00:00Z` -> `2025-01-01T08:26:16Z` with `0.000342` cloud
+    - `2025-02-10T08:00:00Z` -> `2025-02-05T08:26:42Z` with `0.000136` cloud
+  - result:
+    - exact parcel is good
+    - weather is no longer the blocker
+    - bounded `0.8 km` then `0.4 km` review still failed to show a defendable plant-scale structural scar
+- status:
+  - `hold_exact_parcel_signal_soft`
+- next action:
+  - keep only as exact evidence unless a later clean window shows a clearer compound-scale disruption than the current January/February pair
+- sources:
+  - [UNICEF Sudan SitRep No. 29, March 2025](https://www.unicef.org/media/170421/file/UNICEF%20Sudan%20Humanitarian%20Situation%20Report%20No.%2029%20-%20March%202025.pdf)
+  - [AidData project page with OSM way clue](https://china.aiddata.org/projects/208/)
+
 ## Promotion candidates
 
 ### `water_01` Bahri Water Treatment Plant

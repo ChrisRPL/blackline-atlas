@@ -127,9 +127,11 @@ If planner fine-tuning is ever revisited later:
 
 1. keep `Novus Logistics Center` on hold unless a clearly better post-strike frame appears
 2. keep `Okhmatdyt Children's Hospital` as the new inland medical-aid anchor
-3. keep `Ayn al-Bayda Water Pumping Station` reopened as evidence, but not as a second water positive until the signal is honest
-4. search fresh parcel-tight food / water / aid leads in parallel instead of overworking the same soft boards
-5. planner eval expansion only after watchlist/query breadth grows again
+3. keep `Veggy Trend Invest` as the fastest new food lead, but not until the Soborna `111` campus is parcel-tight
+4. keep `Wad Medani main water treatment plant` as exact water evidence, but not as a second water positive until the signal is honest
+5. keep `Ayn al-Bayda Water Pumping Station` reopened as evidence, but not as a second water positive until the signal is honest
+6. keep `Bashtanka Multiprofile Hospital` as a weather-blocked inland medical backup
+7. planner eval expansion only after watchlist/query breadth grows again
 
 ## Current recommendation
 
