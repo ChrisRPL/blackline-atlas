@@ -298,6 +298,7 @@ Primary buckets:
     - `50.595098, 30.857445`
 - notes:
   - public company sources place the storehouse at `Soborna St. 111, Velyka Dymerka`
+  - municipal emergency-planning records also place mixed industrial activity at `Soborna 111A`
   - source trail says the complex includes:
     - vegetable storehouse
     - weigh-house
@@ -312,10 +313,45 @@ Primary buckets:
     - semantics are promising
     - address truth is good
     - parcel lock is still not good enough for a real row
-    - only reopen after one better parcel clue appears inside the Soborna 111 industrial campus
+    - campus now reads mixed, not clearly single-function
+    - stop probing until one better parcel clue appears inside the Soborna `111/111A` industrial campus
 - sources:
   - [The Page dossier on Veggy Trend Invest](https://en.thepage.ua/dossier/vegi-trend)
   - [UACRISIS note on the warehouse burning during shelling](https://uacrisis.org/en/march-2022/10)
+  - [Velyka Dymerka emergency-planning annex](https://vdsr.gov.ua/sites/vdsr.gov.ua/files/document_files/%D0%B4%D0%BE%D0%B4%D0%B0%D1%82%D0%BE%D0%BA%20%D1%80%D1%96%D1%88%D0%B5%D0%BD%D0%BD%D1%8F%20%E2%84%96%20219%20%D0%BF%D0%BB%D0%B0%D0%BD.pdf)
+
+#### Roshen Yahotyn logistics center
+- asset type: `logistics_hub`
+- why:
+  - exact finished-goods food logistics campus
+  - much cleaner semantics than mixed industrial parks
+  - direct civilian-supply relevance
+- status: `hold_exact_parcel_weather_blocked`
+- coordinates:
+  - Roshen public map marker:
+    - `50.245008, 31.814647`
+- notes:
+  - exact public address:
+    - `Filatova 112-B, Yahotyn, Kyiv Oblast`
+  - Roshen's own site exposes an exact map marker for the logistics center
+  - first bounded local SimSat pass on the exact marker was fully weather-blocked:
+    - `2026-01-23T08:56:23Z` with `99.997187` cloud
+    - `2026-02-07T08:56:18Z` with `99.993944` cloud
+    - `2026-02-17T08:56:20Z` with `99.962109` cloud
+    - `2026-03-04T08:56:24Z` with `95.539671` cloud
+    - later checks stayed blocked:
+      - `2026-03-19T09:06:42Z` with `99.980569` cloud
+      - `2026-04-03T08:56:24Z` with `87.620318` cloud
+      - `2026-04-18T09:06:39Z` with `77.825803` cloud
+  - result:
+    - parcel truth is strong
+    - event semantics are strong
+    - no honest current row yet because the entire post-strike archive window is clouded
+- sources:
+  - [Roshen logistics center page](https://www.roshen.com/ua/uk/kontakty/logistychnyy-kompleks)
+  - [Mercor project page for the Roshen logistics center](https://mercor.com.ua/project/logistychnyj-czentr-roshen/)
+  - [Ukrainska Pravda on the 2026-02-07 strike](https://www.pravda.com.ua/eng/news/2026/02/07/8019840/)
+  - [Interfax-Ukraine follow-up](https://en.interfax.com.ua/news/general/1142921.html)
 
 #### Gedaref Grain Silos
 - asset type: `grain_storage_complex`

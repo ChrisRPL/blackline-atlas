@@ -166,14 +166,15 @@ Current read:
 
 They are not replacements for the internal tranche below.
 
-1. keep `Veggy Trend Invest` as the fastest new inland food lead, but do not probe again until the Soborna `111` campus is parcel-tight
-2. keep `Novus Logistics Center` on hold unless a clearly better post-strike frame appears than the current January/March pair
-3. keep `Wad Medani main water treatment plant` as an exact water evidence lead, but not a promotion until plant-scale change is defendable
-4. keep `Ayn al-Bayda Water Pumping Station` reopened as exact evidence, but not as `water_02` until plant-scale damage is defendable
-5. use `Okhmatdyt Children's Hospital` as the inland medical-aid anchor while the next aid-positive search runs in parallel
-6. keep `Bashtanka Multiprofile Hospital` as the cleanest inland medical backup, but weather-blocked
-7. keep `Bahri Water Station` as the exact water control row for this tranche
-8. keep the planner eval pack stable at its current widened shape unless watchlist/query breadth grows again
+1. keep `Roshen Yahotyn logistics center` as the best new inland food lead; exact parcel is solved, but the whole post-strike window is cloud-blocked
+2. keep `Veggy Trend Invest` on hold; the `Soborna 111/111A` campus still reads too mixed for another probe
+3. keep `Novus Logistics Center` on hold unless a clearly better post-strike frame appears than the current January/March pair
+4. keep `Wad Medani main water treatment plant` as an exact water evidence lead, but not a promotion until plant-scale change is defendable
+5. keep `Ayn al-Bayda Water Pumping Station` reopened as exact evidence, but not as `water_02` until plant-scale damage is defendable
+6. use `Okhmatdyt Children's Hospital` as the inland medical-aid anchor while the next aid-positive search runs in parallel
+7. keep `Bashtanka Multiprofile Hospital` as the cleanest inland medical backup, but weather-blocked
+8. keep `Bahri Water Station` as the exact water control row for this tranche
+9. keep the planner eval pack stable at its current widened shape unless watchlist/query breadth grows again
 
 ## Stop rules
 
