@@ -1,33 +1,64 @@
 # Blackline Atlas
 
-Blackline Atlas is a map-first civilian lifeline disruption triage system.
+Blackline Atlas is a map-first civilian lifeline disruption triage system built during the Liquid AI x DPhi Space hackathon.
 
-Built during the Liquid AI x DPhi Space hackathon.
+It compares current satellite imagery against historical baselines for a small, curated watchlist of public civilian lifelines, then emits structured alerts only when macro-scale visible disruption is defensible.
 
-It watches a small, curated set of public civilian lifelines such as food hubs, water infrastructure, aid access nodes, and a narrow set of clearly civilian mobility chokepoints, compares current satellite imagery against historical baselines, suppresses low-value frames locally, and emits compact structured alerts only when there is evidence of macro-scale visible disruption.
+## What it does
 
-## At a glance
-
-- Sentinel-first current-vs-baseline disruption checks
-- structured machine-readable alerts, not chatty summaries
-- map-first operator UI with an agent command dock
+- civilian lifeline monitoring, not general surveillance
+- map-first operator workflow with an agent command dock
+- structured alert generation, not chatty summarization
 - deterministic replay and cached fallback paths
-- strict civilian, non-tactical scope
+- Sentinel-first time-aware change checks
 
-## Repo tree
+## Scope
+
+Blackline Atlas is intentionally narrow.
+
+We prioritize:
+- food infrastructure
+- water infrastructure
+- aid nodes
+- a small set of clearly civilian mobility chokepoints
+
+We do not aim to support:
+- tactical targeting
+- strike support
+- military asset ranking
+- tiny-object surveillance
+- route or convoy intelligence
+
+## Current status
+
+Prototype, but real:
+
+- backend product loop works end to end
+- map-first UI and deterministic agent contract are live
+- replay-safe and cached fallback paths are in place
+- internal eval lane is real but still small
+- fine-tuning is not the critical path yet
+
+Current reality:
+- internal annotated eval set exists and drives the core product
+- external benchmark seeds exist for auxiliary transfer testing
+- prompted baseline and benchmark runners exist
+- no trustworthy train split yet
+- the biggest bottleneck is still data quality and coverage, not framework work
+
+## Repo layout
 
 ```text
 blackline-atlas/
-├── app/
-│   ├── api/         FastAPI routes
-│   ├── core/        config and app wiring
-│   ├── schemas/     typed boundaries for assets, frames, alerts, replay, health
-│   └── services/    runtime spine, planner seam, replay/eval helpers, watchlist
+├── app/                     backend routes, services, schemas
 ├── training/
-│   ├── replay_pack/ annotated eval rows, tranche plans, acquisition memos
-│   └── scripts/     SimSat capture, corpus build, eval, prompted baseline runs
-├── tests/           API, service, eval, and UI regressions
-└── ui/              same-origin map-first shell and static assets
+│   ├── replay_pack/         internal eval rows, tranche plans, research notes
+│   ├── external_benchmarks/ public benchmark seed slices
+│   ├── internal_benchmarks/ tiny checked-in internal benchmark seeds
+│   └── scripts/             capture, corpus build, eval, benchmark helpers
+├── tests/                   API, runtime, eval, and UI regressions
+├── ui/                      same-origin map-first shell and assets
+└── docs/                    stable product and training docs
 ```
 
 ## Screens
@@ -40,67 +71,7 @@ Real analyzed case, Port Sudan Aid Hub before/after:
 
 ![Port Sudan Aid Hub comparison](ui/assets/blackline-portsudan-comparison.png)
 
-## Why this exists
-
-Most satellites still downlink raw pixels.
-Blackline Atlas downlinks operator-ready disruption alerts.
-
-This repo is optimized for:
-- a narrow, credible civilian monitoring scope
-- one clear end-to-end demonstration path
-- structured outputs over chatty text
-- deterministic replay and cached fallback paths
-
-## How it works
-
-1. Fetch current Sentinel imagery for a small curated watchlist.
-2. Pair it with a historical baseline.
-3. Suppress low-value frames locally.
-4. Emit a compact structured alert only when macro-visible disruption is defensible.
-
-## What this is not
-
-Do not turn this into:
-- tactical targeting
-- strike support
-- military asset ranking
-- precise battle-damage claims
-- tiny-object surveillance
-
-## Current status
-
-This repo is in a strong prototype state, not a finished product:
-
-- end-to-end product loop works
-- map-first shell and deterministic agent contract are live
-- replay-safe and cached fallback paths are in place
-- real eval/data lane exists, but the gold set is still small
-- model fine-tuning is not the critical path yet
-
-## What works today
-
-This repo contains:
-- a FastAPI backend skeleton
-- typed schemas for assets, frames, replay, metrics, and alerts
-- optional Mapbox inspection context on accepted alerts when a token is present
-- a same-origin UI shell at `/ui`
-- routes for the core product loop
-- a tiny replay-pack exporter and offline eval harness
-- a SimSat Sentinel capture-manifest exporter for freezing real current/baseline pairs
-- a Liquid-compatible corpus freezer that joins SimSat captures with replay labels
-- tests for API and service behavior
-
-## Where community help matters most
-
-Useful OSS contributions now:
-
-- better civilian-lifeline eval cases with exact public evidence
-- more negative/control cases, not just hero positives
-- UI polish for map readability, mobile behavior, and operator flow
-- tighter replay/demo reliability
-- dataset tooling for freezing and reviewing real Sentinel pairs
-
-## Fast start
+## Quick start
 
 ```bash
 cp .env.example .env
@@ -108,16 +79,17 @@ python3 -m pip install -e ".[dev]"
 make dev
 ```
 
-Then open `http://127.0.0.1:8000/docs`.
-The read-only UI shell lives at `http://127.0.0.1:8000/ui`.
+Then open:
+- API docs: `http://127.0.0.1:8000/docs`
+- UI shell: `http://127.0.0.1:8000/ui`
 
-## Local SimSat lane
+## Local data lane
 
-Verified local bring-up for the official hackathon data source:
+Primary local data source:
+- SimSat historical Sentinel: `http://localhost:9005/data/image/sentinel`
+- SimSat current Sentinel: `http://localhost:9005/data/current/image/sentinel`
 
-- dashboard: `http://localhost:8000`
-- historical Sentinel: `http://localhost:9005/data/image/sentinel`
-- current Sentinel: `http://localhost:9005/data/current/image/sentinel`
+Bring-up:
 
 ```bash
 git clone https://github.com/DPhi-Space/SimSat.git ~/Projects/oss/SimSat
@@ -127,27 +99,7 @@ docker compose up -d
 curl http://localhost:9005/
 ```
 
-Note:
-- the current SimSat stack requires a non-empty `MAPBOX_ACCESS_TOKEN` at boot, even for Sentinel-only smoke tests
-
-Freeze one real capture pack, then build and score the held-out corpus:
-
-```bash
-python3 training/scripts/capture_simsat_manifest.py \
-  --historical-endpoint http://localhost:9005/data/image/sentinel \
-  --output-dir /tmp/blackline-simsat-capture
-
-python3 training/scripts/build_lfm25_vl_corpus.py \
-  --capture-manifest /tmp/blackline-simsat-capture/simsat_capture_manifest.json \
-  --output-dir /tmp/blackline-lfm25-vl-v1
-
-python3 training/scripts/eval_structured_outputs.py \
-  --dataset /tmp/blackline-lfm25-vl-v1/blackline_candidate_eval.jsonl
-```
-
-If one annotated case needs a tighter crop or shifted center to keep the
-facility honest at Sentinel scale, keep that override in a manifest-only JSON
-file keyed by `case_id` and pass it at capture time:
+Freeze one capture pack:
 
 ```bash
 python3 training/scripts/capture_simsat_manifest.py \
@@ -157,39 +109,31 @@ python3 training/scripts/capture_simsat_manifest.py \
   --output-dir /tmp/non_demo_simsat_capture
 ```
 
-Rule:
-- keep capture overrides out of `non_demo_eval.jsonl`; labels stay canonical, overrides stay capture-only
-
-First real non-demo annotations live in:
-
-- `training/replay_pack/non_demo_eval.jsonl`
-- sourced next-case backlog: `training/replay_pack/civilian_aoi_backlog.md`
-- broad 2026 conflict-location triage memo: `training/replay_pack/conflict_aoi_triage_2026-04-17.md`
-- gold-set acquisition matrix: `training/replay_pack/gold_eval_acquisition_matrix.md`
-- first acquisition batch plan: `training/replay_pack/gold_eval_tranche_01.md`
-- first water acquisition memo: `training/replay_pack/water_tranche_01.md`
-
-Prompted Liquid eval path:
+Build and score the prompted baseline corpus:
 
 ```bash
-python3 -m pip install -e ".[dev,vlm]"
-cat training/replay_pack/hero_eval.jsonl training/replay_pack/non_demo_eval.jsonl > /tmp/phase3_eval.jsonl
-
-python3 training/scripts/capture_simsat_manifest.py \
-  --historical-endpoint http://localhost:9005/data/image/sentinel \
-  --cases-dataset /tmp/phase3_eval.jsonl \
-  --capture-overrides training/replay_pack/non_demo_capture_overrides.json \
-  --output-dir /tmp/phase3_simsat_capture
-
 python3 training/scripts/build_lfm25_vl_corpus.py \
-  --capture-manifest /tmp/phase3_simsat_capture/simsat_capture_manifest.json \
-  --replay-dataset /tmp/phase3_eval.jsonl \
-  --output-dir /tmp/phase3_corpus
+  --capture-manifest /tmp/non_demo_simsat_capture/simsat_capture_manifest.json \
+  --replay-dataset training/replay_pack/non_demo_eval.jsonl \
+  --output-dir /tmp/non_demo_corpus
 
 python3 training/scripts/run_lfm25_vl_prompted_eval.py \
-  --dataset /tmp/phase3_corpus/blackline_candidate_eval.jsonl \
-  --output-dir /tmp/phase3_run_full
+  --dataset /tmp/non_demo_corpus/blackline_candidate_eval.jsonl \
+  --output-dir /tmp/non_demo_eval_run
+```
 
+## Benchmarking
+
+Ready benchmark slices:
+- internal public research seed:
+  - `training/internal_benchmarks/blackline_public_seed`
+- external public seeds:
+  - `training/external_benchmarks/xbd_public_seed`
+  - `training/external_benchmarks/spacenet8_public_seed`
+
+Run the first cohort:
+
+```bash
 python3 training/scripts/run_model_benchmark.py \
   --manifest training/replay_pack/model_benchmark_manifest.json \
   --slice-id internal_public_seed_v0 \
@@ -197,235 +141,28 @@ python3 training/scripts/run_model_benchmark.py \
   --slice-id spacenet8_public_seed_v0
 ```
 
-Benchmark notes:
-
-- cross-model cohort + external dataset plan live in
-  [training/replay_pack/external_benchmark_research_2026-04-19.md](training/replay_pack/external_benchmark_research_2026-04-19.md)
-- runnable cohort/slice config lives in
-  [training/replay_pack/model_benchmark_manifest.json](training/replay_pack/model_benchmark_manifest.json)
-- tiny checked-in internal research seed lives in
-  [training/internal_benchmarks/blackline_public_seed](training/internal_benchmarks/blackline_public_seed)
-- default benchmark output lands in `training/eval_runs/model-benchmark/`
-- HTTP benchmark models are activated by envs such as:
-  - `BLACKLINE_LIQUID_BENCHMARK_ENDPOINT`
-  - `BLACKLINE_SMOLVLM2_ENDPOINT`
-  - `BLACKLINE_QWEN25VL3B_ENDPOINT`
-  - `BLACKLINE_INTERNVL25_4B_ENDPOINT`
-- external slice normalizers:
-  - `python3 training/scripts/normalize_xbd_slice.py --seed-dataset ...`
-  - `python3 training/scripts/normalize_spacenet8_slice.py --seed-dataset ...`
-  - notes: [training/external_benchmarks/README.md](training/external_benchmarks/README.md)
-- first ready external slice:
-  - [training/external_benchmarks/xbd_public_seed](training/external_benchmarks/xbd_public_seed)
-  - runnable now through `xbd_public_seed_v0`
-- second ready external slice:
-  - [training/external_benchmarks/spacenet8_public_seed](training/external_benchmarks/spacenet8_public_seed)
-  - runnable now through `spacenet8_public_seed_v0`
-- full internal non-demo benchmark remains the primary target, but it still needs
-  frozen SimSat bytes:
-  - materializer: `python3 training/scripts/materialize_internal_benchmark_slice.py`
-  - env path for auto-materialization inside the runner:
-    - `BLACKLINE_INTERNAL_BENCHMARK_CAPTURE_MANIFEST`
-    - or `BLACKLINE_INTERNAL_BENCHMARK_HISTORICAL_ENDPOINT`
-- for heavier cohort runs or cross-model sweeps:
-  - prefer Hugging Face Jobs over long local runs
-  - keep the internal Blackline slice as the primary scorecard
-
-HF Jobs fallback, smallest repo-native path:
-
-```bash
-hf jobs uv run \
-  --flavor l4x1 \
-  --timeout 2h \
-  --secrets HF_TOKEN \
-  -v hf://buckets/<your-namespace>/blackline-benchmark:/outputs \
-  training/scripts/run_model_benchmark_hf_job.py \
-  --repo-url https://github.com/ChrisRPL/blackline-atlas.git \
-  --ref "$(git rev-parse HEAD)" \
-  --model-key liquid_lfm25_vl_450m_http \
-  --slice-id internal_public_seed_v0 \
-  --slice-id xbd_public_seed_v0 \
-  --slice-id spacenet8_public_seed_v0
-```
-
-Notes:
-
-- helper downloads the repo snapshot for `--ref`, installs `.[dev,vlm]`, writes a temp manifest, and rewrites only the selected model to `transformers_local`
-- tracked manifest stays untouched; this is benchmark-helper-only, not runtime behavior
-- outputs land in `/outputs/model-benchmark` by default, so mounting a HF bucket at `/outputs` preserves the scorecards and predictions
-- best first HF hardware:
-  - `l4x1`
-  - fallback: `a10g-small`
-- keep one job per model; repeat with a different `--model-key` for comparators
-
-Candidate selection rule:
-
-- prefer lifelines a civilian near a country or city would actually care about:
-  food first, then water, then aid, then mobility
-- prefer assets serving nearby population centers over globally famous infrastructure
-- keep ports as one lane, not the whole product
-- keep major bridges and ports on a shorter leash than food, water, and aid
-- reject cases where Sentinel cannot show an honest macro change
-- avoid mixed-use military ports, fuel depots, and frontline route intel
-
-## Core API routes
-
-- `GET /health`
-- `GET /assets`
-- `GET /agent/tools`
-- `POST /agent/query`
-- `POST /replay/start`
-- `POST /replay/stop`
-- `GET /replay/status`
-- `GET /frames/current`
-- `GET /frames/baseline`
-- `GET /alerts`
-- `GET /metrics`
-
-## Hugging Face workflows
-
-This project can optionally use Hugging Face tooling for:
-- dataset creation
-- evaluation
-- training on HF Jobs
-- Hub artifact handling
-
-## Agent control plane
-
-The `/agent/query` contract is now deterministic-first:
-
-- text planner chooses a tool and filters
-- deterministic backend tools execute:
-  - `latest_alerts`
-  - `biggest_disruptions`
-  - `site_compare`
-  - `explain_alert`
-- trust, ranking, replay/live truth, and alert evidence remain backend-owned
-
-Optional text-planner envs:
-
-```bash
-AGENT_MODEL_VERSION=lfm2.5-1.2b-instruct
-AGENT_ENDPOINT=
-AGENT_HTTP_ENABLED=
-AGENT_API_KEY=
-AGENT_PROVIDER=atlas_json_http
-```
-
-For Liquid-served `LFM2.5-1.2B-Instruct`, the smallest honest live path is an
-OpenAI-compatible chat-completions endpoint:
-
-```bash
-AGENT_MODEL_VERSION=LiquidAI/LFM2.5-1.2B-Instruct
-AGENT_ENDPOINT=https://your-liquid-host/v1/chat/completions
-AGENT_HTTP_ENABLED=true
-AGENT_PROVIDER=openai_chat_completions_http
-```
-
-For a local endpoint, Liquid’s Ollama docs work with the same provider contract:
-
-```bash
-ollama serve
-ollama pull hf.co/LiquidAI/LFM2.5-1.2B-Instruct-GGUF
-
-AGENT_MODEL_VERSION=hf.co/LiquidAI/LFM2.5-1.2B-Instruct-GGUF
-AGENT_ENDPOINT=http://127.0.0.1:11434/v1/chat/completions
-AGENT_HTTP_ENABLED=true
-AGENT_PROVIDER=openai_chat_completions_http
-```
-
-This app now sends `response_format={"type":"json_object"}` on the planner
-chat-completions path to improve strict JSON routing.
-
-Optional candidate-model envs:
-
-```bash
-MODEL_VERSION=lfm2.5-vl-450m-prompted
-MODEL_ENDPOINT=
-MODEL_HTTP_ENABLED=
-MODEL_API_KEY=
-MODEL_PROVIDER=atlas_json_http
-```
-
-For a shared OpenAI-compatible multimodal candidate lane, including `vLLM` behind
-the endpoint, use:
-
-```bash
-MODEL_VERSION=LiquidAI/LFM2.5-VL-450M
-MODEL_ENDPOINT=https://your-vllm-or-liquid-host/v1/chat/completions
-MODEL_HTTP_ENABLED=true
-MODEL_PROVIDER=openai_chat_completions_http
-```
-
-For Apple Silicon, this repo now includes a thin local Liquid-VL bridge instead
-of pretending `vLLM` is the default laptop path:
-
-```bash
-uv venv .venv
-source .venv/bin/activate
-uv pip install -e ".[dev,local-vlm]"
-
-HF_TOKEN=... \
-python training/scripts/serve_liquid_vl_openai.py \
-  --model-id LiquidAI/LFM2.5-VL-450M-MLX-4bit \
-  --port 8014
-
-MODEL_VERSION=LiquidAI/LFM2.5-VL-450M-MLX-4bit
-MODEL_ENDPOINT=http://127.0.0.1:8014/v1/chat/completions
-MODEL_HTTP_ENABLED=true
-MODEL_PROVIDER=openai_chat_completions_http
-```
-
-To prove the candidate backend against real SimSat image bytes instead of stub
-refs, run the smoke helper on one annotated case:
-
-```bash
-python training/scripts/run_candidate_backend_smoke.py \
-  --historical-endpoint http://localhost:9005/data/image/sentinel \
-  --model-endpoint http://127.0.0.1:8014/v1/chat/completions \
-  --case-id beirut_port_blast
-```
-
 Important:
-- Liquid’s published MLX quickstart currently pins `mlx-vlm==0.3.9`
-- this repo mirrors that pin in `.[local-vlm]`
-- Liquid’s MLX processor path still pulls in `torch` + `torchvision` here, so
-  `.[local-vlm]` includes them
-- the smoke helper defaults to a `120s` gateway timeout so first-run downloads do
-  not masquerade as model failures
+- external slices are auxiliary research slices
+- they do not replace the internal Blackline gold set
+- the full internal non-demo benchmark still needs frozen SimSat bytes or a capture manifest
 
-## Model gateway
+For heavier runs, prefer Hugging Face Jobs. See [docs/HF_JOBS.md](docs/HF_JOBS.md).
 
-Blackline now uses one small shared Python model gateway for both:
-- candidate inference
-- agent planning
+## Key docs
 
-The gateway owns only:
-- provider request shaping
-- HTTP transport
-- in-memory prompt/frame cache
-- raw text result telemetry
+- [docs/BLUEPRINT.md](docs/BLUEPRINT.md)
+- [docs/SPECS.md](docs/SPECS.md)
+- [docs/TRAINING_BLUEPRINT.md](docs/TRAINING_BLUEPRINT.md)
+- [docs/HF_JOBS.md](docs/HF_JOBS.md)
 
-It does not own:
-- prompts
-- alert parsing/policy
-- planner sanitization/routing
+Most working research notes live under:
+- [training/replay_pack/](training/replay_pack)
 
-That is intentional. We want a thin product-owned seam, not a custom ML framework.
+## What needs help
 
-`/health` now also exposes a tiny `debug` block with the last model/planner gateway
-event per lane. This is last-event status only, not a rolling trace.
-
-Frame-cache note:
-- old zero-byte cached image refs now self-heal on read
-- cached metadata is reused only when its local image paths still exist and have bytes
-
-To score the first frozen command flows against a running app:
-
-```bash
-python3 -m training.scripts.run_agent_command_eval --base-url http://127.0.0.1:8000
-```
-
-`/health` now exposes both `model_backend` and `agent_backend`, plus machine-readable
-planner config flags, so the UI can tell fixture planner vs live planner without
-parsing prose.
+Best contributions now:
+- more exact civilian lifeline eval cases
+- more controls and false-positive traps
+- stronger map readability and mobile polish
+- better benchmark slices for transfer testing
+- tooling for freezing and reviewing real Sentinel pairs
