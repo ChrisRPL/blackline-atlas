@@ -11,20 +11,20 @@ Purpose:
 ### VLM / image-lane truth
 
 - `hero_eval.jsonl`: `2`
-- `non_demo_eval.jsonl`: `16`
-- overall annotated rows: `18`
+- `non_demo_eval.jsonl`: `17`
+- overall annotated rows: `19`
 - non-demo positives: `7`
   - `food`: `3`
   - `aid`: `2`
   - `mobility`: `1`
   - `water`: `1`
-- non-demo controls / stress: `9`
-  - `water`: `3`
+- non-demo controls / stress: `10`
+  - `water`: `4`
   - `food`: `3`
   - `aid`: `3`
 - split shape:
   - `holdout_geo`: `6`
-  - `holdout_stress`: `9`
+  - `holdout_stress`: `10`
   - `dev`: `1`
   - `train`: `0`
 
@@ -44,7 +44,7 @@ Implication:
 - current frozen planner eval rows:
   - `training/replay_pack/agent_command_eval.jsonl`: `30`
 - current watchlist assets:
-  - `18`
+  - `19`
 
 Implication:
 
@@ -67,13 +67,13 @@ First gold-set target stays:
 
 Current gap against that target:
 
-- total missing rows: `6`
+- total missing rows: `5`
 - missing positives: `5`
   - `food`: `1`
   - `water`: `2`
   - `aid`: `1`
   - `mobility`: `1`
-- missing controls / stress: `1`
+- missing controls / stress: `0`
 
 Most important missing pieces:
 

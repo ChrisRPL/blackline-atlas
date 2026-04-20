@@ -160,5 +160,14 @@
     "latitude": 50.474539,
     "longitude": 34.922882,
     "hero": false
+  },
+  {
+    "asset_id": "kramatorsk_filtration_01",
+    "asset_name": "Kramatorsk Filtration Station",
+    "asset_type": "water_infrastructure",
+    "region": "Kramatorsk, Donetsk Oblast",
+    "latitude": 48.731001,
+    "longitude": 37.601078,
+    "hero": false
   }
 ]

@@ -7,17 +7,18 @@ Use this to grow `training/replay_pack/non_demo_eval.jsonl` from a tiny demo-adj
 - demo/smoke rows:
   - `hero_eval.jsonl`: `2`
 - real/manual non-demo rows:
-  - `non_demo_eval.jsonl`: `16`
+  - `non_demo_eval.jsonl`: `17`
 - current real positive non-demo mix:
   - `food`: `3` (`Beirut Grain Silos`, `Silpo Kvitneve Distribution Center`, `Roshen Yahotyn Logistics Center`)
   - `aid`: `2` (`Port Sudan Aid Hub`, `Okhmatdyt Children's Hospital`)
   - `mobility`: `1` (`Baltimore Bridge`)
   - `water`: `1` (`Arbaat Dam`)
 - current non-demo controls / stress rows:
-  - `water`: `3`
+  - `water`: `4`
     - `Ras Abu Jarjur`
     - `Doha West`
     - `Bahri Water Station`
+    - `Kramatorsk Filtration Station`
   - `food`: `3`
     - `Vasyshcheve ATB Distribution Center`
     - `Gedaref Grain Silos`
@@ -27,16 +28,16 @@ Use this to grow `training/replay_pack/non_demo_eval.jsonl` from a tiny demo-adj
     - `Mosul Medical City Hospital`
     - `Trostianets City Hospital`
 - overall annotated rows:
-  - `18`
+  - `19`
 - current split shape:
   - `holdout_geo`: `6`
   - `dev`: `1`
-  - `holdout_stress`: `9`
+  - `holdout_stress`: `10`
   - `train`: `0`
 - train rows:
   - `0`
 
-This means the pipeline is mostly ready, but the dataset is still far too small and skewed to represent the app’s intended civilian use.
+This means the pipeline is mostly ready, but the dataset still lacks enough positive coverage to represent the app’s intended civilian use.
 
 ## Goal
 
@@ -70,6 +71,16 @@ Rule:
   - visible difference from non-conflict drift, construction, or normal operations
 
 ### Total first gold set: `22`
+
+## Remaining gap
+
+- total missing rows: `5`
+- missing positives: `5`
+  - `food`: `1`
+  - `water`: `2`
+  - `aid`: `1`
+  - `mobility`: `1`
+- missing controls / stress: `0`
 
 ## Category rules
 
@@ -226,7 +237,7 @@ Better order now:
 - count `Roshen Yahotyn Logistics Center` as the current third food/event anchor
 - count `Gedaref Grain Silos` as an exact food no-event anchor, not as a missing positive
 
-1. reopen `aid` only for a parcel-tight inland depot or hospital campus, not another soft warehouse guess
-2. keep `water` open only for a second exact positive, not more soft control churn
+1. keep `water` open only for a second exact positive; the control quota is now filled
+2. reopen `aid` only for a parcel-tight inland depot or hospital campus, not another soft warehouse guess
 3. keep `Novus Logistics Center` as opportunistic food follow-up only if a clearly better weather window appears
 4. keep `mobility` narrow

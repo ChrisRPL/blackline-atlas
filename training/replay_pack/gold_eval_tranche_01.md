@@ -64,11 +64,13 @@ It is the first acquisition batch with the best chance of moving coverage, not j
 - target type:
   - desalination plant only if clearly water-first
 - current lead quality:
-  - category now has one exact positive and three exact controls
+  - category now has one exact positive and four exact controls
+  - `Kramatorsk Filtration Station` now fills the last missing control slot as an exact stress row
   - second positive row does not exist yet
   - working memo: `training/replay_pack/water_tranche_01.md`
 - next action:
   - use only if plant identity is exact and visual disruption is honest
+  - keep tranche pressure on a new positive, not more water-control churn
 
 ### Aid
 

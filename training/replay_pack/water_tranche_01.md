@@ -26,6 +26,7 @@ Prompted-baseline gate, `2026-04-18`:
   - `Ras Abu Jarjur`
   - `Doha West`
   - `Bahri Water Station`
+  - `Kramatorsk Filtration Station`
 - strongest existing evidence:
   - `Doha West` -> exact site, but clouded + mixed-use
   - `Ras Abu Jarjur` -> exact site, but no honest macro-visible change
@@ -173,6 +174,42 @@ Rule:
 - sources:
   - [UNICEF Sudan SitRep No. 29, March 2025](https://www.unicef.org/media/170421/file/UNICEF%20Sudan%20Humanitarian%20Situation%20Report%20No.%2029%20-%20March%202025.pdf)
   - [AidData project page with OSM way clue](https://china.aiddata.org/projects/208/)
+
+### `water_11` Kramatorsk Filtration Station
+
+- country:
+  - `Ukraine`
+- type:
+  - filtration station
+- why:
+  - exact named OSM water-works parcel exists
+  - clear civilian drinking-water role for Kramatorsk
+  - strong stress-control shape: real strike reporting, clean pair, still no honest plant-scale scar
+- parcel state:
+  - exact public way:
+    - `OSM way 105507934`
+  - centroid:
+    - `48.7310014, 37.6010781`
+- bounded probe truth:
+  - exact parcel requests returned one honest clean pre and post pair:
+    - `2023-09-25T08:00:00Z` -> `2023-09-20T08:36:48Z` with `3.190563` cloud
+    - `2024-04-25T08:00:00Z` -> `2024-04-22T08:36:45Z` with `3.575131` cloud
+  - strike-window frames stayed weak:
+    - `2024-02-21T08:00:00Z` -> `2024-02-20T08:46:40Z` with `99.959219` cloud
+    - `2024-02-28T08:00:00Z` -> `2024-02-27T08:36:45Z` with `13.590509` cloud
+  - result:
+    - exact parcel is good
+    - clean pair exists
+    - compound-scale signal is still too soft and mixed for a defendable station-specific positive at Sentinel scale
+- status:
+  - `added_to_non_demo_eval_as_exact_control`
+- next action:
+  - keep as a water stress/control row
+  - do not spend more bounded review unless a cleaner plant-scale scar appears
+- sources:
+  - [UNICEF on the February 2024 strike and four-day outage](https://www.unicef.org/ukraine/en/stories/keeping-water-flowing-despite-attacks)
+  - [Detector Media on the 2024-02-20 filtration-station destruction claim](https://en.detector.media/post/state-terrorism-why-does-russia-resort-to-the-tactics-of-pure-terror-against-ukraine)
+  - [OSM parcel](https://www.openstreetmap.org/way/105507934)
 
 ## Promotion candidates
 

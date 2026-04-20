@@ -524,6 +524,34 @@ Primary buckets:
   - [ICRC on Al-Khafsa water station role](https://www.icrcnewsroom.org/story/en/2058/syria-urgent-action-needed-to-address-humanitarian-needs)
   - [SNHR on `2025-02-23` damage to the station main building](https://news.snhr.org/2025/02/24/sdf-bomb-a-water-station-in-e-aleppo-february-23-2025/)
 
+#### Kramatorsk Filtration Station
+- asset type: `water_infrastructure`
+- why:
+  - exact named filtration-station parcel exists in OSM
+  - clear civilian drinking-water role
+  - clean public event trail for the February 2024 strike
+- coordinates:
+  - `48.7310014, 37.6010781`
+- bounded probe:
+  - clean pre:
+    - `2023-09-25` -> `2023-09-20T08:36:48Z` with `3.190563` cloud
+  - clean post:
+    - `2024-04-25` -> `2024-04-22T08:36:45Z` with `3.575131` cloud
+  - strike-window frames:
+    - `2024-02-21` -> `2024-02-20T08:46:40Z` with `99.959219` cloud
+    - `2024-02-28` -> `2024-02-27T08:36:45Z` with `13.590509` cloud
+- status:
+  - `added_to_non_demo_eval_as_exact_control`
+- notes:
+  - exact parcel and event story are both real
+  - clean pair exists
+  - compound-scale signal still too soft for a defendable station-specific positive at Sentinel scale
+  - useful as a water stress/control row instead
+- sources:
+  - [UNICEF on the February 2024 strike](https://www.unicef.org/ukraine/en/stories/keeping-water-flowing-despite-attacks)
+  - [Detector Media on Kramatorsk filtration station](https://en.detector.media/post/state-terrorism-why-does-russia-resort-to-the-tactics-of-pure-terror-against-ukraine)
+  - [OSM water-works parcel](https://www.openstreetmap.org/way/105507934)
+
 #### Maisat / Wazzani Water Project
 - asset type: `water_infrastructure`
 - why:

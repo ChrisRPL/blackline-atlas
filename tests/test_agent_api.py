@@ -175,6 +175,25 @@ def test_agent_query_site_compare_returns_reference_control_evidence_for_trostia
     assert payload["compare"]["current_frame"]["accepted_for_alerting"] is False
 
 
+def test_agent_query_site_compare_returns_reference_control_evidence_for_kramatorsk() -> None:
+    client = TestClient(create_app())
+
+    response = client.post(
+        "/agent/query",
+        json={"tool": "site_compare", "site_id": "kramatorsk_filtration_01"},
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["tool"] == "site_compare"
+    assert payload["status"] == "ok"
+    assert payload["focus_asset_id"] == "kramatorsk_filtration_01"
+    assert payload["focus_alert_id"] is None
+    assert payload["alerts"] == []
+    assert payload["compare"]["asset_id"] == "kramatorsk_filtration_01"
+    assert payload["compare"]["current_frame"]["accepted_for_alerting"] is False
+
+
 def test_agent_query_explain_alert_uses_selected_asset_context() -> None:
     client = TestClient(create_app())
 
