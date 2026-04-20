@@ -221,6 +221,33 @@ Benchmark notes:
   - prefer Hugging Face Jobs over long local runs
   - keep the internal Blackline slice as the primary scorecard
 
+HF Jobs fallback, smallest repo-native path:
+
+```bash
+hf jobs uv run \
+  --flavor l4x1 \
+  --timeout 2h \
+  --secrets HF_TOKEN \
+  -v hf://buckets/<your-namespace>/blackline-benchmark:/outputs \
+  training/scripts/run_model_benchmark_hf_job.py \
+  --repo-url https://github.com/ChrisRPL/blackline-atlas.git \
+  --ref "$(git rev-parse HEAD)" \
+  --model-key liquid_lfm25_vl_450m_http \
+  --slice-id internal_non_demo \
+  --slice-id xbd_public_seed_v0 \
+  --slice-id spacenet8_public_seed_v0
+```
+
+Notes:
+
+- helper downloads the repo snapshot for `--ref`, installs `.[dev,vlm]`, writes a temp manifest, and rewrites only the selected model to `transformers_local`
+- tracked manifest stays untouched; this is benchmark-helper-only, not runtime behavior
+- outputs land in `/outputs/model-benchmark` by default, so mounting a HF bucket at `/outputs` preserves the scorecards and predictions
+- best first HF hardware:
+  - `l4x1`
+  - fallback: `a10g-small`
+- keep one job per model; repeat with a different `--model-key` for comparators
+
 Candidate selection rule:
 
 - prefer lifelines a civilian near a country or city would actually care about:
