@@ -90,22 +90,25 @@ Rule:
   - exact public lead:
     - `36.224362, 37.566329`
 - status:
-  - `hold_pre_event_archive_blocked`
+  - `hold_archive_resolved_signal_still_soft`
 - next action:
   - bounded SimSat pass was run on the exact public lead
-  - pre-event side failed the hard gate:
+  - original blocker was the pre-event side:
     - request `2016-10-15T08:00:00Z` -> no image
     - request `2016-11-10T08:00:00Z` -> returned `2016-11-09T08:17:59Z` with `81.460319` cloud
     - request `2016-12-05T08:00:00Z` -> returned `2016-12-02T08:23:15Z` with `48.905083` cloud
     - wider pre sweep:
       - `2016-06-15`, `2016-07-10`, `2016-08-15`, `2016-09-10` -> no image
       - `2017-01-10` -> returned `2017-01-08T08:13:13Z` with `57.327253` cloud
+  - reopened local pass found one honest pre-event baseline:
+    - request `2016-11-22T08:00:00Z` -> returned `2016-11-19T08:18:06Z` with `9.476642` cloud
   - post side was readable:
     - request `2017-02-20T08:00:00Z` -> returned `2017-02-17T08:15:12Z` with `4.672619` cloud
     - request `2017-04-05T08:00:00Z` -> returned `2017-03-29T08:16:03Z` with `1.179413` cloud
   - result:
     - exact lead is good
-    - no honest baseline pair exists yet in the local archive lane
+    - archive blocker is resolved
+    - bounded `0.64 km` and tighter `0.4 km` parcel review still failed to show a defendable plant-scale structural change
   - keep crop on the station only, not surrounding pipeline politics
 - sources:
   - [UNICEF June 2025 sitrep](https://www.unicef.org/syria/media/20661/file/Syria-Humanitarian-situation-report-June-2025.pdf)

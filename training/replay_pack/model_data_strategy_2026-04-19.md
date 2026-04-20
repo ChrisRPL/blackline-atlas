@@ -125,9 +125,9 @@ If planner fine-tuning is ever revisited later:
 
 ## Next data order
 
-1. inland food positive expansion around `Novus Logistics Center` only if a clear post-strike window appears
-2. second water positive only when archive / parcel truth is real
-3. new inland aid lead search only if a parcel-tight candidate appears
+1. keep `Novus Logistics Center` on hold unless a clearly better post-strike frame appears
+2. reopen inland aid on `Okhmatdyt Children's Hospital` as the next parcel-tight exact lead
+3. keep `Ayn al-Bayda Water Pumping Station` reopened as evidence, but not as a second water positive until the signal is honest
 4. planner eval expansion only after watchlist/query breadth grows again
 
 ## Current recommendation

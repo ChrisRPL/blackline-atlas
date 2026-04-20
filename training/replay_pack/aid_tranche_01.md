@@ -327,6 +327,40 @@ Reject:
   - [MSF attack statement](https://www.msf.org/yemen-eleven-people-dead-and-least-19-injured-after-airstrike-hits-abs-hospital-hajjah)
   - [Mapcarta / OSM place anchor](https://mapcarta.com/27241474)
 
+### `aid_12` Okhmatdyt Children's Hospital, Kyiv
+
+- country:
+  - `Ukraine`
+- type:
+  - `medical_aid_node`
+- why:
+  - best new inland aid lead found after the current board stalled
+  - exact named civilian hospital campus
+  - very strong humanitarian fit and public-source identity
+- parcel state:
+  - official address:
+    - `V. Chornovola St. 28/1, Kyiv, 01135`
+  - exact OSM campus relation exists
+  - current centroid anchor:
+    - `50.451172, 30.479935`
+- status:
+  - `active_exact_lead_weather_limited`
+- next action:
+  - bounded local SimSat pass on the campus anchor:
+    - pre request `2024-07-01T08:00:00Z` -> returned `2024-06-30T09:06:31Z` with `7.950252` cloud
+    - strike-day request `2024-07-08T12:00:00Z` -> returned `2024-07-08T09:16:27Z` with `86.164784` cloud
+    - first post request `2024-07-12T08:00:00Z` -> returned `2024-07-10T09:06:29Z` with `20.704573` cloud
+  - result:
+    - exact campus is strong enough to keep
+    - first post-event frame is still too cloud-obscured for promotion
+  - next move:
+    - one tighter post-event weather check only
+    - if still obscured, keep as evidence-only and stop
+- sources:
+  - [Okhmatdyt official site](https://ohmatdyt.com.ua/en/)
+  - [HRW on the July 8, 2024 attack](https://www.hrw.org/news/2024/07/11/russias-july-8-attack-childrens-hospital-ukraine)
+  - [OpenStreetMap relation](https://www.openstreetmap.org/relation/4202052)
+
 ## Immediate next work order
 
 1. keep `aid_09` `Saudi Teaching Maternal Hospital` as evidence-only unless a tighter hospital-only read emerges
@@ -334,7 +368,8 @@ Reject:
 3. keep `aid_02` `Lankien` and `aid_03` `Tyre` as evidence-only, not active parcel hunts
 4. keep `aid_07` `Taiz`, `aid_08` `Kunduz`, `aid_10` `Urum`, and `aid_11` `Abs` as archive-blocked retrospective leads only
 5. `UNHCR Baghdad` and `Mosul Medical City` are now the exact aid / medical-aid control anchors
-6. reopen inland `food` before adding more aid notes
+6. use `aid_12` `Okhmatdyt` as the next bounded inland aid pass
+7. if `Okhmatdyt` stays weather-limited, stop and reopen inland food before adding more aid notes
 
 ## Stop rules
 

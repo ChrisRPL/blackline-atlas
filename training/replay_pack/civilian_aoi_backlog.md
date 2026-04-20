@@ -124,21 +124,24 @@ Primary buckets:
 - coordinates:
   - `36.224362, 37.566329`
 - bounded probe:
-  - pre side failed:
+  - first pass had looked archive-blocked:
     - `2016-10-15` -> no image
     - `2016-11-10` -> `2016-11-09T08:17:59Z` with `81.460319` cloud
     - `2016-12-05` -> `2016-12-02T08:23:15Z` with `48.905083` cloud
     - wider pre sweep `2016-06` through `2016-09` -> no image
     - `2017-01-10` -> `2017-01-08T08:13:13Z` with `57.327253` cloud
+  - reopening pass found one honest pre-event side:
+    - `2016-11-22` -> `2016-11-19T08:18:06Z` with `9.476642` cloud
   - post side usable:
     - `2017-02-20` -> `2017-02-17T08:15:12Z` with `4.672619` cloud
     - `2017-04-05` -> `2017-03-29T08:16:03Z` with `1.179413` cloud
 - status:
-  - `hold_pre_event_archive_blocked`
+  - `hold_archive_resolved_signal_still_soft`
 - notes:
   - exact lead is good
-  - local archive lane does not yet give an honest pre-event baseline
-  - do not promote until a real baseline exists
+  - pre-event archive blocker is no longer the main problem
+  - bounded `0.64 km` and tighter `0.4 km` pre/post review still did not isolate a defendable plant-scale damage signature
+  - do not promote yet; keep only as an exact reopened evidence lead
 - sources:
   - [UNICEF June 2025 sitrep](https://www.unicef.org/syria/media/20661/file/Syria-Humanitarian-situation-report-June-2025.pdf)
   - [Syrians for Truth and Justice geolocated station report](https://stj-sy.org/en/al-babs-thirsty-is-the-syrian-government-using-dehydration-as-a-punishment/)
@@ -242,7 +245,7 @@ Primary buckets:
   - user story is strong:
     - disruption near Kyiv
     - visible risk to grocery distribution, not just generic warehousing
-- status: `active_exact_lead_weather_blocked`
+- status: `hold_exact_pair_signal_too_soft`
 - coordinates:
   - recommended crop center:
     - `50.404419, 30.419830`
@@ -257,15 +260,23 @@ Primary buckets:
     - MIGA / EBRD project pages
     - and the named OSM footprint all converge on the same logistics-center parcel
   - best current crop recommendation is a `640 m x 640 m` square centered on `50.404419, 30.419830`
-  - bounded SimSat pass on the strongest current anchor was unusable on the strike windows:
+  - first bounded SimSat pass on the strongest current anchor was unusable on the strike windows:
     - `2025-11-10` -> `2025-11-09T09:06:42Z` with `99.992341` cloud
     - `2025-11-28` -> `2025-11-27T09:06:36Z` with `99.978232` cloud
     - `2025-12-10` -> `2025-12-07T09:06:35Z` with `99.998862` cloud
+  - reopening pass finally found readable post-event windows:
+    - `2026-01-15` -> `2026-01-14T09:16:20Z` with `4.837549` cloud
+    - `2026-03-15` -> `2026-03-12T09:16:44Z` with `18.896043` cloud
+  - best near-strike pre side remained weak but usable:
+    - `2025-11-20` -> `2025-11-19T09:06:43Z` with `22.037385` cloud
   - result:
     - exact product semantics: good
     - exact parcel lock: good
-    - current post-strike archive/weather truth: blocked
-  - keep as the next active food positive lead if a clean post-strike Sentinel frame appears
+    - current post-strike archive/weather truth: no longer blocked
+    - but the bounded pre/post review still fails the honesty bar:
+      - the January frame is snow-dominated
+      - the March frame is readable but still does not show a defendable parcel-scale macro scar
+  - keep on hold; stop spending time unless a clearly better post-strike frame appears
 - sources:
   - [Kyiv construction registry / parcel permit](https://e-construction.gov.ua/document_detail/doc_id=3227146532302095948/optype=100)
   - [Public cadastral map query](https://map.land.gov.ua/?cadnum=8000000000:75:199:0001)
