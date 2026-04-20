@@ -1,0 +1,101 @@
+{
+  "version": "2026-04-20",
+  "default_output_dir": "training/eval_runs/model-benchmark",
+  "models": [
+    {
+      "model_key": "liquid_lfm25_vl_450m_http",
+      "title": "Liquid LFM2.5-VL-450M (HTTP bridge)",
+      "model_id": "LiquidAI/LFM2.5-VL-450M",
+      "runner_kind": "openai_chat_completions_http",
+      "enabled": true,
+      "provider_id": "openai_chat_completions_http",
+      "endpoint_env": "BLACKLINE_LIQUID_BENCHMARK_ENDPOINT",
+      "api_key_env": "BLACKLINE_LIQUID_BENCHMARK_API_KEY",
+      "notes": "Best first cohort anchor. Use local MLX bridge or shared OpenAI-compatible endpoint."
+    },
+    {
+      "model_key": "smolvlm2_500m_http",
+      "title": "SmolVLM2-500M (HTTP bridge)",
+      "model_id": "HuggingFaceTB/SmolVLM2-500M-Video-Instruct",
+      "runner_kind": "openai_chat_completions_http",
+      "enabled": true,
+      "provider_id": "openai_chat_completions_http",
+      "endpoint_env": "BLACKLINE_SMOLVLM2_ENDPOINT",
+      "api_key_env": "BLACKLINE_SMOLVLM2_API_KEY",
+      "notes": "Small-size comparator."
+    },
+    {
+      "model_key": "qwen25vl_3b_http",
+      "title": "Qwen2.5-VL-3B (HTTP bridge)",
+      "model_id": "Qwen/Qwen2.5-VL-3B-Instruct",
+      "runner_kind": "openai_chat_completions_http",
+      "enabled": true,
+      "provider_id": "openai_chat_completions_http",
+      "endpoint_env": "BLACKLINE_QWEN25VL3B_ENDPOINT",
+      "api_key_env": "BLACKLINE_QWEN25VL3B_API_KEY",
+      "notes": "Upper-mid open comparator."
+    },
+    {
+      "model_key": "internvl25_4b_http",
+      "title": "InternVL2.5-4B (HTTP bridge)",
+      "model_id": "OpenGVLab/InternVL2_5-4B",
+      "runner_kind": "openai_chat_completions_http",
+      "enabled": true,
+      "provider_id": "openai_chat_completions_http",
+      "endpoint_env": "BLACKLINE_INTERNVL25_4B_ENDPOINT",
+      "api_key_env": "BLACKLINE_INTERNVL25_4B_API_KEY",
+      "notes": "Stronger open deployable comparator."
+    }
+  ],
+  "slices": [
+    {
+      "slice_id": "internal_non_demo",
+      "title": "Blackline internal non-demo",
+      "tier": "internal",
+      "status": "ready",
+      "dataset_path": "training/replay_pack/non_demo_eval.jsonl",
+      "source_label": "Blackline Atlas",
+      "notes": "Primary exact-schema benchmark."
+    },
+    {
+      "slice_id": "xbd_damage_slice_v1",
+      "title": "xBD normalized damage slice",
+      "tier": "external_task_fit",
+      "status": "planned",
+      "dataset_path": "training/external_benchmarks/xbd/blackline_candidate_eval.jsonl",
+      "source_label": "xBD / xView2",
+      "source_url": "https://www.sei.cmu.edu/projects/xview-2-challenge/",
+      "notes": "Disaster damage transfer and external eval."
+    },
+    {
+      "slice_id": "spacenet8_flood_slice_v1",
+      "title": "SpaceNet 8 normalized flood slice",
+      "tier": "external_task_fit",
+      "status": "planned",
+      "dataset_path": "training/external_benchmarks/spacenet8/blackline_candidate_eval.jsonl",
+      "source_label": "SpaceNet 8",
+      "source_url": "https://spacenet.ai/sn8-challenge/",
+      "notes": "Flooded building and route disruption slice."
+    },
+    {
+      "slice_id": "levir_cd_change_slice_v1",
+      "title": "LEVIR-CD normalized change slice",
+      "tier": "external_task_fit",
+      "status": "planned",
+      "dataset_path": "training/external_benchmarks/levir_cd/blackline_candidate_eval.jsonl",
+      "source_label": "LEVIR-CD",
+      "source_url": "https://justchenhao.github.io/LEVIR/",
+      "notes": "Change-detection discipline and no-change robustness."
+    },
+    {
+      "slice_id": "vrsbench_sanity_v1",
+      "title": "VRSBench sanity slice",
+      "tier": "external_sanity",
+      "status": "planned",
+      "dataset_path": "training/external_benchmarks/vrsbench/blackline_candidate_eval.jsonl",
+      "source_label": "VRSBench",
+      "source_url": "https://proceedings.neurips.cc/paper_files/paper/2024/file/05b7f821234f66b78f99e7803fffa78a-Paper-Datasets_and_Benchmarks_Track.pdf",
+      "notes": "Optional hackathon storytelling layer, not ship metric."
+    }
+  ]
+}

@@ -189,7 +189,24 @@ python3 training/scripts/build_lfm25_vl_corpus.py \
 python3 training/scripts/run_lfm25_vl_prompted_eval.py \
   --dataset /tmp/phase3_corpus/blackline_candidate_eval.jsonl \
   --output-dir /tmp/phase3_run_full
+
+python3 training/scripts/run_model_benchmark.py \
+  --manifest training/replay_pack/model_benchmark_manifest.json \
+  --slice-id internal_non_demo
 ```
+
+Benchmark notes:
+
+- cross-model cohort + external dataset plan live in
+  [training/replay_pack/external_benchmark_research_2026-04-19.md](training/replay_pack/external_benchmark_research_2026-04-19.md)
+- runnable cohort/slice config lives in
+  [training/replay_pack/model_benchmark_manifest.json](training/replay_pack/model_benchmark_manifest.json)
+- default benchmark output lands in `training/eval_runs/model-benchmark/`
+- HTTP benchmark models are activated by envs such as:
+  - `BLACKLINE_LIQUID_BENCHMARK_ENDPOINT`
+  - `BLACKLINE_SMOLVLM2_ENDPOINT`
+  - `BLACKLINE_QWEN25VL3B_ENDPOINT`
+  - `BLACKLINE_INTERNVL25_4B_ENDPOINT`
 
 Candidate selection rule:
 

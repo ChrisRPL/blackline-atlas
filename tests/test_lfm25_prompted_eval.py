@@ -3,6 +3,8 @@ from __future__ import annotations
 import json
 import sys
 from pathlib import Path
+from urllib.error import URLError
+from urllib.request import Request
 
 ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
@@ -237,3 +239,218 @@ def test_load_candidate_eval_cases_resolves_paths_against_dataset_root(tmp_path:
     assert case.baseline_image_path == str(
         (tmp_path / "images/hero_port_disruption/baseline.png").resolve()
     )
+
+
+def test_http_candidate_text_runner_uses_frozen_prompt_and_images(tmp_path: Path) -> None:
+    image_root = tmp_path / "images" / "bridge_case"
+    image_root.mkdir(parents=True)
+    (image_root / "current.png").write_bytes(b"current-bytes")
+    (image_root / "baseline.png").write_bytes(b"baseline-bytes")
+
+    dataset_path = _write_eval_case_dataset(
+        tmp_path=tmp_path,
+        case_id="bridge_case",
+        current_rel="images/bridge_case/current.png",
+        baseline_rel="images/bridge_case/baseline.png",
+    )
+    case = run_lfm25_vl_prompted_eval.load_candidate_eval_cases(dataset_path)[0]
+
+    requests: list[dict[str, object]] = []
+
+    def fake_urlopen(request: Request, timeout: float):
+        requests.append(
+            {
+                "timeout": timeout,
+                "body": json.loads(request.data.decode("utf-8")),
+            }
+        )
+        return _FakeHTTPResponse(
+            body=(
+                b'{"choices":[{"message":{"content":"'
+                b'{\\"event_type\\":\\"probable_access_obstruction\\",'
+                b'\\"severity\\":\\"high\\",\\"confidence\\":0.91,'
+                b'\\"bbox\\":[0.1,0.2,0.8,0.9],'
+                b'\\"civilian_impact\\":\\"public_mobility_disruption\\",'
+                b'\\"why\\":\\"Bridge span damaged.\\",'
+                b'\\"action\\":\\"downlink_now\\"}'
+                b'"}}]}'
+            )
+        )
+
+    telemetry = []
+    runner = run_lfm25_vl_prompted_eval.HttpCandidateTextRunner(
+        model_id="Qwen/Qwen2.5-VL-3B-Instruct",
+        endpoint="http://127.0.0.1:9999/v1/chat/completions",
+        provider_id="openai_chat_completions_http",
+        gateway=run_lfm25_vl_prompted_eval.ModelGateway(
+            timeout_seconds=4.0,
+            telemetry_sink=telemetry,
+            opener=fake_urlopen,
+        ),
+    )
+
+    text = runner.generate(case)
+
+    assert "Bridge span damaged." in text
+    body = requests[0]["body"]
+    assert body["model"] == "Qwen/Qwen2.5-VL-3B-Instruct"
+    assert body["messages"][0]["content"][0]["text"] == case.prompt["system"]
+    assert body["messages"][1]["content"][0]["text"] == case.prompt["user"]
+    assert body["messages"][1]["content"][1]["type"] == "image_url"
+    assert body["messages"][1]["content"][2]["type"] == "image_url"
+    assert telemetry[0].parse_ok is True
+
+
+def test_http_candidate_text_runner_does_not_fallback_to_expected_output(tmp_path: Path) -> None:
+    image_root = tmp_path / "images" / "bridge_case"
+    image_root.mkdir(parents=True)
+    (image_root / "current.png").write_bytes(b"current-bytes")
+    (image_root / "baseline.png").write_bytes(b"baseline-bytes")
+
+    dataset_path = _write_eval_case_dataset(
+        tmp_path=tmp_path,
+        case_id="bridge_case",
+        current_rel="images/bridge_case/current.png",
+        baseline_rel="images/bridge_case/baseline.png",
+    )
+    case = run_lfm25_vl_prompted_eval.load_candidate_eval_cases(dataset_path)[0]
+
+    def fake_urlopen(request: Request, timeout: float):
+        _ = request
+        _ = timeout
+        raise URLError("offline")
+
+    telemetry = []
+    runner = run_lfm25_vl_prompted_eval.HttpCandidateTextRunner(
+        model_id="LiquidAI/LFM2.5-VL-450M",
+        endpoint="http://127.0.0.1:9999/v1/chat/completions",
+        provider_id="openai_chat_completions_http",
+        gateway=run_lfm25_vl_prompted_eval.ModelGateway(
+            timeout_seconds=4.0,
+            telemetry_sink=telemetry,
+            opener=fake_urlopen,
+        ),
+    )
+
+    assert runner.generate(case) == ""
+    assert telemetry[0].fallback_reason == "http_error"
+    assert telemetry[0].parse_ok is False
+
+
+def _write_eval_case_dataset(
+    *,
+    tmp_path: Path,
+    case_id: str,
+    current_rel: str,
+    baseline_rel: str,
+) -> Path:
+    dataset_path = tmp_path / "blackline_candidate_eval.jsonl"
+    dataset_path.write_text(
+        json.dumps(
+            {
+                "case_id": case_id,
+                "split": "dev",
+                "asset": {
+                    "asset_id": "demo_bridge_01",
+                    "asset_name": "Demo Logistics Bridge",
+                    "asset_type": "bridge",
+                    "region": "Lower Danube",
+                    "latitude": 45.169,
+                    "longitude": 28.801,
+                    "hero": False,
+                },
+                "current_image_path": current_rel,
+                "baseline_image_path": baseline_rel,
+                "prompt": {
+                    "system": "Frozen system prompt",
+                    "user": "Frozen user prompt",
+                },
+                "model_output_text": (
+                    '{"event_type":"probable_access_obstruction","severity":"high",'
+                    '"confidence":0.95,"bbox":[0.31,0.28,0.72,0.66],'
+                    '"civilian_impact":"public_mobility_disruption",'
+                    '"why":"Bridge span is broken.","action":"downlink_now"}'
+                ),
+                "expected_candidate": {
+                    "event_type": "probable_access_obstruction",
+                    "severity": "high",
+                    "confidence": 0.95,
+                    "bbox": [0.31, 0.28, 0.72, 0.66],
+                    "civilian_impact": "public_mobility_disruption",
+                    "why": "Bridge span is broken.",
+                    "action": "downlink_now",
+                },
+                "expected_action": "downlink_now",
+                "expected_alert": {
+                    "alert_id": "blk_nd_00002",
+                    "timestamp": "2024-04-15T15:00:00Z",
+                    "asset_id": "demo_bridge_01",
+                    "asset_name": "Demo Logistics Bridge",
+                    "asset_type": "bridge",
+                    "event_type": "probable_access_obstruction",
+                    "severity": "high",
+                    "confidence": 0.95,
+                    "bbox": [0.31, 0.28, 0.72, 0.66],
+                    "civilian_impact": "public_mobility_disruption",
+                    "why": "Bridge span is broken.",
+                    "action": "downlink_now",
+                    "source": {
+                        "current_frame_id": "cur_demo_bridge_01_20240415",
+                        "baseline_frame_id": "base_demo_bridge_01_20240326",
+                        "model_version": "lfm2.5-vl-450m-prompted",
+                    },
+                    "mapbox_context_ref": None,
+                },
+                "expected_metrics": {
+                    "frames_scanned": 61,
+                    "alerts_emitted": 1,
+                    "raw_frames_suppressed": 57,
+                    "downlink_rate": 0.028,
+                },
+                "simsat": {
+                    "current": {
+                        "requested_timestamp": "2024-04-15T15:00:00Z",
+                        "request_url": "https://example.test/current",
+                        "image_available": True,
+                        "datetime": "2024-04-14T16:02:24Z",
+                        "cloud_cover": 4.72,
+                        "footprint": [],
+                        "spectral_bands": ["red", "green", "blue"],
+                        "size_km": 5.0,
+                        "window_seconds": 864000.0,
+                    },
+                    "baseline": {
+                        "requested_timestamp": "2024-03-26T15:00:00Z",
+                        "request_url": "https://example.test/baseline",
+                        "image_available": True,
+                        "datetime": "2024-03-25T16:02:24Z",
+                        "cloud_cover": 0.02,
+                        "footprint": [],
+                        "spectral_bands": ["red", "green", "blue"],
+                        "size_km": 5.0,
+                        "window_seconds": 864000.0,
+                    },
+                },
+            }
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    return dataset_path
+
+
+class _FakeHTTPResponse:
+    def __init__(self, *, body: bytes, status: int = 200) -> None:
+        self._body = body
+        self.status = status
+
+    def read(self) -> bytes:
+        return self._body
+
+    def __enter__(self) -> "_FakeHTTPResponse":
+        return self
+
+    def __exit__(self, exc_type, exc, tb) -> None:
+        _ = exc_type
+        _ = exc
+        _ = tb

@@ -11,8 +11,15 @@ ROOT = Path(__file__).resolve().parents[2]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
+from app.schemas.model_payload import (  # noqa: E402
+    CandidateImageInput,
+    CandidateRequestPayload,
+    CandidateTextInput,
+)
 from app.schemas.training_corpus import BlacklineCandidateEvalRecord  # noqa: E402
 from app.services.alert_pipeline import StructuredAlertPipeline  # noqa: E402
+from app.services.model_gateway import ModelGateway, ModelGatewayTelemetry  # noqa: E402
+from app.services.model_provider import resolve_http_candidate_provider  # noqa: E402
 from training.scripts.eval_structured_outputs import evaluate_dataset  # noqa: E402
 
 DEFAULT_MODEL_ID = "LiquidAI/LFM2.5-VL-450M"
@@ -77,6 +84,49 @@ class TransformersLfm25Runner:
         return text.strip()
 
 
+class HttpCandidateTextRunner:
+    def __init__(
+        self,
+        *,
+        model_id: str,
+        endpoint: str,
+        provider_id: str,
+        api_key: str | None = None,
+        timeout_seconds: float = 120.0,
+        gateway: ModelGateway | None = None,
+        telemetry_sink: list[ModelGatewayTelemetry] | None = None,
+    ) -> None:
+        provider = resolve_http_candidate_provider(provider_id)
+        if provider is None:
+            raise RuntimeError(f"Unsupported candidate provider: {provider_id}")
+
+        self.model_id = model_id
+        self.endpoint = endpoint
+        self.provider = provider
+        self.api_key = api_key
+        self.telemetry_sink = telemetry_sink if telemetry_sink is not None else []
+        self.gateway = gateway or ModelGateway(
+            timeout_seconds=timeout_seconds,
+            telemetry_sink=self.telemetry_sink,
+        )
+
+    def generate(self, case: BlacklineCandidateEvalRecord) -> str:
+        payload = build_frozen_candidate_payload(case=case, model_id=self.model_id)
+        result = self.gateway.invoke(
+            endpoint=self.endpoint,
+            provider=self.provider,
+            payload=payload,
+            api_key=self.api_key,
+            fallback="",
+            request_kind="benchmark_candidate",
+            frame_ids=(
+                case.expected_alert.source.current_frame_id,
+                case.expected_alert.source.baseline_frame_id,
+            ),
+        )
+        return result.output_text
+
+
 def build_liquid_conversation(
     case: BlacklineCandidateEvalRecord,
     *,
@@ -99,6 +149,33 @@ def build_liquid_conversation(
             ],
         },
     ]
+
+
+def build_frozen_candidate_payload(
+    *,
+    case: BlacklineCandidateEvalRecord,
+    model_id: str,
+) -> CandidateRequestPayload:
+    inputs: list[CandidateTextInput | CandidateImageInput] = [
+        CandidateTextInput(type="input_text", role="system", text=case.prompt["system"]),
+        CandidateTextInput(type="input_text", role="user", text=case.prompt["user"]),
+        CandidateImageInput(
+            type="input_image",
+            role="current",
+            image_ref=case.current_image_path,
+        ),
+        CandidateImageInput(
+            type="input_image",
+            role="baseline",
+            image_ref=case.baseline_image_path,
+        ),
+    ]
+    return CandidateRequestPayload(
+        model_version=model_id,
+        asset_id=case.asset.asset_id,
+        scenario_id=case.case_id,
+        inputs=inputs,
+    )
 
 
 def load_candidate_eval_cases(dataset_path: Path) -> list[BlacklineCandidateEvalRecord]:
