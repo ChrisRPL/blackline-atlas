@@ -211,6 +211,14 @@ wiki/
 docs/local/
 wiki/local/
 *.local.md
+*.scratch.md
+*.tmp.md
+
+# Generated benchmark / eval artifacts
+training/eval_runs/
+training/internal_benchmarks/local/
+training/external_benchmarks/local/
+training/replay_pack/local/
 
 # Marimo
 marimo/_static/
