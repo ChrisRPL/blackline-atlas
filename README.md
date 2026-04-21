@@ -4,6 +4,8 @@ Blackline Atlas is a map-first civilian lifeline disruption triage system built 
 
 It compares current satellite imagery against historical baselines for a small, curated watchlist of public civilian lifelines, then emits structured alerts only when macro-scale visible disruption is defensible.
 
+It now also carries a small file-backed lead registry for globe markers, separate from the exact-site watchlist and exact-site VLM review lane.
+
 ## What it does
 
 - civilian lifeline monitoring, not general surveillance
@@ -83,6 +85,11 @@ Then open:
 - API docs: `http://127.0.0.1:8000/docs`
 - UI shell: `http://127.0.0.1:8000/ui`
 
+Useful API surfaces:
+- `GET /assets`
+- `GET /leads`
+- `POST /agent/query`
+
 ## Local data lane
 
 Primary local data source:
@@ -120,6 +127,12 @@ python3 training/scripts/build_lfm25_vl_corpus.py \
 python3 training/scripts/run_lfm25_vl_prompted_eval.py \
   --dataset /tmp/non_demo_corpus/blackline_candidate_eval.jsonl \
   --output-dir /tmp/non_demo_eval_run
+```
+
+Refresh the local lead registry seed:
+
+```bash
+python3 training/scripts/refresh_lead_registry.py
 ```
 
 ## Benchmarking

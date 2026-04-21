@@ -7,6 +7,7 @@ from app.schemas.alert import Alert
 from app.schemas.asset import Asset
 from app.schemas.frame import FrameEnvelope
 from app.schemas.health import HealthResponse
+from app.schemas.lead import Lead
 from app.schemas.metrics import Metrics
 from app.schemas.replay import ReplayStartRequest, ReplayState
 
@@ -15,6 +16,8 @@ class AtlasService(Protocol):
     def get_health(self) -> HealthResponse: ...
 
     def list_assets(self) -> list[Asset]: ...
+
+    def list_leads(self) -> list[Lead]: ...
 
     def list_agent_tools(self) -> list[AtlasAgentToolSpec]: ...
 

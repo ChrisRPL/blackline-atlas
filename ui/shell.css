@@ -441,6 +441,18 @@ body::before {
   box-shadow: inset 0 0 0 2px rgba(115, 129, 139, 0.62);
 }
 
+.map-marker.lead_only,
+.marker.lead_only .marker-core {
+  background: transparent;
+  border-color: rgba(216, 161, 90, 0.82);
+  box-shadow: inset 0 0 0 2px rgba(216, 161, 90, 0.55);
+}
+
+.map-marker.vlm_reviewed,
+.marker.vlm_reviewed .marker-core {
+  background: rgba(131, 212, 203, 0.72);
+}
+
 .map-marker.loading,
 .marker.loading .marker-core {
   background: rgba(115, 129, 139, 0.88);

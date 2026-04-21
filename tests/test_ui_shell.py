@@ -18,6 +18,7 @@ def test_ui_shell_serves_same_origin_dashboard() -> None:
     assert "Blackline Atlas" in response.text
     assert "/ui-static/shell.css" in response.text
     assert "/assets" in static_response.text
+    assert "/leads" in static_response.text
     assert "/replay/status" in static_response.text
     assert "/frames/current" in static_response.text
     assert "/frames/baseline" in static_response.text

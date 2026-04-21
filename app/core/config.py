@@ -29,6 +29,7 @@ class Settings:
     simsat_baseline_endpoint: str | None
     mapbox_token_present: bool
     watchlist_path: str | None
+    lead_registry_path: str | None = None
     simsat_current_http_enabled: bool = False
     simsat_baseline_http_enabled: bool = False
     mapbox_context_enabled: bool = True
@@ -61,6 +62,7 @@ def get_settings() -> Settings:
         simsat_baseline_endpoint=os.getenv("SIMSAT_BASELINE_ENDPOINT") or None,
         mapbox_token_present=bool(os.getenv("MAPBOX_TOKEN")),
         watchlist_path=os.getenv("WATCHLIST_PATH") or None,
+        lead_registry_path=os.getenv("LEAD_REGISTRY_PATH") or None,
         simsat_current_http_enabled=env_flag("SIMSAT_CURRENT_HTTP_ENABLED"),
         simsat_baseline_http_enabled=env_flag("SIMSAT_BASELINE_HTTP_ENABLED"),
         mapbox_context_enabled=env_flag("MAPBOX_CONTEXT_ENABLED", default=True),

@@ -825,6 +825,21 @@ def test_assets_endpoint_returns_seeded_assets() -> None:
     } <= asset_ids
 
 
+def test_leads_endpoint_returns_seeded_lead_registry() -> None:
+    response = client.get("/leads")
+
+    assert response.status_code == 200
+    payload = response.json()
+    lead_ids = {item["lead_id"] for item in payload}
+    assert {
+        "lead_mansour_dam_202309",
+        "lead_kakhovka_dam_202306",
+        "lead_okhmatdyt_202407",
+        "lead_kytc_202403",
+        "lead_qasmiyeh_bridge_202604",
+    } <= lead_ids
+
+
 def test_replay_cycle() -> None:
     start_response = client.post("/replay/start", json={"asset_id": "demo_bridge_01"})
     assert start_response.status_code == 200

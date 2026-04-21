@@ -44,6 +44,8 @@ def test_agent_query_latest_alerts_returns_watchlist_latest() -> None:
     assert payload["planner"]["mode"] == "deterministic"
     assert payload["planner"]["reason"] == "fixture_planner"
     assert payload["trust"]["mode"] == "replay_safe"
+    assert payload["camera"]["mode"] == "watchlist"
+    assert "demo_bridge_01" in payload["camera"]["highlight_asset_ids"]
 
 
 def test_agent_query_biggest_disruptions_prioritizes_high_severity() -> None:
@@ -79,6 +81,8 @@ def test_agent_query_site_compare_returns_selected_site_frames() -> None:
     assert payload["compare"]["baseline_frame"]["frame"]["asset_id"] == "demo_bridge_01"
     assert payload["resolved"]["site_id"] == "demo_bridge_01"
     assert payload["resolved"]["tool"] == "site_compare"
+    assert payload["camera"]["mode"] == "focus_asset"
+    assert payload["camera"]["asset_id"] == "demo_bridge_01"
 
 
 def test_agent_query_site_compare_returns_reference_event_evidence() -> None:
@@ -278,3 +282,5 @@ def test_agent_query_latest_alerts_can_return_no_result_for_real_watchlist_area(
     assert payload["focus_asset_id"] is None
     assert payload["alerts"] == []
     assert payload["resolved"]["area"] == "Bahrain"
+    assert payload["camera"]["mode"] == "watchlist"
+    assert payload["camera"]["highlight_lead_ids"] == []

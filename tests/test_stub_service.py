@@ -697,6 +697,28 @@ def test_stub_service_default_watchlist_includes_real_civilian_sites() -> None:
     assert asset_by_id["mansour_dam_01"].evidence_state == "reference_event"
 
 
+def test_stub_service_exposes_seeded_leads() -> None:
+    service = StubAtlasService(
+        Settings(
+            app_env="test",
+            app_port=8000,
+            model_version="lfm2.5-vl-450m-prompted",
+            simsat_current_endpoint=None,
+            simsat_baseline_endpoint=None,
+            mapbox_token_present=False,
+            watchlist_path=None,
+            lead_registry_path=None,
+        )
+    )
+
+    leads = service.list_leads()
+    by_id = {lead.lead_id: lead for lead in leads}
+
+    assert "lead_mansour_dam_202309" in by_id
+    assert by_id["lead_mansour_dam_202309"].linked_asset_id == "mansour_dam_01"
+    assert by_id["lead_qasmiyeh_bridge_202604"].status == "lead_only"
+
+
 def test_stub_service_keeps_water_category_when_query_mentions_dam(
     tmp_path: Path, monkeypatch
 ) -> None:

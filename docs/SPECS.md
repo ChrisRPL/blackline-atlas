@@ -68,6 +68,7 @@
 - `GET /health`
 - `GET /health.debug`
 - `GET /assets`
+- `GET /leads`
 - `GET /agent/tools`
 - `POST /agent/query`
 - `POST /replay/start`

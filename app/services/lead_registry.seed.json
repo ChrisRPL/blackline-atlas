@@ -1,0 +1,71 @@
+[
+  {
+    "lead_id": "lead_mansour_dam_202309",
+    "title": "Mansour Dam",
+    "region": "Derna, Libya",
+    "latitude": 32.65937,
+    "longitude": 22.57708,
+    "category_guess": "water_infrastructure",
+    "status": "reference_event",
+    "summary": "Catastrophic dam failure above Derna with major downstream flood and water-service consequences.",
+    "source_url": "https://apnews.com/article/libya-floods-dams-storm-daniel-derna-6988c0502c713af29989ce8118b618e6",
+    "source_date": "2023-09-13",
+    "linked_asset_id": "mansour_dam_01",
+    "last_refreshed_at": "2026-04-21T18:19:57Z"
+  },
+  {
+    "lead_id": "lead_kakhovka_dam_202306",
+    "title": "Kakhovka Dam",
+    "region": "Nova Kakhovka, Kherson Oblast",
+    "latitude": 46.776336,
+    "longitude": 33.371477,
+    "category_guess": "water_infrastructure",
+    "status": "reference_event",
+    "summary": "Major dam breach and drained reservoir affecting civilian water supplies in southern Ukraine.",
+    "source_url": "https://apnews.com/article/russia-ukraine-war-dam-collapse-kakhovka-kherson-daacdc431f42912dfb91548794f03a3c",
+    "source_date": "2023-06-06",
+    "linked_asset_id": "kakhovka_dam_01",
+    "last_refreshed_at": "2026-04-21T18:19:57Z"
+  },
+  {
+    "lead_id": "lead_okhmatdyt_202407",
+    "title": "Okhmatdyt Children's Hospital",
+    "region": "Kyiv",
+    "latitude": 50.451172,
+    "longitude": 30.479935,
+    "category_guess": "medical_aid_node",
+    "status": "reference_event",
+    "summary": "Pediatric hospital campus in Kyiv struck with visible parcel-scale disruption.",
+    "source_url": "https://apnews.com/article/russia-ukraine-war-kyiv-childrens-hospital-attack-5273809f9d6483a4399d0a44e568f5a4",
+    "source_date": "2024-07-08",
+    "linked_asset_id": "okhmatdyt_01",
+    "last_refreshed_at": "2026-04-21T18:19:57Z"
+  },
+  {
+    "lead_id": "lead_kytc_202403",
+    "title": "Khan Younis Training Centre",
+    "region": "Khan Younis, Gaza Strip",
+    "latitude": 31.364167,
+    "longitude": 34.295556,
+    "category_guess": "aid_shelter_campus",
+    "status": "reference_event",
+    "summary": "Shelter-campus disruption in southern Gaza with heavy visible compound damage.",
+    "source_url": "https://www.unrwa.org/newsroom/official-statements/unrwa-condemns-strikes-khan-younis-training-centre-and-shelter",
+    "source_date": "2024-03-05",
+    "linked_asset_id": "khan_younis_kytc_01",
+    "last_refreshed_at": "2026-04-21T18:19:57Z"
+  },
+  {
+    "lead_id": "lead_qasmiyeh_bridge_202604",
+    "title": "Qasmiyeh Bridge",
+    "region": "South Lebanon",
+    "latitude": 33.33944,
+    "longitude": 35.25222,
+    "category_guess": "bridge",
+    "status": "lead_only",
+    "summary": "Reported bridge strike on a major civilian crossing into southern Lebanon; still needs an honest non-artifact satellite pair.",
+    "source_url": "https://wsau.com/2026/04/16/israeli-strike-severs-last-bridge-linking-southern-lebanon-to-rest-of-country-lebanese-security-official-says/",
+    "source_date": "2026-04-16",
+    "last_refreshed_at": "2026-04-21T18:19:57Z"
+  }
+]

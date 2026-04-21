@@ -9,6 +9,7 @@ from app.schemas.alert import Alert
 from app.schemas.asset import Asset
 from app.schemas.frame import FrameEnvelope
 from app.schemas.health import HealthResponse
+from app.schemas.lead import Lead
 from app.schemas.metrics import Metrics
 from app.schemas.replay import ReplayStartRequest, ReplayState
 from app.services.contracts import AtlasService
@@ -28,6 +29,11 @@ def health(service: Annotated[AtlasService, Depends(get_service)]) -> HealthResp
 @router.get("/assets", response_model=list[Asset])
 def assets(service: Annotated[AtlasService, Depends(get_service)]) -> list[Asset]:
     return service.list_assets()
+
+
+@router.get("/leads", response_model=list[Lead])
+def leads(service: Annotated[AtlasService, Depends(get_service)]) -> list[Lead]:
+    return service.list_leads()
 
 
 @router.get("/agent/tools", response_model=list[AtlasAgentToolSpec])

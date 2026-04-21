@@ -29,6 +29,7 @@ def test_agent_prompt_builder_targets_tool_plan_only() -> None:
 
     assert "Choose exactly one tool" in prompt.system
     assert "Return JSON only" in prompt.system
+    assert "tool, area, category, site_id, alert_id, camera" in prompt.system
     assert "latest_alerts" in prompt.system
     assert "biggest_disruptions" in prompt.system
     assert (
@@ -37,6 +38,7 @@ def test_agent_prompt_builder_targets_tool_plan_only() -> None:
         "medical_aid_node, water_infrastructure."
     ) in prompt.system
     assert "site_id must be exactly one watchlist asset_id or null." in prompt.system
+    assert "camera.mode must be watchlist or focus_asset" in prompt.system
     assert "For site_compare, set site_id" in prompt.system
     assert "selected_asset: demo_port_01" in prompt.user
     assert "user_query: show biggest disruptions near Black Sea" in prompt.user

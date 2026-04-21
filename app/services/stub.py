@@ -7,6 +7,7 @@ from typing import cast
 
 from app.core.config import Settings
 from app.schemas.agent import (
+    AtlasAgentCameraIntent,
     AtlasAgentCompare,
     AtlasAgentPlan,
     AtlasAgentPlannerTelemetry,
@@ -28,6 +29,7 @@ from app.schemas.health import (
     HealthGatewayRecent,
     HealthResponse,
 )
+from app.schemas.lead import Lead
 from app.schemas.metrics import Metrics
 from app.schemas.replay import ReplayStartRequest, ReplayState
 from app.services.agent_planner import (
@@ -45,6 +47,7 @@ from app.services.frame_cache import FrameCacheLayout
 from app.services.frame_client import CachedFrameClient, FixtureFrameClient
 from app.services.frame_filters import FrameFilterPolicy
 from app.services.frame_types import FrameRequest
+from app.services.lead_registry_loader import load_lead_registry
 from app.services.model_gateway import ModelGateway, ModelGatewayTelemetry
 from app.services.model_provider import resolve_http_candidate_provider
 from app.services.model_wrapper import (
@@ -98,6 +101,7 @@ class StubAtlasService:
         self._model_gateway_events: list[ModelGatewayTelemetry] = []
         self._agent_gateway_events: list[ModelGatewayTelemetry] = []
         self.assets = load_watchlist_assets(settings.watchlist_path)
+        self.leads = load_lead_registry(settings.lead_registry_path)
         self.reference_cases = load_reference_cases()
         self.scenarios = build_stub_scenarios(
             settings=self.settings,
@@ -185,6 +189,9 @@ class StubAtlasService:
             )
             for asset in self.assets
         ]
+
+    def list_leads(self) -> list[Lead]:
+        return self.leads
 
     def list_agent_tools(self) -> list[AtlasAgentToolSpec]:
         return [
@@ -364,11 +371,27 @@ class StubAtlasService:
         no_result_summary: str,
     ) -> AtlasAgentQueryResponse:
         if not alerts:
+            matching_leads = self._filter_leads(
+                area=resolved.area,
+                category=resolved.category,
+                limit=resolved.limit,
+            )
             return AtlasAgentQueryResponse(
                 status="no_result",
                 tool=tool,
-                summary=no_result_summary,
+                summary=(
+                    f"{no_result_summary} {len(matching_leads)} lead "
+                    f"{'marker remains' if len(matching_leads) == 1 else 'markers remain'} visible."
+                    if matching_leads
+                    else no_result_summary
+                ),
                 resolved=resolved,
+                camera=self._camera_intent(
+                    tool=tool,
+                    alerts=[],
+                    focus_asset_id=None,
+                    lead_matches=matching_leads,
+                ),
                 alerts=[],
                 planner=planner,
                 trust=trust,
@@ -385,6 +408,11 @@ class StubAtlasService:
                 f"{'alert' if len(alerts) == 1 else 'alerts'}."
             ),
             resolved=resolved,
+            camera=self._camera_intent(
+                tool=tool,
+                alerts=alerts,
+                focus_asset_id=focus.asset_id,
+            ),
             focus_asset_id=focus.asset_id,
             focus_alert_id=focus.alert_id,
             alerts=alerts,
@@ -457,6 +485,11 @@ class StubAtlasService:
             tool="site_compare",
             summary=summary,
             resolved=resolved,
+            camera=self._camera_intent(
+                tool="site_compare",
+                alerts=alerts,
+                focus_asset_id=asset.asset_id,
+            ),
             focus_asset_id=asset.asset_id,
             focus_alert_id=alerts[0].alert_id if alerts else None,
             alerts=alerts,
@@ -503,6 +536,11 @@ class StubAtlasService:
                 f"{round(target_alert.confidence * 100)}% confidence."
             ),
             resolved=resolved,
+            camera=self._camera_intent(
+                tool="explain_alert",
+                alerts=[target_alert],
+                focus_asset_id=target_alert.asset_id,
+            ),
             focus_asset_id=target_alert.asset_id,
             focus_alert_id=target_alert.alert_id,
             alerts=[target_alert],
@@ -830,6 +868,46 @@ class StubAtlasService:
             filtered = [alert for alert in filtered if alert.asset_type == category]
         return filtered[:limit]
 
+    def _filter_leads(
+        self,
+        *,
+        area: str | None,
+        category: str | None,
+        limit: int,
+    ) -> list[Lead]:
+        filtered = self.leads
+        if area:
+            area_lower = area.lower()
+            filtered = [
+                lead
+                for lead in filtered
+                if area_lower in lead.title.lower() or area_lower in lead.region.lower()
+            ]
+        if category:
+            filtered = [lead for lead in filtered if lead.category_guess == category]
+        return filtered[:limit]
+
+    def _camera_intent(
+        self,
+        *,
+        tool: AtlasAgentTool,
+        alerts: list[Alert],
+        focus_asset_id: str | None,
+        lead_matches: list[Lead] | None = None,
+    ) -> AtlasAgentCameraIntent:
+        if tool in {"site_compare", "explain_alert"} and focus_asset_id:
+            return AtlasAgentCameraIntent(
+                mode="focus_asset",
+                asset_id=focus_asset_id,
+                highlight_asset_ids=[focus_asset_id],
+            )
+
+        return AtlasAgentCameraIntent(
+            mode="watchlist",
+            highlight_asset_ids=[alert.asset_id for alert in alerts],
+            highlight_lead_ids=[lead.lead_id for lead in lead_matches or []],
+        )
+
     def _resolve_alert_target(
         self,
         *,
@@ -1090,6 +1168,11 @@ class StubAtlasService:
                 return asset.asset_name
             if asset.region.lower() == area_lower:
                 return asset.region
+        for lead in self.leads:
+            if lead.title.lower() == area_lower:
+                return lead.title
+            if lead.region.lower() == area_lower:
+                return lead.region
         return None
 
     def _canonical_category(self, category: str | None) -> str | None:
@@ -1162,6 +1245,11 @@ class StubAtlasService:
                 return asset.asset_name
             if asset.region.lower() in lowered:
                 return asset.region
+        for lead in self.leads:
+            if lead.title.lower() in lowered:
+                return lead.title
+            if lead.region.lower() in lowered:
+                return lead.region
         return None
 
     def _infer_category(self, query: str) -> str | None:

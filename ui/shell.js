@@ -1,6 +1,7 @@
 const urls = {
   health: new URL("/health", window.location.origin),
   assets: new URL("/assets", window.location.origin),
+  leads: new URL("/leads", window.location.origin),
   alerts: new URL("/alerts", window.location.origin),
   replay: new URL("/replay/status", window.location.origin),
   current: new URL("/frames/current", window.location.origin),
@@ -12,10 +13,12 @@ const urls = {
 const state = {
   health: null,
   assets: [],
+  leads: [],
   liveAlerts: [],
   replay: null,
   metrics: null,
   selectedAssetId: null,
+  selectedLeadId: null,
   selectedSiteContext: null,
   selectedSiteLoading: false,
   transcriptSeeded: false,
@@ -24,6 +27,8 @@ const state = {
   mapReady: false,
   mobileSheet: null,
   plannerFallbackActive: false,
+  cameraMode: "globe",
+  lastCameraIntentKey: null,
 };
 
 const dom = {
@@ -110,6 +115,10 @@ function siteImpactClass(level) {
 
 function selectedAsset() {
   return state.assets.find((asset) => asset.asset_id === state.selectedAssetId) || state.assets[0] || null;
+}
+
+function selectedLead() {
+  return state.leads.find((lead) => lead.lead_id === state.selectedLeadId) || null;
 }
 
 function liveAlert() {
@@ -308,7 +317,7 @@ function seedTranscript() {
   const alert = liveAlert();
   const opening = alert
     ? `Atlas online. ${alert.asset_name} is in focus.`
-    : "Atlas online. No accepted alert right now.";
+    : "Atlas online. Globe watch active.";
   appendMessage("assistant", opening);
 
   state.transcriptSeeded = true;
@@ -319,12 +328,21 @@ function selectAsset(assetId) {
     return;
   }
   state.selectedAssetId = assetId;
+  state.selectedLeadId = null;
   if (isMobileSheetMode()) {
     setMobileSheet("site");
   }
   renderMap();
   renderDrawer();
   void loadSelectedSiteContext(assetId);
+}
+
+function selectLead(leadId) {
+  if (!leadId || state.selectedLeadId === leadId) {
+    return;
+  }
+  state.selectedLeadId = leadId;
+  renderMap();
 }
 
 function clearLiveMapMarkers() {
@@ -337,6 +355,18 @@ function currentMapZoom() {
     return 1.4;
   }
   return state.map.getZoom();
+}
+
+function setMapProjection(mode) {
+  if (!state.map || typeof state.map.setProjection !== "function") {
+    return;
+  }
+
+  try {
+    state.map.setProjection({ type: mode === "globe" ? "globe" : "mercator" });
+  } catch (error) {
+    // Projection support varies by runtime and style.
+  }
 }
 
 function isMobileSheetMode() {
@@ -355,6 +385,8 @@ function focusMapOnAsset(asset, { immediate = false } = {}) {
     return;
   }
 
+  state.cameraMode = "map";
+  setMapProjection("map");
   const targetZoom = Math.max(currentMapZoom(), 3.25);
   const options = {
     center: [asset.longitude, asset.latitude],
@@ -366,18 +398,56 @@ function focusMapOnAsset(asset, { immediate = false } = {}) {
   state.map.easeTo(options);
 }
 
-function fitMapToAssets() {
-  if (!state.map || !state.assets.length || !window.maplibregl) {
+function fitMapToPoints(points) {
+  if (!state.map || !points.length || !window.maplibregl) {
     return;
   }
 
+  state.cameraMode = "globe";
+  setMapProjection("globe");
   const bounds = new window.maplibregl.LngLatBounds();
-  state.assets.forEach((asset) => bounds.extend([asset.longitude, asset.latitude]));
+  points.forEach((point) => bounds.extend([point.longitude, point.latitude]));
   state.map.fitBounds(bounds, {
     padding: 120,
-    maxZoom: state.assets.length === 1 ? 7 : 2.8,
+    maxZoom: points.length === 1 ? 4.2 : 2.8,
     duration: 0,
   });
+}
+
+function markerItems() {
+  if (state.leads.length) {
+    return state.leads.map((lead) => ({
+      kind: "lead",
+      id: lead.lead_id,
+      label: lead.title,
+      latitude: lead.latitude,
+      longitude: lead.longitude,
+      status: lead.status,
+      linkedAssetId: lead.linked_asset_id,
+      selected:
+        state.selectedLeadId === lead.lead_id
+        || (lead.linked_asset_id && state.selectedAssetId === lead.linked_asset_id),
+      alert:
+        !!lead.linked_asset_id
+        && state.liveAlerts.some((item) => item.asset_id === lead.linked_asset_id),
+      hero: false,
+      summary: lead.summary,
+    }));
+  }
+
+  return state.assets.map((asset) => ({
+    kind: "asset",
+    id: asset.asset_id,
+    label: asset.asset_name,
+    latitude: asset.latitude,
+    longitude: asset.longitude,
+    status: siteEvidenceState(asset),
+    linkedAssetId: asset.asset_id,
+    selected: state.selectedAssetId === asset.asset_id,
+    alert: state.liveAlerts.some((item) => item.asset_id === asset.asset_id),
+    hero: asset.hero,
+    summary: null,
+  }));
 }
 
 function syncLiveMapMarkers() {
@@ -386,28 +456,41 @@ function syncLiveMapMarkers() {
   }
 
   clearLiveMapMarkers();
-  state.assets.forEach((asset) => {
-    const alert = liveAlertForAsset(asset.asset_id);
-    const selected = state.selectedAssetId === asset.asset_id;
-    const evidenceState = siteEvidenceState(asset);
+  markerItems().forEach((item) => {
     const markerEl = document.createElement("button");
     markerEl.className = [
       "map-marker",
-      alert ? "alert" : evidenceState,
-      selected ? "selected" : "",
-      asset.hero ? "hero" : "",
+      item.alert ? "alert" : item.status,
+      item.selected ? "selected" : "",
+      item.hero ? "hero" : "",
     ]
       .filter(Boolean)
       .join(" ");
     markerEl.type = "button";
-    markerEl.setAttribute("aria-label", `Focus ${asset.asset_name}`);
+    markerEl.setAttribute("aria-label", `Focus ${item.label}`);
     markerEl.addEventListener("click", () => {
-      selectAsset(asset.asset_id);
-      appendMessage("assistant", `Map focused on ${asset.asset_name}.`);
+      if (item.kind === "lead") {
+        selectLead(item.id);
+        if (item.linkedAssetId) {
+          selectAsset(item.linkedAssetId);
+          const asset = state.assets.find((entry) => entry.asset_id === item.linkedAssetId);
+          if (asset) {
+            focusMapOnAsset(asset);
+          }
+        }
+        appendMessage("assistant", `${item.label}: ${item.summary || "Lead marker selected."}`);
+        return;
+      }
+      selectAsset(item.linkedAssetId);
+      const asset = state.assets.find((entry) => entry.asset_id === item.linkedAssetId);
+      if (asset) {
+        focusMapOnAsset(asset);
+      }
+      appendMessage("assistant", `Map focused on ${item.label}.`);
     });
 
     const marker = new window.maplibregl.Marker({ element: markerEl, anchor: "center" })
-      .setLngLat([asset.longitude, asset.latitude])
+      .setLngLat([item.longitude, item.latitude])
       .addTo(state.map);
 
     state.mapMarkers.push(marker);
@@ -432,12 +515,8 @@ function ensureLiveMap() {
   state.map.on("load", () => {
     state.mapReady = true;
     dom.mapStage.classList.add("is-live-map");
-    fitMapToAssets();
+    fitMapToPoints(markerItems());
     syncLiveMapMarkers();
-    const selected = selectedAsset();
-    if (selected) {
-      focusMapOnAsset(selected, { immediate: true });
-    }
   });
 }
 
@@ -526,8 +605,42 @@ function watchlistSummary() {
   );
   appendMessage(
     "assistant",
-    `Watchlist: ${state.assets.length} sites. ${counts.live_demo || 0} live demo, ${counts.reference_event || 0} reference events, ${counts.reference_control || 0} controls.`,
+    `Watchlist: ${state.assets.length} sites. Globe leads: ${state.leads.length}. ${counts.live_demo || 0} live demo, ${counts.reference_event || 0} reference events, ${counts.reference_control || 0} controls.`,
   );
+}
+
+function pointMatchesCamera(item, camera) {
+  if (!camera) {
+    return false;
+  }
+  if (item.kind === "lead") {
+    return camera.highlight_lead_ids.includes(item.id)
+      || (item.linkedAssetId && camera.highlight_asset_ids.includes(item.linkedAssetId));
+  }
+  return camera.highlight_asset_ids.includes(item.id);
+}
+
+function applyCameraIntent(camera) {
+  if (!camera || !state.map) {
+    return;
+  }
+
+  const key = JSON.stringify(camera);
+  if (state.lastCameraIntentKey === key) {
+    return;
+  }
+  state.lastCameraIntentKey = key;
+
+  if (camera.mode === "focus_asset" && camera.asset_id) {
+    const asset = state.assets.find((entry) => entry.asset_id === camera.asset_id);
+    if (asset) {
+      focusMapOnAsset(asset);
+    }
+    return;
+  }
+
+  const highlighted = markerItems().filter((item) => pointMatchesCamera(item, camera));
+  fitMapToPoints(highlighted.length ? highlighted : markerItems());
 }
 
 function applyAgentResponse(response) {
@@ -544,6 +657,10 @@ function applyAgentResponse(response) {
 
   if (response.focus_asset_id) {
     state.selectedAssetId = response.focus_asset_id;
+  }
+
+  if (response.camera) {
+    applyCameraIntent(response.camera);
   }
 
   renderTopbar();
@@ -699,13 +816,12 @@ function renderTopbar() {
 }
 
 function renderMap() {
-  const selected = selectedAsset();
-  const alert = selected ? liveAlertForAsset(selected.asset_id) : liveAlert();
-  const bounds = computeBounds(state.assets);
+  const points = markerItems();
+  const bounds = computeBounds(points);
 
   ensureLiveMap();
 
-  if (!selected) {
+  if (!points.length) {
     dom.mapMarkers.innerHTML = "";
     return;
   }
@@ -713,20 +829,16 @@ function renderMap() {
   if (state.mapReady) {
     dom.mapMarkers.innerHTML = "";
     syncLiveMapMarkers();
-    focusMapOnAsset(selected);
   } else {
-    dom.mapMarkers.innerHTML = state.assets
-      .map((asset) => {
-        const position = project(asset, bounds);
-        const isSelected = selected?.asset_id === asset.asset_id;
-        const isAlert = state.liveAlerts.some((item) => item.asset_id === asset.asset_id);
-        const evidenceState = siteEvidenceState(asset);
+    dom.mapMarkers.innerHTML = points
+      .map((item) => {
+        const position = project(item, bounds);
         const classes = [
           "marker",
-          isSelected ? "selected" : "",
-          isAlert ? "alert" : "",
-          !isAlert ? evidenceState : "",
-          asset.hero ? "hero" : "",
+          item.selected ? "selected" : "",
+          item.alert ? "alert" : "",
+          !item.alert ? item.status : "",
+          item.hero ? "hero" : "",
         ]
           .filter(Boolean)
           .join(" ");
@@ -734,12 +846,13 @@ function renderMap() {
           <button
             class="${classes || "marker quiet"}"
             type="button"
-            data-asset-id="${asset.asset_id}"
+            data-marker-id="${item.id}"
+            data-marker-kind="${item.kind}"
             style="left:${position.left};top:${position.top};"
-            aria-label="Focus ${asset.asset_name}"
+            aria-label="Focus ${item.label}"
           >
             <span class="marker-core"></span>
-            <span class="marker-label">${asset.asset_name}</span>
+            <span class="marker-label">${item.label}</span>
           </button>
         `;
       })
@@ -747,13 +860,31 @@ function renderMap() {
 
     dom.mapMarkers.querySelectorAll(".marker").forEach((button) => {
       button.addEventListener("click", () => {
-        const assetId = button.dataset.assetId;
-        if (!assetId) {
+        const markerId = button.dataset.markerId;
+        const markerKind = button.dataset.markerKind;
+        if (!markerId || !markerKind) {
           return;
         }
-        selectAsset(assetId);
-        const asset = state.assets.find((item) => item.asset_id === assetId);
+        if (markerKind === "lead") {
+          const lead = state.leads.find((item) => item.lead_id === markerId);
+          if (!lead) {
+            return;
+          }
+          selectLead(lead.lead_id);
+          if (lead.linked_asset_id) {
+            selectAsset(lead.linked_asset_id);
+            const asset = state.assets.find((entry) => entry.asset_id === lead.linked_asset_id);
+            if (asset) {
+              focusMapOnAsset(asset);
+            }
+          }
+          appendMessage("assistant", `${lead.title}: ${lead.summary || "Lead marker selected."}`);
+          return;
+        }
+        selectAsset(markerId);
+        const asset = state.assets.find((item) => item.asset_id === markerId);
         if (asset) {
+          focusMapOnAsset(asset);
           appendMessage("assistant", `Map focused on ${asset.asset_name}.`);
         }
       });
@@ -943,6 +1074,7 @@ async function boot() {
   const [
     healthResult,
     assetsResult,
+    leadsResult,
     alertsResult,
     replayResult,
     currentResult,
@@ -951,6 +1083,7 @@ async function boot() {
   ] = await Promise.allSettled([
     loadJson(urls.health),
     loadJson(urls.assets),
+    loadJson(urls.leads),
     loadJson(urls.alerts),
     loadJson(urls.replay),
     loadJson(urls.current),
@@ -963,6 +1096,9 @@ async function boot() {
   }
   if (assetsResult.status === "fulfilled") {
     state.assets = assetsResult.value;
+  }
+  if (leadsResult.status === "fulfilled") {
+    state.leads = leadsResult.value;
   }
   if (alertsResult.status === "fulfilled") {
     state.liveAlerts = alertsResult.value;
