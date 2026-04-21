@@ -93,5 +93,10 @@
     "latitude": 36.507778,
     "longitude": 37.961389,
     "size_km": 0.8
+  },
+  "vasyshcheve_atb_train_20260313_20260323": {
+    "latitude": 49.849286,
+    "longitude": 36.326572,
+    "size_km": 1.0
   }
 }

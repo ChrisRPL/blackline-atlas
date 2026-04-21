@@ -8,7 +8,7 @@ Purpose:
 
 ## Current status
 
-- promoted train rows: `19`
+- promoted train rows: `20`
 - promoted dataset:
   - [train_01.jsonl](/Users/krzysztof/blackline-atlas/training/replay_pack/train_01.jsonl)
 - first active families with real rows:
@@ -27,6 +27,7 @@ Purpose:
   - `Okhmatdyt Children's Hospital`
   - `Gedaref Grain Silos`
   - `Manbij Grain Silo Complex`
+  - `Vasyshcheve ATB Distribution Center`
 - still blocked / not yet promotable:
   - `Roshen Yahotyn Logistics Center`
   - `Mondelez Trostianets Confectionery Factory`
@@ -138,4 +139,4 @@ This keeps one canonical row family for:
 1. start with `Mondelez`, `Morandi`, `Roshen`, and `Kakhovka`
 2. collect non-gold timestamp variants only
 3. hold `Khan Younis` until a genuinely non-gold clean pair exists
-4. first `12`-row train mini-pack is closed; current pack is `19`, and the next push should widen another food family, another low-leakage control, or one more aid/water positive
+4. first `12`-row train mini-pack is closed; current pack is `20`, and the next push should widen another food family, another low-leakage control, or one more aid/water positive
