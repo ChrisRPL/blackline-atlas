@@ -40,6 +40,7 @@ def test_train_01_pack_rows_parse() -> None:
         "gedaref_grain_silos_train_20231011_20241015",
         "manbij_grain_silos_train_20241013_20250312",
         "vasyshcheve_atb_train_20260313_20260323",
+        "port_sudan_aid_hub_train_20250128_20250707",
     ]
     assert all(row.split == "train" for row in rows)
     assert all(row.holdout_reason is None for row in rows)
