@@ -680,6 +680,8 @@ def test_stub_service_default_watchlist_includes_real_civilian_sites() -> None:
     assert "kramatorsk_filtration_01" in asset_ids
     assert "kakhovka_dam_01" in asset_ids
     assert "mansour_dam_01" in asset_ids
+    assert "mondelez_trostianets_01" in asset_ids
+    assert "morandi_bridge_01" in asset_ids
     assert asset_by_id["demo_port_01"].evidence_state == "live_demo"
     assert asset_by_id["beirut_port_01"].evidence_state == "reference_event"
     assert asset_by_id["arbaat_dam_01"].evidence_state == "reference_event"
@@ -695,6 +697,8 @@ def test_stub_service_default_watchlist_includes_real_civilian_sites() -> None:
     assert asset_by_id["kramatorsk_filtration_01"].evidence_state == "reference_control"
     assert asset_by_id["kakhovka_dam_01"].evidence_state == "reference_event"
     assert asset_by_id["mansour_dam_01"].evidence_state == "reference_event"
+    assert asset_by_id["mondelez_trostianets_01"].evidence_state == "reference_event"
+    assert asset_by_id["morandi_bridge_01"].evidence_state == "reference_event"
 
 
 def test_stub_service_exposes_seeded_leads() -> None:
@@ -1370,6 +1374,32 @@ def test_stub_service_site_compare_returns_reference_event_for_seeded_food_site_
     assert "reference event evidence" in response.summary
 
 
+def test_stub_service_site_compare_returns_reference_event_for_seeded_food_site_mondelez() -> None:
+    service = StubAtlasService(
+        Settings(
+            app_env="test",
+            app_port=8000,
+            model_version="lfm2.5-vl-450m-prompted",
+            simsat_current_endpoint=None,
+            simsat_baseline_endpoint=None,
+            mapbox_token_present=False,
+            watchlist_path=None,
+        )
+    )
+
+    response = service.run_agent_query(
+        AtlasAgentQueryRequest(tool="site_compare", site_id="mondelez_trostianets_01"),
+    )
+
+    assert response.status == "ok"
+    assert response.tool == "site_compare"
+    assert response.focus_asset_id == "mondelez_trostianets_01"
+    assert response.focus_alert_id == "blk_nd_00021"
+    assert response.compare is not None
+    assert response.compare.current_frame.accepted_for_alerting is True
+    assert "reference event evidence" in response.summary
+
+
 def test_stub_service_site_compare_returns_reference_control_for_seeded_medical_soft_site() -> None:
     service = StubAtlasService(
         Settings(
@@ -1469,6 +1499,32 @@ def test_stub_service_site_compare_returns_reference_event_for_seeded_water_site
     assert response.tool == "site_compare"
     assert response.focus_asset_id == "mansour_dam_01"
     assert response.focus_alert_id == "blk_nd_00020"
+    assert response.compare is not None
+    assert response.compare.current_frame.accepted_for_alerting is True
+    assert "reference event evidence" in response.summary
+
+
+def test_stub_service_site_compare_returns_reference_event_for_morandi() -> None:
+    service = StubAtlasService(
+        Settings(
+            app_env="test",
+            app_port=8000,
+            model_version="lfm2.5-vl-450m-prompted",
+            simsat_current_endpoint=None,
+            simsat_baseline_endpoint=None,
+            mapbox_token_present=False,
+            watchlist_path=None,
+        )
+    )
+
+    response = service.run_agent_query(
+        AtlasAgentQueryRequest(tool="site_compare", site_id="morandi_bridge_01"),
+    )
+
+    assert response.status == "ok"
+    assert response.tool == "site_compare"
+    assert response.focus_asset_id == "morandi_bridge_01"
+    assert response.focus_alert_id == "blk_nd_00022"
     assert response.compare is not None
     assert response.compare.current_frame.accepted_for_alerting is True
     assert "reference event evidence" in response.summary

@@ -41,6 +41,8 @@ def test_non_demo_eval_pack_rows_parse() -> None:
         "kakhovka_dam_breach",
         "khan_younis_training_centre_shelling",
         "mansour_dam_collapse",
+        "mondelez_trostianets_factory_strike",
+        "morandi_bridge_collapse",
     ]
     assert rows[0].split == "holdout_geo"
     assert rows[0].holdout_reason == "retrospective_food_security_anchor"
@@ -128,4 +130,14 @@ def test_non_demo_eval_pack_rows_parse() -> None:
     assert (
         by_case_id["mansour_dam_collapse"].holdout_reason
         == "retrospective_dam_failure_water_source_anchor"
+    )
+    assert by_case_id["mondelez_trostianets_factory_strike"].split == "holdout_geo"
+    assert (
+        by_case_id["mondelez_trostianets_factory_strike"].holdout_reason
+        == "current_conflict_inland_food_manufacturing_anchor"
+    )
+    assert by_case_id["morandi_bridge_collapse"].split == "holdout_geo"
+    assert (
+        by_case_id["morandi_bridge_collapse"].holdout_reason
+        == "retrospective_civilian_bridge_collapse_anchor"
     )

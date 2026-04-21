@@ -196,5 +196,23 @@
     "latitude": 32.65937,
     "longitude": 22.57708,
     "hero": false
+  },
+  {
+    "asset_id": "mondelez_trostianets_01",
+    "asset_name": "Mondelez Trostianets Confectionery Factory",
+    "asset_type": "logistics_hub",
+    "region": "Trostianets, Sumy Oblast",
+    "latitude": 50.485456,
+    "longitude": 34.943761,
+    "hero": false
+  },
+  {
+    "asset_id": "morandi_bridge_01",
+    "asset_name": "Morandi Bridge",
+    "asset_type": "bridge",
+    "region": "Genoa, Liguria",
+    "latitude": 44.425568,
+    "longitude": 8.890246,
+    "hero": false
   }
 ]

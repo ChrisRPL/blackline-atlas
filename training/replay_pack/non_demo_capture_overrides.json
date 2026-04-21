@@ -44,6 +44,16 @@
     "longitude": 22.57708,
     "size_km": 2.5
   },
+  "mondelez_trostianets_factory_strike": {
+    "latitude": 50.485456,
+    "longitude": 34.943761,
+    "size_km": 0.8
+  },
+  "morandi_bridge_collapse": {
+    "latitude": 44.425568,
+    "longitude": 8.890246,
+    "size_km": 2.0
+  },
   "trostianets_city_hospital_signal_soft": {
     "latitude": 50.474539,
     "longitude": 34.922882,

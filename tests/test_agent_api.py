@@ -235,6 +235,42 @@ def test_agent_query_site_compare_returns_reference_event_evidence_for_mansour()
     assert payload["compare"]["current_frame"]["accepted_for_alerting"] is True
 
 
+def test_agent_query_site_compare_returns_reference_event_evidence_for_mondelez() -> None:
+    client = TestClient(create_app())
+
+    response = client.post(
+        "/agent/query",
+        json={"tool": "site_compare", "site_id": "mondelez_trostianets_01"},
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["tool"] == "site_compare"
+    assert payload["status"] == "ok"
+    assert payload["focus_asset_id"] == "mondelez_trostianets_01"
+    assert payload["focus_alert_id"] == "blk_nd_00021"
+    assert payload["compare"]["asset_id"] == "mondelez_trostianets_01"
+    assert payload["compare"]["current_frame"]["accepted_for_alerting"] is True
+
+
+def test_agent_query_site_compare_returns_reference_event_evidence_for_morandi() -> None:
+    client = TestClient(create_app())
+
+    response = client.post(
+        "/agent/query",
+        json={"tool": "site_compare", "site_id": "morandi_bridge_01"},
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["tool"] == "site_compare"
+    assert payload["status"] == "ok"
+    assert payload["focus_asset_id"] == "morandi_bridge_01"
+    assert payload["focus_alert_id"] == "blk_nd_00022"
+    assert payload["compare"]["asset_id"] == "morandi_bridge_01"
+    assert payload["compare"]["current_frame"]["accepted_for_alerting"] is True
+
+
 def test_agent_query_explain_alert_uses_selected_asset_context() -> None:
     client = TestClient(create_app())
 

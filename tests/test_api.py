@@ -822,6 +822,8 @@ def test_assets_endpoint_returns_seeded_assets() -> None:
         "kramatorsk_filtration_01",
         "kakhovka_dam_01",
         "mansour_dam_01",
+        "mondelez_trostianets_01",
+        "morandi_bridge_01",
     } <= asset_ids
 
 
