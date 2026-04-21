@@ -178,7 +178,7 @@ Current rule:
 - export LEAP-compatible VLM SFT from the same frozen corpus shape
 - start train acquisition in a separate tranche, not by mutating gold rows
 - first promoted train rows now live in [training/replay_pack/train_01.jsonl](training/replay_pack/train_01.jsonl)
-- current Train 01 count: `18`
+- current Train 01 count: `19`
 
 Working doc:
 

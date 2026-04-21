@@ -88,5 +88,10 @@
     "latitude": 14.026667,
     "longitude": 35.365,
     "size_km": 1.0
+  },
+  "manbij_grain_silos_train_20241013_20250312": {
+    "latitude": 36.507778,
+    "longitude": 37.961389,
+    "size_km": 0.8
   }
 }
