@@ -125,6 +125,10 @@ python3 training/scripts/build_lfm25_vl_corpus.py \
   --replay-dataset training/replay_pack/non_demo_eval.jsonl \
   --output-dir /tmp/non_demo_corpus
 
+python3 training/scripts/export_leap_vlm_sft.py \
+  --candidate-eval-dataset /tmp/non_demo_corpus/blackline_candidate_eval.jsonl \
+  --output-dir /tmp/non_demo_leap
+
 python3 training/scripts/run_lfm25_vl_prompted_eval.py \
   --dataset /tmp/non_demo_corpus/blackline_candidate_eval.jsonl \
   --output-dir /tmp/non_demo_eval_run
@@ -165,6 +169,18 @@ Important:
 - external slices are auxiliary research slices
 - they do not replace the internal Blackline gold set
 - the full internal non-demo benchmark still needs frozen SimSat bytes or a capture manifest
+
+## Train-prep
+
+Current rule:
+
+- keep the `22`-row non-demo gold eval set frozen
+- export LEAP-compatible VLM SFT from the same frozen corpus shape
+- start train acquisition in a separate tranche, not by mutating gold rows
+
+Working doc:
+
+- [training/replay_pack/train_tranche_01.md](training/replay_pack/train_tranche_01.md)
 
 For heavier runs, prefer Hugging Face Jobs. See [docs/HF_JOBS.md](docs/HF_JOBS.md).
 

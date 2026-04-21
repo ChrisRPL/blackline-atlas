@@ -138,6 +138,20 @@ Current state:
 
 - the non-demo gold eval pack is now frozen at `22` exact-site rows
 - next step is local capture freeze plus the first train-prep corpus build
+- LEAP-compatible VLM SFT export now comes from the same frozen candidate corpus, not a parallel ad hoc format
+
+## Train 01 opening contract
+
+- keep `training/replay_pack/non_demo_eval.jsonl` frozen and eval-only
+- promote train rows in a separate tranche board:
+  - [training/replay_pack/train_tranche_01.md](/Users/krzysztof/blackline-atlas/training/replay_pack/train_tranche_01.md)
+- no random split
+- no hero/demo rows
+- no external benchmark rows in the first train tranche
+- use the same exact-site pair shape for:
+  - prompted eval
+  - benchmark
+  - later LEAP-compatible VLM SFT
 
 ## Future trainer fit
 

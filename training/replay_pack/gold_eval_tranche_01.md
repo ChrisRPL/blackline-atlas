@@ -182,6 +182,14 @@ They are not replacements for the internal tranche below.
 5. start the first train-row tranche instead of growing gold coverage further
 6. keep the planner eval pack stable at its current widened shape unless watchlist/query breadth grows again
 
+## Closeout
+
+- tranche complete
+- the first internal non-demo gold eval set is now frozen at `22` rows
+- no new gold-row acquisition unless product scope changes or a frozen row is invalidated
+- all new data work moves to [train_tranche_01.md](/Users/krzysztof/blackline-atlas/training/replay_pack/train_tranche_01.md)
+- the next useful pressure is train-row promotion, not more gold coverage
+
 ## Stop rules
 
 - one hard map/geocode pass only per candidate before downgrade

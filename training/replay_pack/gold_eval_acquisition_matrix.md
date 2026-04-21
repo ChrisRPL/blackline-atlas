@@ -238,3 +238,22 @@ Next order:
 2. materialize the local SimSat capture manifest against that frozen pack
 3. build the first `lfm25-vl-v1` train-prep corpus from the frozen captures
 4. keep this gold set stable while the first real train-row tranche is assembled
+
+## Frozen gold baseline
+
+- internal non-demo gold eval: `22`
+- positives: `12`
+- controls/stress: `10`
+- split shape:
+  - `dev: 1`
+  - `holdout_geo: 11`
+  - `holdout_stress: 10`
+  - `train: 0`
+
+## Train 01 handoff
+
+- gold is now eval-only
+- train growth moves to [train_tranche_01.md](/Users/krzysztof/blackline-atlas/training/replay_pack/train_tranche_01.md)
+- LEAP-compatible VLM SFT export comes from the same frozen candidate corpus via [export_leap_vlm_sft.py](/Users/krzysztof/blackline-atlas/training/scripts/export_leap_vlm_sft.py)
+- first success condition:
+  - promote the first `8-12` non-gold train rows without temporal leakage

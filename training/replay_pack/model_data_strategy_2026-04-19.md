@@ -128,6 +128,10 @@ If planner fine-tuning is ever revisited later:
 5. open the first train-row tranche toward `40-80` rows while leaving the gold pack stable
 6. planner eval expansion only after watchlist/query breadth grows again
 
+Working train-row board:
+
+- see [train_tranche_01.md](./train_tranche_01.md)
+
 ## Current recommendation
 
 - VLM: freeze gold eval, then data-first toward train rows
@@ -213,6 +217,7 @@ Use them this way, not literally:
 
 - do not build custom training infra first
 - do export Blackline train/eval rows into one LEAP-compatible VLM SFT format once we have enough train rows
+- the exporter path now exists in `training/scripts/export_leap_vlm_sft.py`
 - keep our stricter structured eval outside the trainer too:
   - action accuracy
   - schema-valid rate
