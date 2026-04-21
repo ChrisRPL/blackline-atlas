@@ -187,5 +187,14 @@
     "latitude": 31.364167,
     "longitude": 34.295556,
     "hero": false
+  },
+  {
+    "asset_id": "mansour_dam_01",
+    "asset_name": "Mansour Dam",
+    "asset_type": "water_infrastructure",
+    "region": "Derna, Libya",
+    "latitude": 32.65937,
+    "longitude": 22.57708,
+    "hero": false
   }
 ]

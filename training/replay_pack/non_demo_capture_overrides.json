@@ -39,6 +39,11 @@
     "longitude": 34.295556,
     "size_km": 0.5
   },
+  "mansour_dam_collapse": {
+    "latitude": 32.65937,
+    "longitude": 22.57708,
+    "size_km": 2.5
+  },
   "trostianets_city_hospital_signal_soft": {
     "latitude": 50.474539,
     "longitude": 34.922882,

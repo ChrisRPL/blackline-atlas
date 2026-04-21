@@ -17,12 +17,13 @@ Prompted-baseline gate, `2026-04-18`:
 - important read:
   - all `4` real positive anchors were still discarded
   - water was the biggest civilian-usefulness gap
-  - the lane now has its second exact positive, but still needs a third positive before it is meaningfully covered
+- the lane now has its third exact positive and no longer needs more bounded water churn for tranche-01 coverage
 
-- promoted water rows: `2`
+- promoted water rows: `3`
 - exact promoted water rows:
   - `Arbaat Dam`
   - `Kakhovka Dam`
+  - `Mansour Dam`
 - exact water controls:
   - `Ras Abu Jarjur`
   - `Doha West`
@@ -245,6 +246,40 @@ Rule:
   - [AP on the 2023-06-06 breach](https://apnews.com/article/russia-ukraine-war-dam-collapse-kakhovka-kherson-daacdc431f42912dfb91548794f03a3c)
   - [WHO on water-supply disruption after the breach](https://www.who.int/europe/news/item/13-06-2023-who-steps-up-its-humanitarian-response-in-southern-ukraine-following-the-destruction-of-the-kakhovka-dam)
   - [Global Energy Observatory facility clue](https://globalenergyobservatory.org/geoid/43018)
+
+### `water_13` Mansour Dam
+
+- country:
+  - `Libya`
+- type:
+  - dam / reservoir water source
+- why:
+  - macro-visible dam-failure morphology is obvious at Sentinel scale
+  - exact public parcel clue exists for the failed structure above Derna
+  - the flood aftermath had clear downstream civilian water and infrastructure consequences
+- parcel state:
+  - exact public clue:
+    - `Mapcarta / OSM way 1207192349`
+  - capture center:
+    - `32.65937, 22.57708`
+- bounded probe truth:
+  - clean pre-event frame:
+    - `2023-09-05T08:00:00Z` -> `2023-09-02T09:21:27Z` with `0.486787` cloud
+  - clean post-event frame:
+    - `2023-11-05T08:00:00Z` -> `2023-11-01T09:21:20Z` with `0.785303` cloud
+  - result:
+    - exact site is good
+    - breach and widened flood-corridor morphology are obvious
+    - row is defensible as catastrophic civilian water-infrastructure disruption
+- status:
+  - `added_to_non_demo_eval_as_reference_event`
+- next action:
+  - keep as a retrospective dam-failure water-source anchor
+  - stop bounded churn on softer water leads until a clearly better future case appears
+- sources:
+  - [AP on the September 2023 collapse of two dams above Derna](https://apnews.com/article/libya-floods-dams-storm-daniel-derna-6988c0502c713af29989ce8118b618e6)
+  - [UNICEF Libya humanitarian situation report on washed-out wells and inaccessible clean water after the floods](https://www.unicef.org/media/151781/file/Libya%20Humanitarian%20Situation%20Report%20No.%201%20%28End%20of%20Year%29%201%20Jan%20-%2031%20December%202023.pdf)
+  - [Mapcarta exact facility clue](https://mapcarta.com/W1207192349)
 
 ## Promotion candidates
 

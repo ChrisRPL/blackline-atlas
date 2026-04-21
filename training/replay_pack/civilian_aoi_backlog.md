@@ -479,6 +479,10 @@ Primary buckets:
   - direct civilian mobility lifeline
   - publicly reported as the last bridge linking southern Lebanon to the rest of the country
   - right product shape for a civilian user
+- exact public clue:
+  - `Jisr el Qâsmîyé`
+  - `33.33944, 35.25222`
+  - `Mapcarta / GeoNames bridge entry`
 - dates probed:
   - promising baseline: `2026-03-10T08:31:00Z`
   - promising current: `2026-04-16T08:31:18Z`
@@ -486,10 +490,12 @@ Primary buckets:
 - notes:
   - local SimSat probe around the likely crossing returned a tile-edge baseline artifact
   - safety review says major bridges drift tactical faster than food, water, and aid
+  - exact public clue is now locked, but the row still needs one honest non-artifact pair
   - keep as a mobility example, not the next forced eval row
 - sources:
   - [Reuters syndication, 2026-04-16](https://wsau.com/2026/04/16/israeli-strike-severs-last-bridge-linking-southern-lebanon-to-rest-of-country-lebanese-security-official-says/)
   - [Le Monde, 2026-03-24](https://www.lemonde.fr/en/international/article/2026/03/24/in-southern-lebanon-civilians-are-trapped-after-israel-destroys-bridges_6751768_4.html)
+  - [Mapcarta exact bridge clue](https://mapcarta.com/12884156)
 
 #### Gulf desalination plants
 - asset type: `water_infrastructure`

@@ -40,6 +40,15 @@ It is the first acquisition batch with the best chance of moving coverage, not j
 - status:
   - `done`
 
+#### `food_03`
+- target:
+  - `Roshen Yahotyn Logistics Center`
+- role:
+  - already landed
+  - inland food-distribution anchor
+- status:
+  - `done`
+
 ### Water
 
 #### `water_01`
@@ -60,16 +69,12 @@ It is the first acquisition batch with the best chance of moving coverage, not j
   - `done`
 
 #### `water_03`
-- target type:
-  - desalination plant only if clearly water-first
-- current lead quality:
-  - category now has two exact positives and four exact controls
-  - `Kramatorsk Filtration Station` now fills the last missing control slot as an exact stress row
-  - one more positive row is still missing
-  - working memo: `training/replay_pack/water_tranche_01.md`
-- next action:
-  - use only if plant identity is exact and visual disruption is honest
-  - keep tranche pressure on a new positive, not more water-control churn
+- target:
+  - `Mansour Dam`
+- role:
+  - retrospective dam-failure water-source anchor
+- status:
+  - `done`
 
 ### Aid
 
@@ -109,6 +114,10 @@ It is the first acquisition batch with the best chance of moving coverage, not j
   - one clearly civilian bridge / causeway only
 - current lead:
   - `Qasmiyeh Bridge`
+- exact public clue:
+  - `Jisr el Qâsmîyé`
+  - `33.33944, 35.25222`
+  - `Mapcarta / GeoNames bridge entry`
 - blocker:
   - sensitivity and visibility
 - next action:
@@ -162,14 +171,14 @@ Current read:
 They are not replacements for the internal tranche below.
 
 1. count `Roshen Yahotyn Logistics Center` as a landed inland food-distribution anchor
-2. keep `Wad Medani main water treatment plant` as an exact water evidence lead, but not a promotion until plant-scale change is defendable
-3. keep `Ayn al-Bayda Water Pumping Station` reopened as exact evidence, but not as `water_02` until plant-scale damage is defendable
-4. count `Khan Younis Training Centre` as the third aid positive and stop spending time on it
-5. count `Trostianets City Hospital` as an exact inland medical signal-soft control
-6. keep `Bashtanka Multiprofile Hospital` as the strongest remaining inland medical backup board, but not a promotion-ready row
+2. count `Mansour Dam` as the new third water positive and stop spending time on water-control churn for this tranche
+3. keep `Khan Younis Training Centre` as the third aid positive and stop spending time on it
+4. count `Trostianets City Hospital` as an exact inland medical signal-soft control
+5. keep `Bashtanka Multiprofile Hospital` as the strongest remaining inland medical backup board, but not a promotion-ready row
+6. retarget `food_04` to `Mondelēz Trostianets Confectionery Factory` first, then `Dnipro Oil Extraction Plant`, then `Chips Lux Plant`
 7. keep `Veggy Trend Invest` on hold; the `Soborna 111/111A` campus still reads too mixed for another probe
 8. keep `Novus Logistics Center` on hold unless a clearly better post-strike frame appears than the current January/March pair
-9. keep `Bahri Water Station` as the exact water control row for this tranche
+9. keep `mobility_02` narrow on one clearly civilian bridge / causeway only
 10. keep the planner eval pack stable at its current widened shape unless watchlist/query breadth grows again
 
 ## Stop rules

@@ -11,19 +11,19 @@ Purpose:
 ### VLM / image-lane truth
 
 - `hero_eval.jsonl`: `2`
-- `non_demo_eval.jsonl`: `19`
-- overall annotated rows: `21`
-- non-demo positives: `9`
+- `non_demo_eval.jsonl`: `20`
+- overall annotated rows: `22`
+- non-demo positives: `10`
   - `food`: `3`
   - `aid`: `3`
   - `mobility`: `1`
-  - `water`: `2`
+  - `water`: `3`
 - non-demo controls / stress: `10`
   - `water`: `4`
   - `food`: `3`
   - `aid`: `3`
 - split shape:
-  - `holdout_geo`: `7`
+  - `holdout_geo`: `9`
   - `holdout_stress`: `10`
   - `dev`: `1`
   - `train`: `0`
@@ -44,7 +44,7 @@ Implication:
 - current frozen planner eval rows:
   - `training/replay_pack/agent_command_eval.jsonl`: `30`
 - current watchlist assets:
-  - `21`
+  - `22`
 
 Implication:
 
@@ -67,19 +67,17 @@ First gold-set target stays:
 
 Current gap against that target:
 
-- total missing rows: `3`
-- missing positives: `3`
+- total missing rows: `2`
+- missing positives: `2`
   - `food`: `1`
-  - `water`: `1`
   - `mobility`: `1`
 - missing controls / stress: `0`
 
 Most important missing pieces:
 
-1. one more exact water positive
-2. one second aid positive with inland parcel lock
-3. one more exact food or mobility positive before adapter prep
-4. first real train split after the gold eval set is no longer tiny
+1. one more exact food positive
+2. one more exact mobility positive
+3. first real train split after the gold eval set is no longer tiny
 
 ## What the agent model still needs
 
@@ -126,10 +124,10 @@ If planner fine-tuning is ever revisited later:
 
 1. count `Roshen Yahotyn Logistics Center` as the new third inland food positive and stop spending time on it
 2. count `Khan Younis Training Centre` as the new third aid positive and stop spending time on it
-3. keep `Wad Medani main water treatment plant` as exact water evidence, but not as a third water positive until the signal is honest
-4. keep `Ayn al-Bayda Water Pumping Station` reopened as evidence, but not as a third water positive until the signal is honest
-5. count `Trostianets City Hospital` as the third exact medical-aid control and stop spending more bounded review on it
-6. keep `Bashtanka Multiprofile Hospital` as the strongest remaining inland medical backup board, but not a promotion-ready row
+3. count `Mansour Dam` as the new third water positive and stop spending time on older soft water leads
+4. count `Trostianets City Hospital` as the third exact medical-aid control and stop spending more bounded review on it
+5. keep `Bashtanka Multiprofile Hospital` as the strongest remaining inland medical backup board, but not a promotion-ready row
+6. retarget `food_04` to `Mondelēz Trostianets Confectionery Factory`, then `Dnipro Oil Extraction Plant`, then `Chips Lux Plant`
 7. keep `Veggy Trend Invest` on hold; the Soborna `111/111A` campus is still too mixed for a defendable parcel read
 8. keep `Novus Logistics Center` on hold unless a clearly better post-strike frame appears
 9. planner eval expansion only after watchlist/query breadth grows again
