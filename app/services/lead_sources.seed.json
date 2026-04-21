@@ -10,8 +10,7 @@
     "summary": "Catastrophic dam failure above Derna with major downstream flood and water-service consequences.",
     "source_url": "https://apnews.com/article/libya-floods-dams-storm-daniel-derna-6988c0502c713af29989ce8118b618e6",
     "source_date": "2023-09-13",
-    "linked_asset_id": "mansour_dam_01",
-    "last_refreshed_at": "2026-04-21T18:32:20Z"
+    "linked_asset_id": "mansour_dam_01"
   },
   {
     "lead_id": "lead_kakhovka_dam_202306",
@@ -24,8 +23,7 @@
     "summary": "Major dam breach and drained reservoir affecting civilian water supplies in southern Ukraine.",
     "source_url": "https://apnews.com/article/russia-ukraine-war-dam-collapse-kakhovka-kherson-daacdc431f42912dfb91548794f03a3c",
     "source_date": "2023-06-06",
-    "linked_asset_id": "kakhovka_dam_01",
-    "last_refreshed_at": "2026-04-21T18:32:20Z"
+    "linked_asset_id": "kakhovka_dam_01"
   },
   {
     "lead_id": "lead_okhmatdyt_202407",
@@ -38,8 +36,7 @@
     "summary": "Pediatric hospital campus in Kyiv struck with visible parcel-scale disruption.",
     "source_url": "https://apnews.com/article/russia-ukraine-war-kyiv-childrens-hospital-attack-5273809f9d6483a4399d0a44e568f5a4",
     "source_date": "2024-07-08",
-    "linked_asset_id": "okhmatdyt_01",
-    "last_refreshed_at": "2026-04-21T18:32:20Z"
+    "linked_asset_id": "okhmatdyt_01"
   },
   {
     "lead_id": "lead_kytc_202403",
@@ -52,8 +49,7 @@
     "summary": "Shelter-campus disruption in southern Gaza with heavy visible compound damage.",
     "source_url": "https://www.unrwa.org/newsroom/official-statements/unrwa-condemns-strikes-khan-younis-training-centre-and-shelter",
     "source_date": "2024-03-05",
-    "linked_asset_id": "khan_younis_kytc_01",
-    "last_refreshed_at": "2026-04-21T18:32:20Z"
+    "linked_asset_id": "khan_younis_kytc_01"
   },
   {
     "lead_id": "lead_qasmiyeh_bridge_202604",
@@ -65,7 +61,6 @@
     "status": "lead_only",
     "summary": "Reported bridge strike on a major civilian crossing into southern Lebanon; still needs an honest non-artifact satellite pair.",
     "source_url": "https://wsau.com/2026/04/16/israeli-strike-severs-last-bridge-linking-southern-lebanon-to-rest-of-country-lebanese-security-official-says/",
-    "source_date": "2026-04-16",
-    "last_refreshed_at": "2026-04-21T18:32:20Z"
+    "source_date": "2026-04-16"
   }
 ]

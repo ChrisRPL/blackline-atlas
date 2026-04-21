@@ -25,8 +25,11 @@ def test_ui_shell_serves_same_origin_dashboard() -> None:
     assert "/alerts" in static_response.text
     assert "/metrics" in static_response.text
     assert "/agent/query" in static_response.text
+    assert "selected_lead_id" in static_response.text
     assert 'id="chat-form"' in response.text
     assert 'id="map-stage"' in response.text
+    assert 'id="lead-popover"' in response.text
+    assert 'id="lead-popover-inspect"' in response.text
     assert 'id="site-name"' in response.text
     assert 'id="signal-action"' in response.text
     assert 'id="metrics-alerts"' in response.text

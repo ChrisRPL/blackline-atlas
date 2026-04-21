@@ -719,6 +719,35 @@ def test_stub_service_exposes_seeded_leads() -> None:
     assert by_id["lead_qasmiyeh_bridge_202604"].status == "lead_only"
 
 
+def test_stub_service_can_focus_selected_lead_without_asset() -> None:
+    service = StubAtlasService(
+        Settings(
+            app_env="test",
+            app_port=8000,
+            model_version="lfm2.5-vl-450m-prompted",
+            simsat_current_endpoint=None,
+            simsat_baseline_endpoint=None,
+            mapbox_token_present=False,
+            watchlist_path=None,
+            lead_registry_path=None,
+        )
+    )
+
+    response = service.run_agent_query(
+        AtlasAgentQueryRequest(
+            query="show latest alerts here",
+            selected_lead_id="lead_qasmiyeh_bridge_202604",
+        )
+    )
+
+    assert response.tool == "latest_alerts"
+    assert response.status == "no_result"
+    assert response.focus_asset_id is None
+    assert response.focus_lead_id == "lead_qasmiyeh_bridge_202604"
+    assert response.camera is not None
+    assert response.camera.mode == "focus_lead"
+
+
 def test_stub_service_keeps_water_category_when_query_mentions_dam(
     tmp_path: Path, monkeypatch
 ) -> None:

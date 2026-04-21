@@ -15,16 +15,20 @@ from app.services.agent_provider import (
     OpenAIChatCompletionsAgentPlannerProvider,
     OpenAIResponsesAgentPlannerProvider,
 )
+from app.services.lead_registry_loader import load_lead_registry
 from app.services.model_gateway import ModelGateway
 from app.services.watchlist_loader import load_watchlist_assets
 
 
 def test_agent_prompt_builder_targets_tool_plan_only() -> None:
     assets = load_watchlist_assets(None)
+    leads = load_lead_registry(None)
     prompt = AgentPlannerPromptBuilder().build(
         query="show biggest disruptions near Black Sea",
         assets=assets,
+        leads=leads,
         selected_asset=assets[0],
+        selected_lead=leads[-1],
     )
 
     assert "Choose exactly one tool" in prompt.system
@@ -38,14 +42,16 @@ def test_agent_prompt_builder_targets_tool_plan_only() -> None:
         "medical_aid_node, water_infrastructure."
     ) in prompt.system
     assert "site_id must be exactly one watchlist asset_id or null." in prompt.system
-    assert "camera.mode must be watchlist or focus_asset" in prompt.system
+    assert "camera.mode must be watchlist, focus_asset, or focus_lead" in prompt.system
     assert "For site_compare, set site_id" in prompt.system
     assert "selected_asset: demo_port_01" in prompt.user
+    assert "selected_lead: lead_qasmiyeh_bridge_202604" in prompt.user
     assert "user_query: show biggest disruptions near Black Sea" in prompt.user
 
 
 def test_prompted_agent_planner_builds_text_only_payload() -> None:
     assets = load_watchlist_assets(None)
+    leads = load_lead_registry(None)
     planner = PromptedAtlasAgentPlanner(
         model_version="lfm2.5-1.2b-instruct",
         backend=_RecordingPlannerBackend(raw_text='{"tool":"latest_alerts"}'),
@@ -54,7 +60,9 @@ def test_prompted_agent_planner_builds_text_only_payload() -> None:
     payload = planner.build_payload(
         query="latest alerts",
         assets=assets,
+        leads=leads,
         selected_asset=assets[0],
+        selected_lead=None,
     )
 
     assert payload.model_version == "lfm2.5-1.2b-instruct"
@@ -63,6 +71,7 @@ def test_prompted_agent_planner_builds_text_only_payload() -> None:
 
 def test_prompted_agent_planner_falls_back_on_invalid_json() -> None:
     assets = load_watchlist_assets(None)
+    leads = load_lead_registry(None)
     fallback = AtlasAgentPlan(tool="biggest_disruptions", area="Black Sea")
     planner = PromptedAtlasAgentPlanner(
         model_version="lfm2.5-1.2b-instruct",
@@ -72,7 +81,9 @@ def test_prompted_agent_planner_falls_back_on_invalid_json() -> None:
     decision = planner.plan(
         query="show biggest disruptions near Black Sea",
         assets=assets,
+        leads=leads,
         selected_asset=assets[0],
+        selected_lead=None,
         fallback_plan=fallback,
     )
 
@@ -110,7 +121,9 @@ def test_http_agent_planner_backend_posts_payload() -> None:
         ).build_payload(
             query="compare this site",
             assets=load_watchlist_assets(None),
+            leads=load_lead_registry(None),
             selected_asset=load_watchlist_assets(None)[0],
+            selected_lead=None,
         ),
         fallback_plan=AtlasAgentPlan(tool="latest_alerts"),
     )
@@ -143,7 +156,9 @@ def test_http_agent_planner_backend_falls_back_on_failure() -> None:
         ).build_payload(
             query="latest alerts near Black Sea",
             assets=load_watchlist_assets(None),
+            leads=load_lead_registry(None),
             selected_asset=None,
+            selected_lead=None,
         ),
         fallback_plan=fallback,
     )
@@ -160,7 +175,9 @@ def test_openai_agent_planner_provider_builds_responses_request() -> None:
     ).build_payload(
         query="show latest alerts",
         assets=load_watchlist_assets(None),
+        leads=load_lead_registry(None),
         selected_asset=None,
+        selected_lead=None,
     )
 
     request = provider.build_request(
@@ -185,7 +202,9 @@ def test_openai_chat_completions_agent_planner_provider_builds_request() -> None
     ).build_payload(
         query="show biggest disruptions near Black Sea",
         assets=load_watchlist_assets(None),
+        leads=load_lead_registry(None),
         selected_asset=None,
+        selected_lead=None,
     )
 
     request = provider.build_request(

@@ -39,6 +39,7 @@ def test_agent_query_latest_alerts_returns_watchlist_latest() -> None:
         "site_id": None,
         "alert_id": None,
         "selected_asset_id": None,
+        "selected_lead_id": None,
         "limit": 3,
     }
     assert payload["planner"]["mode"] == "deterministic"
@@ -252,6 +253,50 @@ def test_agent_query_explain_alert_uses_selected_asset_context() -> None:
     assert "Large terminal footprint change" in payload["summary"]
     assert payload["resolved"]["site_id"] == "demo_port_01"
     assert payload["resolved"]["selected_asset_id"] == "demo_port_01"
+    assert payload["resolved"]["selected_lead_id"] is None
+
+
+def test_agent_query_latest_alerts_can_focus_selected_lead_marker() -> None:
+    client = TestClient(create_app())
+
+    response = client.post(
+        "/agent/query",
+        json={
+            "query": "show latest alerts here",
+            "selected_lead_id": "lead_qasmiyeh_bridge_202604",
+        },
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["tool"] == "latest_alerts"
+    assert payload["status"] == "no_result"
+    assert payload["focus_asset_id"] is None
+    assert payload["focus_lead_id"] == "lead_qasmiyeh_bridge_202604"
+    assert payload["camera"]["mode"] == "focus_lead"
+    assert payload["camera"]["lead_id"] == "lead_qasmiyeh_bridge_202604"
+    assert payload["resolved"]["selected_lead_id"] == "lead_qasmiyeh_bridge_202604"
+
+
+def test_agent_query_explain_alert_returns_lead_only_context() -> None:
+    client = TestClient(create_app())
+
+    response = client.post(
+        "/agent/query",
+        json={
+            "query": "why is this point flagged",
+            "selected_lead_id": "lead_qasmiyeh_bridge_202604",
+        },
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["tool"] == "explain_alert"
+    assert payload["status"] == "no_result"
+    assert payload["focus_asset_id"] is None
+    assert payload["focus_lead_id"] == "lead_qasmiyeh_bridge_202604"
+    assert "lead marker" in payload["summary"]
+    assert payload["camera"]["mode"] == "focus_lead"
 
 
 def test_agent_query_explain_alert_returns_no_result_for_reference_control_site() -> None:

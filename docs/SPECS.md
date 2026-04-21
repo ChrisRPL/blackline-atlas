@@ -123,6 +123,10 @@ Single page only.
   - some are news / source leads
   - some are VLM-reviewed reference sites
   - trust state must remain visible
+- first point click should open a compact source popup
+  - awareness only
+  - title, region, source date, summary, inspect action if linked
+  - evidence drawer stays separate
 
 ## Lead registry
 

@@ -254,6 +254,10 @@ class StubAtlasService:
                         name="selected_asset_id",
                         description="Optional selected asset fallback when alert_id is missing.",
                     ),
+                    AtlasAgentToolArgument(
+                        name="selected_lead_id",
+                        description="Optional selected lead marker when no asset is focused.",
+                    ),
                 ],
             ),
         ]
@@ -266,9 +270,9 @@ class StubAtlasService:
         trust = self._agent_trust()
         alerts = self._filter_agent_alerts(
             alerts=[alert for evaluation in watchlist for alert in evaluation.alerts],
-            area=resolved_request.area,
-            category=resolved_request.category,
-            limit=resolved_request.limit,
+            area=resolved.area,
+            category=resolved.category,
+            limit=resolved.limit,
         )
 
         if tool == "site_compare":
@@ -371,27 +375,33 @@ class StubAtlasService:
         no_result_summary: str,
     ) -> AtlasAgentQueryResponse:
         if not alerts:
-            matching_leads = self._filter_leads(
-                area=resolved.area,
-                category=resolved.category,
-                limit=resolved.limit,
+            matching_leads = self._lead_matches_for_request(resolved)
+            focus_lead = (
+                matching_leads[0]
+                if len(matching_leads) == 1
+                else self._find_lead(resolved.selected_lead_id)
             )
+            summary = no_result_summary
+            if focus_lead is not None:
+                summary = f"{no_result_summary} {focus_lead.title} remains a visible lead marker."
+            elif matching_leads:
+                summary = (
+                    f"{no_result_summary} {len(matching_leads)} lead "
+                    f"{'marker remains' if len(matching_leads) == 1 else 'markers remain'} visible."
+                )
             return AtlasAgentQueryResponse(
                 status="no_result",
                 tool=tool,
-                summary=(
-                    f"{no_result_summary} {len(matching_leads)} lead "
-                    f"{'marker remains' if len(matching_leads) == 1 else 'markers remain'} visible."
-                    if matching_leads
-                    else no_result_summary
-                ),
+                summary=summary,
                 resolved=resolved,
                 camera=self._camera_intent(
                     tool=tool,
                     alerts=[],
                     focus_asset_id=None,
+                    focus_lead_id=focus_lead.lead_id if focus_lead is not None else None,
                     lead_matches=matching_leads,
                 ),
+                focus_lead_id=focus_lead.lead_id if focus_lead is not None else None,
                 alerts=[],
                 planner=planner,
                 trust=trust,
@@ -431,8 +441,35 @@ class StubAtlasService:
         resolved: AtlasAgentResolvedRequest,
         trust: AtlasAgentTrust,
     ) -> AtlasAgentQueryResponse:
-        asset_id = request.site_id or request.selected_asset_id or self.hero_asset.asset_id
+        lead = self._find_lead(request.selected_lead_id)
+        asset_id = (
+            request.site_id
+            or request.selected_asset_id
+            or (lead.linked_asset_id if lead is not None else None)
+            or self.hero_asset.asset_id
+        )
         asset = self._find_asset(asset_id)
+        if asset is None and lead is not None:
+            return AtlasAgentQueryResponse(
+                status="no_result",
+                tool="site_compare",
+                summary=(
+                    f"{lead.title} is still a browse lead only. "
+                    "Evidence compare is not loaded for this point yet."
+                ),
+                resolved=resolved,
+                camera=self._camera_intent(
+                    tool="site_compare",
+                    alerts=[],
+                    focus_asset_id=None,
+                    focus_lead_id=lead.lead_id,
+                    lead_matches=[lead],
+                ),
+                focus_lead_id=lead.lead_id,
+                planner=planner,
+                trust=trust,
+                replay=self.get_replay_state(),
+            )
         if asset is None:
             return AtlasAgentQueryResponse(
                 status="no_result",
@@ -509,9 +546,32 @@ class StubAtlasService:
         resolved: AtlasAgentResolvedRequest,
         trust: AtlasAgentTrust,
     ) -> AtlasAgentQueryResponse:
+        lead = self._find_lead(request.selected_lead_id)
+        if request.selected_asset_id is None and request.site_id is None and lead is not None:
+            if lead.linked_asset_id is None:
+                return AtlasAgentQueryResponse(
+                    status="no_result",
+                    tool="explain_alert",
+                    summary=(
+                        f"{lead.title} is a lead marker, not a confirmed watchlist alert. "
+                        "Open the point popup or wait for evidence review."
+                    ),
+                    resolved=resolved,
+                    camera=self._camera_intent(
+                        tool="explain_alert",
+                        alerts=[],
+                        focus_asset_id=None,
+                        focus_lead_id=lead.lead_id,
+                        lead_matches=[lead],
+                    ),
+                    focus_lead_id=lead.lead_id,
+                    planner=planner,
+                    trust=trust,
+                    replay=self.get_replay_state(),
+                )
         target_alert = self._resolve_alert_target(
             alert_id=request.alert_id,
-            selected_asset_id=request.selected_asset_id or request.site_id,
+            selected_asset_id=request.selected_asset_id or request.site_id or lead.linked_asset_id,
             filtered_alerts=alerts,
             watchlist=watchlist,
         )
@@ -790,17 +850,30 @@ class StubAtlasService:
         request: AtlasAgentQueryRequest,
         tool: AtlasAgentTool,
     ) -> AtlasAgentResolvedRequest:
+        selected_lead = self._find_lead(request.selected_lead_id)
         effective_site_id = request.site_id
         if effective_site_id is None and tool in {"site_compare", "explain_alert"}:
-            effective_site_id = request.selected_asset_id
+            effective_site_id = request.selected_asset_id or self._lead_backed_asset_id(
+                request.selected_lead_id
+            )
+        effective_area = request.area
+        effective_category = request.category
+        if (
+            selected_lead is not None
+            and request.selected_asset_id is None
+            and tool in {"latest_alerts", "biggest_disruptions"}
+        ):
+            effective_area = request.area or selected_lead.region
+            effective_category = request.category or selected_lead.category_guess
 
         return AtlasAgentResolvedRequest(
             tool=tool,
-            area=request.area,
-            category=request.category,
+            area=effective_area,
+            category=effective_category,
             site_id=effective_site_id,
             alert_id=request.alert_id,
             selected_asset_id=request.selected_asset_id,
+            selected_lead_id=request.selected_lead_id,
             limit=request.limit,
         )
 
@@ -887,12 +960,26 @@ class StubAtlasService:
             filtered = [lead for lead in filtered if lead.category_guess == category]
         return filtered[:limit]
 
+    def _lead_matches_for_request(self, request: AtlasAgentResolvedRequest) -> list[Lead]:
+        matching = self._filter_leads(
+            area=request.area,
+            category=request.category,
+            limit=request.limit,
+        )
+        selected = self._find_lead(request.selected_lead_id)
+        if selected is None:
+            return matching
+        return ([selected] + [lead for lead in matching if lead.lead_id != selected.lead_id])[
+            : request.limit
+        ]
+
     def _camera_intent(
         self,
         *,
         tool: AtlasAgentTool,
         alerts: list[Alert],
         focus_asset_id: str | None,
+        focus_lead_id: str | None = None,
         lead_matches: list[Lead] | None = None,
     ) -> AtlasAgentCameraIntent:
         if tool in {"site_compare", "explain_alert"} and focus_asset_id:
@@ -900,6 +987,13 @@ class StubAtlasService:
                 mode="focus_asset",
                 asset_id=focus_asset_id,
                 highlight_asset_ids=[focus_asset_id],
+            )
+        if focus_lead_id:
+            return AtlasAgentCameraIntent(
+                mode="focus_lead",
+                lead_id=focus_lead_id,
+                highlight_asset_ids=[alert.asset_id for alert in alerts],
+                highlight_lead_ids=[focus_lead_id],
             )
 
         return AtlasAgentCameraIntent(
@@ -1022,10 +1116,13 @@ class StubAtlasService:
                 ),
             )
         selected_asset = self._find_asset(request.selected_asset_id)
+        selected_lead = self._find_lead(request.selected_lead_id)
         decision = self.agent_planner.plan(
             query=request.query,
             assets=self.assets,
+            leads=self.leads,
             selected_asset=selected_asset,
+            selected_lead=selected_lead,
             fallback_plan=fallback_plan,
         )
         plan = self._sanitized_planner_plan(decision.plan, request=request)
@@ -1071,6 +1168,9 @@ class StubAtlasService:
             return request.site_id or plan.site_id
         if request.selected_asset_id:
             return request.selected_asset_id
+        linked_asset_id = self._lead_backed_asset_id(request.selected_lead_id)
+        if linked_asset_id:
+            return linked_asset_id
         if plan.tool not in {"site_compare", "explain_alert"}:
             return None
 
@@ -1157,7 +1257,12 @@ class StubAtlasService:
     ) -> Asset | None:
         if plan.tool not in {"site_compare", "explain_alert"}:
             return None
-        return self._find_asset(request.selected_asset_id or request.site_id or site_id)
+        return self._find_asset(
+            request.selected_asset_id
+            or request.site_id
+            or self._lead_backed_asset_id(request.selected_lead_id)
+            or site_id
+        )
 
     def _canonical_area(self, area: str | None) -> str | None:
         if not area:
@@ -1272,6 +1377,17 @@ class StubAtlasService:
         if asset_id is None:
             return None
         return next((asset for asset in self.assets if asset.asset_id == asset_id), None)
+
+    def _find_lead(self, lead_id: str | None) -> Lead | None:
+        if lead_id is None:
+            return None
+        return next((lead for lead in self.leads if lead.lead_id == lead_id), None)
+
+    def _lead_backed_asset_id(self, lead_id: str | None) -> str | None:
+        lead = self._find_lead(lead_id)
+        if lead is None:
+            return None
+        return lead.linked_asset_id
 
     def _agent_trust(self) -> AtlasAgentTrust:
         health = self.get_health()

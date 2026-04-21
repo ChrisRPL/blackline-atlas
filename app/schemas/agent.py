@@ -26,7 +26,7 @@ AtlasAgentPlannerReason = Literal[
     "planner_http_failed",
     "planner_invalid_json",
 ]
-AtlasAgentCameraMode = Literal["watchlist", "focus_asset"]
+AtlasAgentCameraMode = Literal["watchlist", "focus_asset", "focus_lead"]
 
 
 class AtlasAgentToolArgument(BaseModel):
@@ -55,6 +55,7 @@ class AtlasAgentPlannerTelemetry(BaseModel):
 class AtlasAgentCameraIntent(BaseModel):
     mode: AtlasAgentCameraMode
     asset_id: str | None = None
+    lead_id: str | None = None
     highlight_asset_ids: list[str] = Field(default_factory=list)
     highlight_lead_ids: list[str] = Field(default_factory=list)
 
@@ -66,6 +67,7 @@ class AtlasAgentResolvedRequest(BaseModel):
     site_id: str | None = None
     alert_id: str | None = None
     selected_asset_id: str | None = None
+    selected_lead_id: str | None = None
     limit: int = Field(default=3, ge=1, le=10)
 
 
@@ -84,6 +86,7 @@ class AtlasAgentQueryRequest(BaseModel):
     site_id: str | None = None
     alert_id: str | None = None
     selected_asset_id: str | None = None
+    selected_lead_id: str | None = None
     limit: int = Field(default=3, ge=1, le=10)
 
     @model_validator(mode="after")
@@ -109,6 +112,7 @@ class AtlasAgentQueryResponse(BaseModel):
     resolved: AtlasAgentResolvedRequest
     camera: AtlasAgentCameraIntent | None = None
     focus_asset_id: str | None = None
+    focus_lead_id: str | None = None
     focus_alert_id: str | None = None
     alerts: list[Alert] = Field(default_factory=list)
     compare: AtlasAgentCompare | None = None

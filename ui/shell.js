@@ -39,6 +39,15 @@ const dom = {
   mapStage: document.querySelector("#map-stage"),
   mapCanvas: document.querySelector("#map-canvas"),
   mapMarkers: document.querySelector("#map-markers"),
+  leadPopover: document.querySelector("#lead-popover"),
+  leadPopoverKicker: document.querySelector("#lead-popover-kicker"),
+  leadPopoverTitle: document.querySelector("#lead-popover-title"),
+  leadPopoverRegion: document.querySelector("#lead-popover-region"),
+  leadPopoverDate: document.querySelector("#lead-popover-date"),
+  leadPopoverSummary: document.querySelector("#lead-popover-summary"),
+  leadPopoverStatus: document.querySelector("#lead-popover-status"),
+  leadPopoverLink: document.querySelector("#lead-popover-link"),
+  leadPopoverInspect: document.querySelector("#lead-popover-inspect"),
   channelPanel: document.querySelector(".channel-panel"),
   drawerPanel: document.querySelector(".drawer-panel"),
   siteName: document.querySelector("#site-name"),
@@ -100,6 +109,19 @@ function formatTimestamp(value) {
   return timestamp.toISOString().replace("T", " ").replace(".000Z", " UTC").replace("Z", " UTC");
 }
 
+function formatDateLabel(value) {
+  if (!value) {
+    return "date unknown";
+  }
+
+  const timestamp = new Date(value);
+  if (Number.isNaN(timestamp.getTime())) {
+    return value;
+  }
+
+  return timestamp.toISOString().slice(0, 10);
+}
+
 function siteImpactClass(level) {
   if (level === "high" || level === "accepted") {
     return "status-pill high";
@@ -119,6 +141,13 @@ function selectedAsset() {
 
 function selectedLead() {
   return state.leads.find((lead) => lead.lead_id === state.selectedLeadId) || null;
+}
+
+function linkedAssetForLead(lead) {
+  if (!lead?.linked_asset_id) {
+    return null;
+  }
+  return state.assets.find((asset) => asset.asset_id === lead.linked_asset_id) || null;
 }
 
 function liveAlert() {
@@ -342,7 +371,14 @@ function selectLead(leadId) {
     return;
   }
   state.selectedLeadId = leadId;
+  state.selectedAssetId = null;
+  state.selectedSiteContext = null;
+  state.selectedSiteLoading = false;
+  if (isMobileSheetMode()) {
+    setMobileSheet(null);
+  }
   renderMap();
+  renderDrawer();
 }
 
 function clearLiveMapMarkers() {
@@ -396,6 +432,21 @@ function focusMapOnAsset(asset, { immediate = false } = {}) {
   };
 
   state.map.easeTo(options);
+}
+
+function focusMapOnLead(lead, { immediate = false } = {}) {
+  if (!state.map || !lead) {
+    return;
+  }
+
+  state.cameraMode = "globe";
+  setMapProjection("globe");
+  state.map.easeTo({
+    center: [lead.longitude, lead.latitude],
+    zoom: Math.max(currentMapZoom(), 2.7),
+    duration: immediate ? 0 : 900,
+    essential: true,
+  });
 }
 
 function fitMapToPoints(points) {
@@ -471,14 +522,14 @@ function syncLiveMapMarkers() {
     markerEl.addEventListener("click", () => {
       if (item.kind === "lead") {
         selectLead(item.id);
-        if (item.linkedAssetId) {
-          selectAsset(item.linkedAssetId);
-          const asset = state.assets.find((entry) => entry.asset_id === item.linkedAssetId);
-          if (asset) {
-            focusMapOnAsset(asset);
-          }
+        const lead = state.leads.find((entry) => entry.lead_id === item.id);
+        if (lead) {
+          focusMapOnLead(lead);
         }
-        appendMessage("assistant", `${item.label}: ${item.summary || "Lead marker selected."}`);
+        appendMessage(
+          "assistant",
+          `${item.label}: ${item.summary || "Lead marker selected."} ${item.linkedAssetId ? "Site inspect available." : ""}`.trim(),
+        );
         return;
       }
       selectAsset(item.linkedAssetId);
@@ -517,6 +568,10 @@ function ensureLiveMap() {
     dom.mapStage.classList.add("is-live-map");
     fitMapToPoints(markerItems());
     syncLiveMapMarkers();
+    renderLeadPopover();
+  });
+  state.map.on("move", () => {
+    renderLeadPopover();
   });
 }
 
@@ -638,6 +693,14 @@ function applyCameraIntent(camera) {
     }
     return;
   }
+  if (camera.mode === "focus_lead" && camera.lead_id) {
+    const lead = state.leads.find((entry) => entry.lead_id === camera.lead_id);
+    if (lead) {
+      selectLead(lead.lead_id);
+      focusMapOnLead(lead);
+    }
+    return;
+  }
 
   const highlighted = markerItems().filter((item) => pointMatchesCamera(item, camera));
   fitMapToPoints(highlighted.length ? highlighted : markerItems());
@@ -657,6 +720,11 @@ function applyAgentResponse(response) {
 
   if (response.focus_asset_id) {
     state.selectedAssetId = response.focus_asset_id;
+    state.selectedLeadId = null;
+  }
+
+  if (response.focus_lead_id && !response.focus_asset_id) {
+    state.selectedLeadId = response.focus_lead_id;
   }
 
   if (response.camera) {
@@ -677,6 +745,7 @@ async function queryAgent(rawText) {
     body: JSON.stringify({
       query: rawText,
       selected_asset_id: state.selectedAssetId,
+      selected_lead_id: state.selectedLeadId,
     }),
   });
 
@@ -815,6 +884,53 @@ function renderTopbar() {
   renderPlannerChip();
 }
 
+function renderLeadPopover() {
+  if (!dom.leadPopover) {
+    return;
+  }
+
+  const lead = selectedLead();
+  if (!lead) {
+    dom.leadPopover.hidden = true;
+    return;
+  }
+
+  const linkedAsset = linkedAssetForLead(lead);
+  dom.leadPopover.hidden = false;
+  dom.leadPopoverKicker.textContent = linkedAsset ? "linked lead" : "lead marker";
+  dom.leadPopoverTitle.textContent = lead.title;
+  dom.leadPopoverRegion.textContent = compactLabel(lead.region);
+  dom.leadPopoverDate.textContent = formatDateLabel(lead.source_date);
+  dom.leadPopoverSummary.textContent = compactLabel(lead.summary, "Lead marker selected.");
+  dom.leadPopoverStatus.textContent = humanizeSlug(lead.status);
+
+  if (lead.source_url) {
+    dom.leadPopoverLink.hidden = false;
+    dom.leadPopoverLink.href = lead.source_url;
+  } else {
+    dom.leadPopoverLink.hidden = true;
+    dom.leadPopoverLink.removeAttribute("href");
+  }
+
+  dom.leadPopoverInspect.hidden = !linkedAsset;
+
+  let left = "50%";
+  let top = "50%";
+  if (state.mapReady && state.map) {
+    const point = state.map.project([lead.longitude, lead.latitude]);
+    left = `${point.x}px`;
+    top = `${point.y}px`;
+  } else {
+    const bounds = computeBounds(markerItems());
+    const position = project(lead, bounds);
+    left = position.left;
+    top = position.top;
+  }
+
+  dom.leadPopover.style.left = left;
+  dom.leadPopover.style.top = top;
+}
+
 function renderMap() {
   const points = markerItems();
   const bounds = computeBounds(points);
@@ -871,14 +987,10 @@ function renderMap() {
             return;
           }
           selectLead(lead.lead_id);
-          if (lead.linked_asset_id) {
-            selectAsset(lead.linked_asset_id);
-            const asset = state.assets.find((entry) => entry.asset_id === lead.linked_asset_id);
-            if (asset) {
-              focusMapOnAsset(asset);
-            }
-          }
-          appendMessage("assistant", `${lead.title}: ${lead.summary || "Lead marker selected."}`);
+          appendMessage(
+            "assistant",
+            `${lead.title}: ${lead.summary || "Lead marker selected."} ${lead.linked_asset_id ? "Site inspect available." : ""}`.trim(),
+          );
           return;
         }
         selectAsset(markerId);
@@ -891,6 +1003,7 @@ function renderMap() {
     });
   }
 
+  renderLeadPopover();
 }
 
 function renderDrawer() {
@@ -1042,6 +1155,17 @@ function pickInitialSelection() {
 }
 
 function bindEvents() {
+  dom.leadPopoverInspect?.addEventListener("click", () => {
+    const lead = selectedLead();
+    const asset = linkedAssetForLead(lead);
+    if (!lead || !asset) {
+      return;
+    }
+    selectAsset(asset.asset_id);
+    focusMapOnAsset(asset);
+    appendMessage("assistant", `Inspecting ${asset.asset_name}.`);
+  });
+
   dom.sheetToggles.forEach((button) => {
     button.addEventListener("click", () => {
       const target = button.dataset.sheetTarget || null;

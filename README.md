@@ -10,6 +10,7 @@ It now also carries a small file-backed lead registry for globe markers, separat
 
 - civilian lifeline monitoring, not general surveillance
 - map-first operator workflow with an agent command dock
+- globe lead markers with a compact source popup before full evidence review
 - structured alert generation, not chatty summarization
 - deterministic replay and cached fallback paths
 - Sentinel-first time-aware change checks
@@ -132,8 +133,14 @@ python3 training/scripts/run_lfm25_vl_prompted_eval.py \
 Refresh the local lead registry seed:
 
 ```bash
-python3 training/scripts/refresh_lead_registry.py
+python3 training/scripts/refresh_lead_registry.py \
+  --source-path app/services/lead_sources.seed.json \
+  --output-path app/services/lead_registry.seed.json
 ```
+
+Notes:
+- `app/services/lead_sources.seed.json` is the curated source-of-truth for globe leads
+- `app/services/lead_registry.seed.json` is the refreshed runtime registry used by `/leads`
 
 ## Benchmarking
 

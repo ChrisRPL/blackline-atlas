@@ -12,6 +12,7 @@ from app.schemas.agent import (
     AtlasAgentPlannerReason,
 )
 from app.schemas.asset import Asset
+from app.schemas.lead import Lead
 from app.schemas.planner_payload import PlannerRequestPayload, PlannerTextInput
 from app.services.agent_prompt_builder import AgentPlannerPrompt, AgentPlannerPromptBuilder
 from app.services.agent_provider import HttpAgentPlannerProvider
@@ -109,12 +110,16 @@ class PromptedAtlasAgentPlanner:
         *,
         query: str,
         assets: list[Asset],
+        leads: list[Lead],
         selected_asset: Asset | None,
+        selected_lead: Lead | None,
     ) -> AgentPlannerPrompt:
         return self.prompt_builder.build(
             query=query,
             assets=assets,
+            leads=leads,
             selected_asset=selected_asset,
+            selected_lead=selected_lead,
         )
 
     def build_payload(
@@ -122,12 +127,16 @@ class PromptedAtlasAgentPlanner:
         *,
         query: str,
         assets: list[Asset],
+        leads: list[Lead],
         selected_asset: Asset | None,
+        selected_lead: Lead | None,
     ) -> PlannerRequestPayload:
         prompt = self.build_prompt(
             query=query,
             assets=assets,
+            leads=leads,
             selected_asset=selected_asset,
+            selected_lead=selected_lead,
         )
         return PlannerRequestPayload(
             model_version=self.model_version,
@@ -142,13 +151,17 @@ class PromptedAtlasAgentPlanner:
         *,
         query: str,
         assets: list[Asset],
+        leads: list[Lead],
         selected_asset: Asset | None,
+        selected_lead: Lead | None,
         fallback_plan: AtlasAgentPlan,
     ) -> AgentPlannerDecision:
         payload = self.build_payload(
             query=query,
             assets=assets,
+            leads=leads,
             selected_asset=selected_asset,
+            selected_lead=selected_lead,
         )
         backend_result = self.backend.generate(
             payload=payload,
