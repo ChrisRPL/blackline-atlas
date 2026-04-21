@@ -6,10 +6,14 @@
 - Product category: onboard civilian lifeline monitoring and alert triage
 - Primary user: civilian resilience operators and analysts who want a small queue of meaningful alerts about lifelines near cities, regions, and nearby countries rather than a firehose of imagery
 - Core outcome: translate raw orbital imagery into compact, credible, structured alerts
+- first impression: operational globe with current disruption points, then drill into evidence with chat or click
 
 ## Functional requirements
 
 ### Must-have
+- public disruption-location fetch layer
+  - refresh on schedule
+  - default cadence: once per day unless manually refreshed
 - curated watchlist
 - current Sentinel frame retrieval
 - historical Sentinel baseline retrieval
@@ -79,10 +83,71 @@
 Single page only.
 
 - top rail: mode, trust, replay state, planner fallback state
-- center: map-first canvas with watchlist and selected-site focus
-- command dock: compact agent control for latest, biggest, compare, and explain flows
-- evidence tray or drawer: current, baseline, alert, and metrics for the selected site
+- landing state:
+  - branded dark 3D globe
+  - disruption / conflict lead markers already visible
+  - no heavy dashboard chrome
+- interaction pattern:
+  - click a point:
+    - focus camera
+    - open compact pop-up card above the point
+    - show chat + evidence tray context
+  - prompt in chat:
+    - resolve geography or category intent
+    - animate globe / map to the area
+    - highlight matching points
+    - summarize in chat
+- center:
+  - globe-first at wide zoom
+  - map-first at inspection zoom
+- command dock:
+  - compact agent control for latest, biggest, compare, explain, and geographic drill-down flows
+- evidence tray or drawer:
+  - current
+  - baseline
+  - alert
+  - metrics
 - optional inspection context only after selection; no dashboard-first layout
+
+## First interaction rules
+
+- user should understand the product in under `20` seconds
+- globe should answer:
+  - where are current disruption leads
+- chat should answer:
+  - what changed
+  - why it matters
+  - show me nearby
+- point markers are not all equal:
+  - some are news / source leads
+  - some are VLM-reviewed reference sites
+  - trust state must remain visible
+
+## Lead registry
+
+Before a user asks anything, the system should maintain a small lead registry of current disruption locations.
+
+Each lead should carry:
+
+- source URL
+- source date
+- locality / region
+- approximate lat / lon
+- category guess
+- status:
+  - `lead_only`
+  - `vlm_reviewed`
+  - `reference_event`
+  - `reference_control`
+
+Rule:
+
+- registry refresh is a fetch / sourcing problem, not a VLM training problem
+- do not run the VLM on every point by default
+- VLM runs only when:
+  - a point is selected
+  - a chat flow requests review
+  - a background batch explicitly targets a shortlist
 
 ## Acceptance criteria
 

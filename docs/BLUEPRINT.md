@@ -10,7 +10,12 @@ Blackline Atlas watches a small list of public civilian lifelines from orbit and
 ## Product architecture
 
 ```text
-watchlist assets
+public lead registry
+  -> web/news source fetch
+  -> geocode / dedupe / daily refresh
+  -> globe markers
+
+watchlist assets or selected lead
   -> current Sentinel fetch
   -> historical Sentinel baseline
   -> hard filters
@@ -19,8 +24,27 @@ watchlist assets
   -> policy decision
   -> alert queue
   -> optional Mapbox context
-  -> metrics + replay UI
+  -> globe/card/chat/evidence UI
 ```
+
+## UX shape
+
+Default product shape:
+
+- globe first
+- chat second
+- evidence third
+
+Meaning:
+
+- the globe is the browsing and awareness surface
+- the chat is the agentic control surface
+- the evidence tray is the proof surface
+
+Important rule:
+
+- a visible point on the globe is a lead, not always a model-confirmed alert
+- point selection should trigger the expensive review path only when needed
 
 ## Recommended build phases
 
@@ -32,6 +56,8 @@ watchlist assets
 - create repo scaffold
 
 ### Phase 1
+- build lead registry fetch + refresh
+- build globe marker layer
 - build FastAPI app
 - build cache-backed service
 - implement watchlist
@@ -42,6 +68,7 @@ watchlist assets
 - add metrics counters
 
 ### Phase 2
+- add chat-driven globe control
 - add prompt builder
 - call VLM
 - parse strict JSON
@@ -78,7 +105,7 @@ Avoid:
 
 ## Non-negotiables
 
-- one-page, map-first UI
+- one-page, globe-to-map UI
 - deterministic replay
 - cache everything
 - structured outputs only
