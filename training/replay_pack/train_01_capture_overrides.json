@@ -78,5 +78,15 @@
     "latitude": 33.901,
     "longitude": 35.52,
     "size_km": 1.0
+  },
+  "port_sudan_aid_hub_train_20250324_20250612": {
+    "latitude": 19.5937,
+    "longitude": 37.236699,
+    "size_km": 5.0
+  },
+  "gedaref_grain_silos_train_20231011_20241015": {
+    "latitude": 14.026667,
+    "longitude": 35.365,
+    "size_km": 1.0
   }
 }
