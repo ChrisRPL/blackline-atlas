@@ -117,6 +117,16 @@ python3 training/scripts/capture_simsat_manifest.py \
   --output-dir /tmp/non_demo_simsat_capture
 ```
 
+Probe candidate Train 01 positive windows before promoting a new row:
+
+```bash
+python3 training/scripts/probe_train_family_windows.py \
+  --historical-endpoint http://localhost:9005/data/image/sentinel \
+  --family okhmatdyt \
+  --family baltimore \
+  --family port_sudan
+```
+
 Build and score the prompted baseline corpus:
 
 ```bash
