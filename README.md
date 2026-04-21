@@ -177,6 +177,7 @@ Current rule:
 - keep the `22`-row non-demo gold eval set frozen
 - export LEAP-compatible VLM SFT from the same frozen corpus shape
 - start train acquisition in a separate tranche, not by mutating gold rows
+- first promoted train rows now live in [training/replay_pack/train_01.jsonl](training/replay_pack/train_01.jsonl)
 
 Working doc:
 

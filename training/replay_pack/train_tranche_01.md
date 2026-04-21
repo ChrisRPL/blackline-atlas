@@ -6,6 +6,18 @@ Purpose:
 - keep the `22`-row gold eval set fixed
 - build the first honest `40-80` train rows without temporal leakage
 
+## Current status
+
+- promoted train rows: `5`
+- promoted dataset:
+  - [train_01.jsonl](/Users/krzysztof/blackline-atlas/training/replay_pack/train_01.jsonl)
+- first active families with real rows:
+  - `Morandi Bridge`
+  - `Kakhovka Dam`
+- still blocked / not yet promotable:
+  - `Roshen Yahotyn Logistics Center`
+  - `Mondelez Trostianets Confectionery Factory`
+
 ## Rule first
 
 - do not mutate `training/replay_pack/non_demo_eval.jsonl`
