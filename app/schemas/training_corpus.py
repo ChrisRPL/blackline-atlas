@@ -75,6 +75,16 @@ class BlacklineCandidateEvalRecord(BaseModel):
     simsat: SimSatCorpusSidecar
 
 
+class LeapVLMSFTRecord(BaseModel):
+    record_id: str
+    case_id: str
+    asset_id: str
+    source_split: CorpusSplit
+    target_split: Literal["train", "eval"]
+    task_kind: Literal["candidate_json_sft"] = "candidate_json_sft"
+    messages: list[dict[str, object]]
+
+
 class CorpusSplitCase(BaseModel):
     case_id: str
     asset_id: str
