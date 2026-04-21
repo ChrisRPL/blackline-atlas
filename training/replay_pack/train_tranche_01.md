@@ -8,7 +8,7 @@ Purpose:
 
 ## Current status
 
-- promoted train rows: `9`
+- promoted train rows: `11`
 - promoted dataset:
   - [train_01.jsonl](/Users/krzysztof/blackline-atlas/training/replay_pack/train_01.jsonl)
 - first active families with real rows:
@@ -16,7 +16,9 @@ Purpose:
   - `Kakhovka Dam`
   - `Port Sudan Aid Hub`
   - `Ras Abu Jarjur`
+  - `Doha West`
   - `Bahri Water Station`
+  - `Kramatorsk Filtration Station`
   - `UNHCR Baghdad Warehouse`
 - still blocked / not yet promotable:
   - `Roshen Yahotyn Logistics Center`
@@ -130,5 +132,5 @@ This keeps one canonical row family for:
 
 1. start with `Mondelez`, `Morandi`, `Roshen`, and `Kakhovka`
 2. collect non-gold timestamp variants only
-3. promote the first `8-12` train rows
-4. then widen to the rest of the frozen positive families
+3. hold `Khan Younis`, `Okhmatdyt`, and `Trostianets` until genuinely non-gold clean pairs exist
+4. target one more clean control or positive row to close the first `12`-row train mini-pack

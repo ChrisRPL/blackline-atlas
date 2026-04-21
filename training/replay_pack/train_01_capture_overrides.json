@@ -43,5 +43,15 @@
     "latitude": 33.34150243963263,
     "longitude": 44.36504131109288,
     "size_km": 5.0
+  },
+  "doha_west_train_20251031_20251230": {
+    "latitude": 29.368333,
+    "longitude": 47.788333,
+    "size_km": 5.0
+  },
+  "kramatorsk_filtration_train_20230809_20240714": {
+    "latitude": 48.731001,
+    "longitude": 37.601078,
+    "size_km": 5.0
   }
 }
