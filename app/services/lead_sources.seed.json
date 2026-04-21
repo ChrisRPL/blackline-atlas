@@ -62,5 +62,29 @@
     "summary": "Reported bridge strike on a major civilian crossing into southern Lebanon; still needs an honest non-artifact satellite pair.",
     "source_url": "https://wsau.com/2026/04/16/israeli-strike-severs-last-bridge-linking-southern-lebanon-to-rest-of-country-lebanese-security-official-says/",
     "source_date": "2026-04-16"
+  },
+  {
+    "lead_id": "lead_european_gaza_hospital_202505",
+    "title": "European Gaza Hospital",
+    "region": "Al-Fukhari, Khan Younis, Gaza Strip",
+    "latitude": 31.30363,
+    "longitude": 34.31985,
+    "category_guess": "medical_aid_node",
+    "status": "lead_only",
+    "summary": "Hospital campus in Khan Younis forced out of service after repeated attacks in May 2025; exact site queued for future VLM review.",
+    "source_url": "https://www.who.int/news/item/22-05-2025-health-system-at-breaking-point-as-hostilities-further-intensify--who-warns",
+    "source_date": "2025-05-22"
+  },
+  {
+    "lead_id": "lead_saudi_maternity_elfasher_202510",
+    "title": "Saudi Maternal Teaching Hospital",
+    "region": "Al-Fashir, North Darfur",
+    "latitude": 13.629704,
+    "longitude": 25.329616,
+    "category_guess": "medical_aid_node",
+    "status": "lead_only",
+    "summary": "Last major maternity hospital in El Fasher repeatedly attacked; exact campus queued for future VLM review.",
+    "source_url": "https://www.who.int/macaochina/news/detail-global/29-10-2025-who-condemns-killings-of-patients-and-civilians-amid-escalating-violence-in-el-fasher--sudan",
+    "source_date": "2025-10-29"
   }
 ]

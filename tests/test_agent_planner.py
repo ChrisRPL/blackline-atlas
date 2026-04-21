@@ -23,12 +23,13 @@ from app.services.watchlist_loader import load_watchlist_assets
 def test_agent_prompt_builder_targets_tool_plan_only() -> None:
     assets = load_watchlist_assets(None)
     leads = load_lead_registry(None)
+    qasmiyeh = next(lead for lead in leads if lead.lead_id == "lead_qasmiyeh_bridge_202604")
     prompt = AgentPlannerPromptBuilder().build(
         query="show biggest disruptions near Black Sea",
         assets=assets,
         leads=leads,
         selected_asset=assets[0],
-        selected_lead=leads[-1],
+        selected_lead=qasmiyeh,
     )
 
     assert "Choose exactly one tool" in prompt.system
