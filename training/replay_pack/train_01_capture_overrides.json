@@ -103,5 +103,10 @@
     "latitude": 19.5937,
     "longitude": 37.236699,
     "size_km": 5.0
+  },
+  "kakhovka_dam_breach_train_20210715_20240228": {
+    "latitude": 46.776336,
+    "longitude": 33.371477,
+    "size_km": 5.0
   }
 }
