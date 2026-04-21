@@ -53,5 +53,20 @@
     "latitude": 48.731001,
     "longitude": 37.601078,
     "size_km": 5.0
+  },
+  "trostianets_hospital_train_20200610_20200911": {
+    "latitude": 50.474539,
+    "longitude": 34.922882,
+    "size_km": 0.5
+  },
+  "okhmatdyt_hospital_train_20240501_20240906": {
+    "latitude": 50.451172,
+    "longitude": 30.479935,
+    "size_km": 0.5
+  },
+  "baltimore_bridge_train_20231106_20240628": {
+    "latitude": 39.218,
+    "longitude": -76.531,
+    "size_km": 2.0
   }
 }
