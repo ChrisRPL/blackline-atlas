@@ -23,5 +23,25 @@
     "latitude": 46.776336,
     "longitude": 33.371477,
     "size_km": 3.0
+  },
+  "port_sudan_aid_hub_train_20250309_20250528": {
+    "latitude": 19.5937,
+    "longitude": 37.236699,
+    "size_km": 5.0
+  },
+  "ras_abu_jarjur_train_20260118_20260418": {
+    "latitude": 26.073889,
+    "longitude": 50.621944,
+    "size_km": 5.0
+  },
+  "bahri_water_station_train_20240913_20250511": {
+    "latitude": 15.6169,
+    "longitude": 32.5347,
+    "size_km": 5.0
+  },
+  "unhcr_baghdad_train_20240609_20241014": {
+    "latitude": 33.34150243963263,
+    "longitude": 44.36504131109288,
+    "size_km": 5.0
   }
 }

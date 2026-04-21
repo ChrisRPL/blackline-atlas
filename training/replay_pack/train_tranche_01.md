@@ -8,15 +8,21 @@ Purpose:
 
 ## Current status
 
-- promoted train rows: `5`
+- promoted train rows: `9`
 - promoted dataset:
   - [train_01.jsonl](/Users/krzysztof/blackline-atlas/training/replay_pack/train_01.jsonl)
 - first active families with real rows:
   - `Morandi Bridge`
   - `Kakhovka Dam`
+  - `Port Sudan Aid Hub`
+  - `Ras Abu Jarjur`
+  - `Bahri Water Station`
+  - `UNHCR Baghdad Warehouse`
 - still blocked / not yet promotable:
   - `Roshen Yahotyn Logistics Center`
   - `Mondelez Trostianets Confectionery Factory`
+  - `Okhmatdyt Children's Hospital`
+  - `Khan Younis Training Centre`
 
 ## Rule first
 
