@@ -68,5 +68,15 @@
     "latitude": 39.218,
     "longitude": -76.531,
     "size_km": 2.0
+  },
+  "khan_younis_training_centre_train_20231231_20240330": {
+    "latitude": 31.364167,
+    "longitude": 34.295556,
+    "size_km": 0.5
+  },
+  "beirut_port_train_20200624_20200907": {
+    "latitude": 33.901,
+    "longitude": 35.52,
+    "size_km": 1.0
   }
 }

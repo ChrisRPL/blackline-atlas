@@ -8,13 +8,15 @@ Purpose:
 
 ## Current status
 
-- promoted train rows: `14`
+- promoted train rows: `16`
 - promoted dataset:
   - [train_01.jsonl](/Users/krzysztof/blackline-atlas/training/replay_pack/train_01.jsonl)
 - first active families with real rows:
   - `Baltimore Bridge`
+  - `Beirut Grain Silos`
   - `Morandi Bridge`
   - `Kakhovka Dam`
+  - `Khan Younis Training Centre`
   - `Port Sudan Aid Hub`
   - `Ras Abu Jarjur`
   - `Doha West`
@@ -26,7 +28,6 @@ Purpose:
 - still blocked / not yet promotable:
   - `Roshen Yahotyn Logistics Center`
   - `Mondelez Trostianets Confectionery Factory`
-  - `Khan Younis Training Centre`
 
 ## Rule first
 
@@ -135,4 +136,4 @@ This keeps one canonical row family for:
 1. start with `Mondelez`, `Morandi`, `Roshen`, and `Kakhovka`
 2. collect non-gold timestamp variants only
 3. hold `Khan Younis` until a genuinely non-gold clean pair exists
-4. first `12`-row train mini-pack is closed; current pack is `14`, and the next push should widen `Khan Younis`, `Beirut`, or another low-leakage control
+4. first `12`-row train mini-pack is closed; current pack is `16`, and the next push should widen another food family, another low-leakage control, or a second Port Sudan variant
