@@ -34,6 +34,11 @@
     "longitude": 33.371477,
     "size_km": 3.0
   },
+  "khan_younis_training_centre_shelling": {
+    "latitude": 31.364167,
+    "longitude": 34.295556,
+    "size_km": 0.5
+  },
   "trostianets_city_hospital_signal_soft": {
     "latitude": 50.474539,
     "longitude": 34.922882,

@@ -39,6 +39,7 @@ def test_non_demo_eval_pack_rows_parse() -> None:
         "trostianets_city_hospital_signal_soft",
         "kramatorsk_filtration_station_signal_soft",
         "kakhovka_dam_breach",
+        "khan_younis_training_centre_shelling",
     ]
     assert rows[0].split == "holdout_geo"
     assert rows[0].holdout_reason == "retrospective_food_security_anchor"
@@ -116,4 +117,9 @@ def test_non_demo_eval_pack_rows_parse() -> None:
     assert (
         by_case_id["kakhovka_dam_breach"].holdout_reason
         == "retrospective_major_water_source_anchor"
+    )
+    assert by_case_id["khan_younis_training_centre_shelling"].split == "holdout_geo"
+    assert (
+        by_case_id["khan_younis_training_centre_shelling"].holdout_reason
+        == "current_conflict_humanitarian_shelter_anchor"
     )

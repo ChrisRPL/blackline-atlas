@@ -11,11 +11,11 @@ Purpose:
 ### VLM / image-lane truth
 
 - `hero_eval.jsonl`: `2`
-- `non_demo_eval.jsonl`: `18`
-- overall annotated rows: `20`
-- non-demo positives: `8`
+- `non_demo_eval.jsonl`: `19`
+- overall annotated rows: `21`
+- non-demo positives: `9`
   - `food`: `3`
-  - `aid`: `2`
+  - `aid`: `3`
   - `mobility`: `1`
   - `water`: `2`
 - non-demo controls / stress: `10`
@@ -44,7 +44,7 @@ Implication:
 - current frozen planner eval rows:
   - `training/replay_pack/agent_command_eval.jsonl`: `30`
 - current watchlist assets:
-  - `20`
+  - `21`
 
 Implication:
 
@@ -67,11 +67,10 @@ First gold-set target stays:
 
 Current gap against that target:
 
-- total missing rows: `4`
-- missing positives: `4`
+- total missing rows: `3`
+- missing positives: `3`
   - `food`: `1`
   - `water`: `1`
-  - `aid`: `1`
   - `mobility`: `1`
 - missing controls / stress: `0`
 
@@ -126,9 +125,9 @@ If planner fine-tuning is ever revisited later:
 ## Next data order
 
 1. count `Roshen Yahotyn Logistics Center` as the new third inland food positive and stop spending time on it
-2. keep `Okhmatdyt Children's Hospital` as the inland medical-aid anchor
-3. keep `Wad Medani main water treatment plant` as exact water evidence, but not as a second water positive until the signal is honest
-4. keep `Ayn al-Bayda Water Pumping Station` reopened as evidence, but not as a second water positive until the signal is honest
+2. count `Khan Younis Training Centre` as the new third aid positive and stop spending time on it
+3. keep `Wad Medani main water treatment plant` as exact water evidence, but not as a third water positive until the signal is honest
+4. keep `Ayn al-Bayda Water Pumping Station` reopened as evidence, but not as a third water positive until the signal is honest
 5. count `Trostianets City Hospital` as the third exact medical-aid control and stop spending more bounded review on it
 6. keep `Bashtanka Multiprofile Hospital` as the strongest remaining inland medical backup board, but not a promotion-ready row
 7. keep `Veggy Trend Invest` on hold; the Soborna `111/111A` campus is still too mixed for a defendable parcel read
@@ -172,3 +171,57 @@ Net:
 - benchmark lane is now useful for research and hackathon proof
 - core Blackline priority does not change
 - next core move is fresh gold-row acquisition, not more benchmark churn
+
+## External dataset-generation findings to keep
+
+From the `leap-finetune` repo plus Pau Labarta Bajo's VLM dataset recipe:
+
+1. training infra is not the hard part
+   - data generation and split hygiene are
+2. use one canonical messages format for both train and benchmark rows
+   - `leap-finetune` expects VLM SFT rows in HF messages schema
+   - the same format can drive eval during training
+3. do not use random temporal splits for imagery
+   - use timestamp cutoffs
+   - avoid near-duplicate pre/post tiles leaking across train and test
+4. favor diverse fixed locations over random open-world grabs
+   - Pau's workflow starts from representative locations, then tiles them
+   - for Blackline this maps to curated civilian lifeline sites, not generic world tiles
+5. frontier-model labeling is useful only behind a hard human gate
+   - model-generated JSON can accelerate labels
+   - exact-parcel promotion still needs human review for honesty
+6. benchmark during training using the same row shape
+   - `leap-finetune` already supports eval-on-train for VLM SFT
+   - useful once our first real train split exists
+
+## Blackline adaptation of those findings
+
+Use them this way, not literally:
+
+1. curated AOI registry first
+   - exact civilian site
+   - fixed capture center
+   - fixed size_km override if needed
+2. temporal registry second
+   - clean pre
+   - clean post
+   - timestamp-cutoff split once train rows exist
+3. row generation third
+   - baseline/current image pair
+   - strict JSON candidate label
+   - optional grounding target for bbox checks
+4. human promotion gate last
+   - exact parcel
+   - honest macro scar
+   - no tactical drift
+
+## What this changes for implementation
+
+- do not build custom training infra first
+- do export Blackline train/eval rows into one LEAP-compatible VLM SFT format once we have enough train rows
+- keep our stricter structured eval outside the trainer too:
+  - action accuracy
+  - schema-valid rate
+  - bbox-valid rate
+  - false-positive rate
+  - `defer` calibration

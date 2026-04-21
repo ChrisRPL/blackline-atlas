@@ -178,5 +178,14 @@
     "latitude": 46.776336,
     "longitude": 33.371477,
     "hero": false
+  },
+  {
+    "asset_id": "khan_younis_kytc_01",
+    "asset_name": "Khan Younis Training Centre",
+    "asset_type": "aid_shelter_campus",
+    "region": "Khan Younis, Gaza Strip",
+    "latitude": 31.364167,
+    "longitude": 34.295556,
+    "hero": false
   }
 ]

@@ -1123,6 +1123,14 @@ class StubAtlasService:
                 "reservoir",
             },
             "logistics_hub": {"logistics", "distribution", "warehouse"},
+            "aid_shelter_campus": {
+                "aid",
+                "shelter",
+                "camp",
+                "unrwa",
+                "training centre",
+                "training center",
+            },
             "aid_warehouse_cluster": {"aid", "warehouse", "unhcr", "wfp", "red cross"},
             "medical_aid_node": {
                 "hospital",

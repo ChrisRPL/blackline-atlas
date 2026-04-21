@@ -8,10 +8,11 @@ Purpose:
 
 ## Current aid truth
 
-- promoted aid rows: `2`
+- promoted aid rows: `3`
   - `Port Sudan Aid Hub`
   - `Okhmatdyt Children's Hospital`
-- inland aid positives: `1`
+  - `Khan Younis Training Centre`
+- inland aid positives: `2`
 - exact aid / medical-aid controls:
   - `UNHCR Baghdad Warehouse`
   - `Mosul Medical City Hospital`
@@ -423,17 +424,46 @@ Reject:
   - [Trostianets hospital contacts](https://trostyanecka.crl.org.ua/feedback/)
   - [PHR on Russia’s assault on Ukraine’s health-care system](https://phr.org/our-work/resources/russias-assault-on-ukraines-health-care-system/)
 
+### `aid_15` Khan Younis Training Centre
+
+- country:
+  - `Gaza`
+- type:
+  - `aid_shelter_campus`
+- why:
+  - exact named UNRWA shelter campus
+  - strong humanitarian-public-accountability framing
+  - large enough to read honestly at Sentinel scale after repeated shelling
+- parcel state:
+  - public map anchor:
+    - `31.364167, 34.295556`
+- status:
+  - `added_to_non_demo_eval_as_reference_event`
+- next action:
+  - bounded local SimSat pass found a clean shelter-campus pair:
+    - baseline request `2024-01-24T08:00:00Z` -> returned `2024-01-20T08:31:31Z` with `0.454766` cloud
+    - immediate post request `2024-02-03T08:00:00Z` -> returned `2024-01-30T08:31:29Z` with `5.169336` cloud
+    - cleaner later post request `2024-03-09T08:00:00Z` -> returned `2024-03-05T08:31:32Z` with `0.004406` cloud
+  - result:
+    - exact campus anchor is good enough
+    - the March frame keeps the shelter-campus scar after the immediate smoke clears
+    - promoted into `non_demo_eval.jsonl` as a humanitarian shelter-campus event row
+- sources:
+  - [UNRWA sitrep referencing direct fire at Khan Younis Training Centre](https://www.unrwa.org/resources/reports/unrwa-situation-report-71-situation-gaza-strip-and-west-bank-including-east-Jerusalem)
+  - [UN one-year timeline referencing the Khan Younis Training Centre incident](https://www.un.org/unispal/document/gaza-strip-unrwa-situation-report-71/)
+  - [Wikimapia anchor for Khan Younis Training Centre](https://wikimapia.org/33010204/Khan-Younis-Training-Centre)
+
 ## Immediate next work order
 
-1. keep `aid_09` `Saudi Teaching Maternal Hospital` as evidence-only unless a tighter hospital-only read emerges
-2. keep `aid_01` `El Obeid` frozen until the ABS complex itself becomes publicly mappable
-3. keep `aid_02` `Lankien` and `aid_03` `Tyre` as evidence-only, not active parcel hunts
-4. keep `aid_07` `Taiz`, `aid_08` `Kunduz`, `aid_10` `Urum`, and `aid_11` `Abs` as archive-blocked retrospective leads only
-5. `UNHCR Baghdad`, `Mosul Medical City`, and `Trostianets` are now the exact aid / medical-aid control anchors
-6. `aid_12` `Okhmatdyt` now fills the missing inland medical-aid positive slot
+1. `aid_12` `Okhmatdyt` and `aid_15` `Khan Younis Training Centre` now anchor the exact inland aid-positive lane
+2. keep `aid_09` `Saudi Teaching Maternal Hospital` as evidence-only unless a tighter hospital-only read emerges
+3. keep `aid_01` `El Obeid` frozen until the ABS complex itself becomes publicly mappable
+4. keep `aid_02` `Lankien` and `aid_03` `Tyre` as evidence-only, not active parcel hunts
+5. keep `aid_07` `Taiz`, `aid_08` `Kunduz`, `aid_10` `Urum`, and `aid_11` `Abs` as archive-blocked retrospective leads only
+6. `UNHCR Baghdad`, `Mosul Medical City`, and `Trostianets` are now the exact aid / medical-aid control anchors
 7. `aid_13` `Bashtanka` is now the strongest exact inland medical backup board
 8. `aid_14` `Trostianets` no longer needs more probe churn unless a tighter future crop changes the read
-9. next aid move should be a second exact inland aid positive only if it beats `Okhmatdyt` on parcel truth and readability
+9. next aid move should stay optional until water / food / mobility gaps close again
 
 ## Stop rules
 

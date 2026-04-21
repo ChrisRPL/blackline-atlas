@@ -84,20 +84,14 @@ It is the first acquisition batch with the best chance of moving coverage, not j
 
 #### `aid_02`
 - target:
-  - exact named humanitarian depot / warehouse cluster
-- current lead:
-  - `Saudi Teaching Maternal Hospital`, `El Fasher`
-  - working board:
-    - `training/replay_pack/aid_tranche_01.md`
-- blocker:
-  - exact parcel is real, but hospital-only Sentinel signal is still too mixed for promotion
-- next action:
-  - keep `Saudi Teaching Maternal Hospital` as evidence-only unless a tighter hospital-only read emerges
-  - keep `El Obeid` blocked unless the ABS complex itself becomes publicly mappable
-  - keep `Tyre Red Cross center` as evidence-only unless compound scale becomes obviously warehouse-yard sized
-  - keep `Urum al-Kubra` and `Abs hospital` as archive-blocked retrospective backups
-  - no current aid lead is promotion-ready again
-  - `Mosul Medical City Hospital` now fills one exact inland medical-aid control slot, but not the missing positive slot
+  - `Khan Younis Training Centre`
+- role:
+  - already landed
+  - humanitarian shelter-campus anchor
+- status:
+  - `done`
+- follow-up board:
+  - `training/replay_pack/aid_tranche_01.md`
 
 ### Mobility
 
@@ -170,7 +164,7 @@ They are not replacements for the internal tranche below.
 1. count `Roshen Yahotyn Logistics Center` as a landed inland food-distribution anchor
 2. keep `Wad Medani main water treatment plant` as an exact water evidence lead, but not a promotion until plant-scale change is defendable
 3. keep `Ayn al-Bayda Water Pumping Station` reopened as exact evidence, but not as `water_02` until plant-scale damage is defendable
-4. use `Okhmatdyt Children's Hospital` as the inland medical-aid anchor while the next aid-positive search runs in parallel
+4. count `Khan Younis Training Centre` as the third aid positive and stop spending time on it
 5. count `Trostianets City Hospital` as an exact inland medical signal-soft control
 6. keep `Bashtanka Multiprofile Hospital` as the strongest remaining inland medical backup board, but not a promotion-ready row
 7. keep `Veggy Trend Invest` on hold; the `Soborna 111/111A` campus still reads too mixed for another probe

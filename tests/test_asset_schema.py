@@ -49,6 +49,19 @@ def test_asset_allows_aid_warehouse_cluster_type() -> None:
     assert asset.asset_type == "aid_warehouse_cluster"
 
 
+def test_asset_allows_aid_shelter_campus_type() -> None:
+    asset = Asset(
+        asset_id="aid_shelter_01",
+        asset_name="Demo Aid Shelter Campus",
+        asset_type="aid_shelter_campus",
+        region="Khan Younis",
+        latitude=31.364167,
+        longitude=34.295556,
+    )
+
+    assert asset.asset_type == "aid_shelter_campus"
+
+
 def test_asset_allows_civilian_building_cluster_type() -> None:
     asset = Asset(
         asset_id="civilian_cluster_01",

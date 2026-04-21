@@ -7,10 +7,10 @@ Use this to grow `training/replay_pack/non_demo_eval.jsonl` from a tiny demo-adj
 - demo/smoke rows:
   - `hero_eval.jsonl`: `2`
 - real/manual non-demo rows:
-  - `non_demo_eval.jsonl`: `18`
+  - `non_demo_eval.jsonl`: `19`
 - current real positive non-demo mix:
   - `food`: `3` (`Beirut Grain Silos`, `Silpo Kvitneve Distribution Center`, `Roshen Yahotyn Logistics Center`)
-  - `aid`: `2` (`Port Sudan Aid Hub`, `Okhmatdyt Children's Hospital`)
+  - `aid`: `3` (`Port Sudan Aid Hub`, `Okhmatdyt Children's Hospital`, `Khan Younis Training Centre`)
   - `mobility`: `1` (`Baltimore Bridge`)
   - `water`: `2` (`Arbaat Dam`, `Kakhovka Dam`)
 - current non-demo controls / stress rows:
@@ -28,9 +28,9 @@ Use this to grow `training/replay_pack/non_demo_eval.jsonl` from a tiny demo-adj
     - `Mosul Medical City Hospital`
     - `Trostianets City Hospital`
 - overall annotated rows:
-  - `20`
+  - `21`
 - current split shape:
-  - `holdout_geo`: `7`
+  - `holdout_geo`: `8`
   - `dev`: `1`
   - `holdout_stress`: `10`
   - `train`: `0`
@@ -74,11 +74,10 @@ Rule:
 
 ## Remaining gap
 
-- total missing rows: `4`
-- missing positives: `4`
+- total missing rows: `3`
+- missing positives: `3`
   - `food`: `1`
   - `water`: `1`
-  - `aid`: `1`
   - `mobility`: `1`
 - missing controls / stress: `0`
 

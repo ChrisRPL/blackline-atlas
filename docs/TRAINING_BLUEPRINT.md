@@ -21,6 +21,12 @@ Use the official SimSat path first.
 - hold bridges to a higher sensitivity bar than food, water, and aid
 - avoid mixed-use military ports, fuel depots, and frontline route-intel assets
 
+Dataset-shape rule:
+
+- one canonical row format for both train and benchmark when possible
+- prefer timestamp cutoffs over random splits once train rows exist
+- promote only after human review; model-generated labels can accelerate drafts, not replace the gate
+
 ## Baseline model behavior
 
 The model should do three narrow things:
@@ -62,3 +68,13 @@ Measure:
 - smoke/demo pack: `training/replay_pack/hero_eval.jsonl`
 - first non-demo pack: `training/replay_pack/non_demo_eval.jsonl`
 - prompted baseline runner: `training/scripts/run_lfm25_vl_prompted_eval.py`
+
+## Future trainer fit
+
+When the first real train split exists, prefer adapting it into an existing VLM SFT path like `leap-finetune` rather than building custom trainer plumbing.
+
+Use the trainer only after:
+
+1. exact-site registry is stable
+2. timestamp-aware splits are frozen
+3. the same row shape can serve both train and benchmark

@@ -15,6 +15,7 @@ AssetType = Literal[
     "logistics_hub",
     "rail_yard",
     "aid_corridor_node",
+    "aid_shelter_campus",
     "aid_warehouse_cluster",
     "medical_aid_node",
 ]
