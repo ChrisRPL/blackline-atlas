@@ -39,7 +39,7 @@ Prototype, but real:
 - backend product loop works end to end
 - map-first UI and deterministic agent contract are live
 - replay-safe and cached fallback paths are in place
-- internal eval lane is real but still small
+- first `22`-row internal non-demo gold eval set is frozen
 - fine-tuning is not the critical path yet
 
 Current reality:
@@ -47,7 +47,7 @@ Current reality:
 - external benchmark seeds exist for auxiliary transfer testing
 - prompted baseline and benchmark runners exist
 - no trustworthy train split yet
-- the biggest bottleneck is still data quality and coverage, not framework work
+- the biggest bottleneck is now train-row acquisition and freeze discipline, not framework work
 
 ## Repo layout
 

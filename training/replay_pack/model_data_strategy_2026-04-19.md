@@ -11,19 +11,19 @@ Purpose:
 ### VLM / image-lane truth
 
 - `hero_eval.jsonl`: `2`
-- `non_demo_eval.jsonl`: `20`
-- overall annotated rows: `22`
-- non-demo positives: `10`
-  - `food`: `3`
+- `non_demo_eval.jsonl`: `22`
+- overall annotated rows: `24`
+- non-demo positives: `12`
+  - `food`: `4`
   - `aid`: `3`
-  - `mobility`: `1`
+  - `mobility`: `2`
   - `water`: `3`
 - non-demo controls / stress: `10`
   - `water`: `4`
   - `food`: `3`
   - `aid`: `3`
 - split shape:
-  - `holdout_geo`: `9`
+  - `holdout_geo`: `11`
   - `holdout_stress`: `10`
   - `dev`: `1`
   - `train`: `0`
@@ -31,6 +31,7 @@ Purpose:
 Implication:
 
 - VLM eval lane is real
+- first gold eval set is complete
 - VLM train lane does not exist yet
 - adapter tuning is still premature
 
@@ -44,7 +45,7 @@ Implication:
 - current frozen planner eval rows:
   - `training/replay_pack/agent_command_eval.jsonl`: `30`
 - current watchlist assets:
-  - `22`
+  - `24`
 
 Implication:
 
@@ -67,17 +68,15 @@ First gold-set target stays:
 
 Current gap against that target:
 
-- total missing rows: `2`
-- missing positives: `2`
-  - `food`: `1`
-  - `mobility`: `1`
+- total missing rows: `0`
+- missing positives: `0`
 - missing controls / stress: `0`
 
-Most important missing pieces:
+Most important next pieces:
 
-1. one more exact food positive
-2. one more exact mobility positive
-3. first real train split after the gold eval set is no longer tiny
+1. freeze the finished `22`-row gold eval set
+2. materialize the first local capture manifest and train-prep corpus from that frozen set
+3. start the first real train tranche after the gold eval set is no longer tiny
 
 ## What the agent model still needs
 
@@ -122,19 +121,16 @@ If planner fine-tuning is ever revisited later:
 
 ## Next data order
 
-1. count `Roshen Yahotyn Logistics Center` as the new third inland food positive and stop spending time on it
-2. count `Khan Younis Training Centre` as the new third aid positive and stop spending time on it
-3. count `Mansour Dam` as the new third water positive and stop spending time on older soft water leads
-4. count `Trostianets City Hospital` as the third exact medical-aid control and stop spending more bounded review on it
-5. keep `Bashtanka Multiprofile Hospital` as the strongest remaining inland medical backup board, but not a promotion-ready row
-6. retarget `food_04` to `Mondelēz Trostianets Confectionery Factory`, then `Dnipro Oil Extraction Plant`, then `Chips Lux Plant`
-7. keep `Veggy Trend Invest` on hold; the Soborna `111/111A` campus is still too mixed for a defendable parcel read
-8. keep `Novus Logistics Center` on hold unless a clearly better post-strike frame appears
-9. planner eval expansion only after watchlist/query breadth grows again
+1. count `Mondelez Trostianets Confectionery Factory` as the fourth exact food positive and stop spending more bounded time on `food_04`
+2. count `Morandi Bridge` as the second exact mobility positive and stop pushing `Qasmiyeh Bridge`
+3. freeze the gold eval pack at `22` non-demo rows
+4. materialize the local SimSat capture manifest and first `lfm25-vl-v1` corpus
+5. open the first train-row tranche toward `40-80` rows while leaving the gold pack stable
+6. planner eval expansion only after watchlist/query breadth grows again
 
 ## Current recommendation
 
-- VLM: data-first
+- VLM: freeze gold eval, then data-first toward train rows
 - planner: eval-first
 - both: no fine-tune rush
 

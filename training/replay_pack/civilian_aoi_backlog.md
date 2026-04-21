@@ -113,6 +113,44 @@ Primary buckets:
   - [UNDP on Port Sudan dependence on Arbaat](https://www.undp.org/stories/restoring-water)
   - [UN Geneva / OCHA on the collapse](https://www.ungeneva.org/en/news-media/news/2024/08/96844/flooding-sudan-dam-collapse-worsens-humanitarian-crisis)
 
+#### Mondelēz Trostianets Confectionery Factory
+- asset type: `logistics_hub`
+- why:
+  - exact named inland food-production campus
+  - official public address is stable
+  - clean pre/post pair now shows an honest factory-scale disruption signal
+- coordinates:
+  - `50.485456, 34.943761`
+- dates:
+  - baseline request `2021-09-13T08:46:20Z`
+  - current request `2022-03-22T08:46:22Z`
+- status:
+  - added to `non_demo_eval.jsonl`
+  - treat as `current_conflict_inland_food_manufacturing_anchor`
+- sources:
+  - [Mondelēz Ukraine official site](https://www.mondelezinternational.com/ukraine/)
+  - [Visicom exact parcel clue](https://maps.visicom.ua/i/ADR3KD1HCZFZWYZNZ7)
+  - [Mondelēz International Q2 2022 results](https://ir.mondelezinternational.com/news-releases/news-release-details/mondelez-international-reports-q2-2022-results/)
+
+#### Morandi Bridge
+- asset type: `bridge`
+- why:
+  - clearly civilian urban mobility chokepoint
+  - retrospective collapse is visually obvious at Sentinel scale
+  - safer gold-row mobility anchor than current-conflict bridge leads
+- coordinates:
+  - `44.425568, 8.890246`
+- dates:
+  - baseline request `2018-07-31T10:28:32Z`
+  - current request `2018-08-15T10:28:26Z`
+- status:
+  - added to `non_demo_eval.jsonl`
+  - treat as `retrospective_civilian_bridge_collapse_anchor`
+- sources:
+  - [Reuters Connect image record for the collapsed bridge](https://www.reutersconnect.com/item/the-collapsed-morandi-bridge-is-seen-in-the-italian-port-city-of-genoa/dGFnOnJldXRlcnMuY29tLDIwMTg6bmV3c21sX1JDMTdGRTAxOEU5MA)
+  - [AP on the fifth anniversary of the collapse](https://apnews.com/article/c1c2864ac02135429534a7ebdcbe1beb)
+  - [Structurae: Polcevera Viaduct](https://structurae.net/en/structures/polcevera-viaduct)
+
 ### Hold; retry with different timestamps
 
 #### Ayn al-Bayda Water Pumping Station

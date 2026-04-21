@@ -49,6 +49,15 @@ It is the first acquisition batch with the best chance of moving coverage, not j
 - status:
   - `done`
 
+#### `food_04`
+- target:
+  - `Mondelez Trostianets Confectionery Factory`
+- role:
+  - already landed
+  - inland food-manufacturing anchor
+- status:
+  - `done`
+
 ### Water
 
 #### `water_01`
@@ -111,18 +120,14 @@ It is the first acquisition batch with the best chance of moving coverage, not j
 
 #### `mobility_02`
 - target:
-  - one clearly civilian bridge / causeway only
-- current lead:
-  - `Qasmiyeh Bridge`
-- exact public clue:
-  - `Jisr el Qâsmîyé`
-  - `33.33944, 35.25222`
-  - `Mapcarta / GeoNames bridge entry`
-- blocker:
-  - sensitivity and visibility
-- next action:
-  - keep narrow
-  - use only if the case remains clearly civilian and macro-visible
+  - `Morandi Bridge`
+- role:
+  - already landed
+  - retrospective civilian bridge-collapse anchor
+- status:
+  - `done`
+- note:
+  - `Qasmiyeh Bridge` stays in backlog only as a sensitivity-bound mobility example, not a gold-row target
 
 ## Control tranche
 
@@ -170,16 +175,12 @@ Current read:
 
 They are not replacements for the internal tranche below.
 
-1. count `Roshen Yahotyn Logistics Center` as a landed inland food-distribution anchor
-2. count `Mansour Dam` as the new third water positive and stop spending time on water-control churn for this tranche
-3. keep `Khan Younis Training Centre` as the third aid positive and stop spending time on it
-4. count `Trostianets City Hospital` as an exact inland medical signal-soft control
-5. keep `Bashtanka Multiprofile Hospital` as the strongest remaining inland medical backup board, but not a promotion-ready row
-6. retarget `food_04` to `Mondelēz Trostianets Confectionery Factory` first, then `Dnipro Oil Extraction Plant`, then `Chips Lux Plant`
-7. keep `Veggy Trend Invest` on hold; the `Soborna 111/111A` campus still reads too mixed for another probe
-8. keep `Novus Logistics Center` on hold unless a clearly better post-strike frame appears than the current January/March pair
-9. keep `mobility_02` narrow on one clearly civilian bridge / causeway only
-10. keep the planner eval pack stable at its current widened shape unless watchlist/query breadth grows again
+1. freeze the completed `22`-row non-demo gold eval set
+2. materialize the local SimSat capture manifest against the frozen pack
+3. build the first `lfm25-vl-v1` corpus from that manifest
+4. keep `Qasmiyeh Bridge` out of the gold set; use `Morandi Bridge` as the final mobility anchor
+5. start the first train-row tranche instead of growing gold coverage further
+6. keep the planner eval pack stable at its current widened shape unless watchlist/query breadth grows again
 
 ## Stop rules
 

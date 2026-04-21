@@ -134,6 +134,11 @@ Keep separate eval tracks:
 - first non-demo pack: `training/replay_pack/non_demo_eval.jsonl`
 - prompted baseline runner: `training/scripts/run_lfm25_vl_prompted_eval.py`
 
+Current state:
+
+- the non-demo gold eval pack is now frozen at `22` exact-site rows
+- next step is local capture freeze plus the first train-prep corpus build
+
 ## Future trainer fit
 
 When the first real train split exists, prefer adapting it into an existing VLM SFT path like `leap-finetune` rather than building custom trainer plumbing.

@@ -7,11 +7,11 @@ Use this to grow `training/replay_pack/non_demo_eval.jsonl` from a tiny demo-adj
 - demo/smoke rows:
   - `hero_eval.jsonl`: `2`
 - real/manual non-demo rows:
-  - `non_demo_eval.jsonl`: `20`
+  - `non_demo_eval.jsonl`: `22`
 - current real positive non-demo mix:
-  - `food`: `3` (`Beirut Grain Silos`, `Silpo Kvitneve Distribution Center`, `Roshen Yahotyn Logistics Center`)
+  - `food`: `4` (`Beirut Grain Silos`, `Silpo Kvitneve Distribution Center`, `Roshen Yahotyn Logistics Center`, `Mondelez Trostianets Confectionery Factory`)
   - `aid`: `3` (`Port Sudan Aid Hub`, `Okhmatdyt Children's Hospital`, `Khan Younis Training Centre`)
-  - `mobility`: `1` (`Baltimore Bridge`)
+  - `mobility`: `2` (`Baltimore Bridge`, `Morandi Bridge`)
   - `water`: `3` (`Arbaat Dam`, `Kakhovka Dam`, `Mansour Dam`)
 - current non-demo controls / stress rows:
   - `water`: `4`
@@ -28,16 +28,16 @@ Use this to grow `training/replay_pack/non_demo_eval.jsonl` from a tiny demo-adj
     - `Mosul Medical City Hospital`
     - `Trostianets City Hospital`
 - overall annotated rows:
-  - `22`
+  - `24`
 - current split shape:
-  - `holdout_geo`: `9`
+  - `holdout_geo`: `11`
   - `dev`: `1`
   - `holdout_stress`: `10`
   - `train`: `0`
 - train rows:
   - `0`
 
-This means the pipeline is mostly ready, but the dataset still lacks enough positive coverage to represent the app’s intended civilian use.
+This means the first gold eval set is now complete. The next bottleneck is no longer gold-row coverage; it is train-row acquisition and freeze discipline.
 
 ## Goal
 
@@ -74,10 +74,8 @@ Rule:
 
 ## Remaining gap
 
-- total missing rows: `2`
-- missing positives: `2`
-  - `food`: `1`
-  - `mobility`: `1`
+- total missing rows: `0`
+- missing positives: `0`
 - missing controls / stress: `0`
 
 ## Category rules
@@ -215,9 +213,13 @@ Counts toward the future gold set:
 - `Beirut Grain Silos`
 - `Silpo Kvitneve Distribution Center`
 - `Roshen Yahotyn Logistics Center`
+- `Mondelez Trostianets Confectionery Factory`
 - `Port Sudan Aid Hub`
 - `Baltimore Bridge`
+- `Morandi Bridge`
 - `Arbaat Dam`
+- `Kakhovka Dam`
+- `Mansour Dam`
 
 Do not count toward gold coverage:
 
@@ -228,14 +230,11 @@ Do not count toward gold coverage:
 
 ## Immediate implication
 
-The next acquisition push should not chase more food-only cases blindly.
+The gold eval push is done.
 
-Better order now:
+Next order:
 
-- count `Roshen Yahotyn Logistics Center` as the current third food/event anchor
-- count `Gedaref Grain Silos` as an exact food no-event anchor, not as a missing positive
-
-1. keep `water` open only for a second exact positive; the control quota is now filled
-2. reopen `aid` only for a parcel-tight inland depot or hospital campus, not another soft warehouse guess
-3. keep `Novus Logistics Center` as opportunistic food follow-up only if a clearly better weather window appears
-4. keep `mobility` narrow
+1. freeze the `22`-row non-demo pack as the canonical gold eval set
+2. materialize the local SimSat capture manifest against that frozen pack
+3. build the first `lfm25-vl-v1` train-prep corpus from the frozen captures
+4. keep this gold set stable while the first real train-row tranche is assembled
