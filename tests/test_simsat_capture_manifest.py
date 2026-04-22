@@ -92,6 +92,42 @@ def test_write_simsat_capture_manifest_materializes_case_pair(tmp_path: Path, mo
     assert "return_type=png" in record["current"]["request_url"]
 
 
+def test_write_simsat_capture_manifest_survives_timeout(tmp_path: Path, monkeypatch) -> None:
+    calls: list[str] = []
+
+    def fake_urlopen(url: str, timeout: float):
+        calls.append(url)
+        if len(calls) == 1:
+            raise TimeoutError("timed out")
+        return _FakeResponse(
+            body=b"baseline-png",
+            metadata={
+                "image_available": True,
+                "source": "sentinel-2a",
+                "spectral_bands": ["red", "green", "blue"],
+                "footprint": [30.70, 46.48, 30.79, 46.52],
+                "size_km": 5.0,
+                "cloud_cover": 3.0,
+                "datetime": "2026-04-12T08:10:00Z",
+            },
+        )
+
+    monkeypatch.setattr(capture_simsat_manifest, "urlopen", fake_urlopen)
+
+    manifest_path, _ = capture_simsat_manifest.write_simsat_capture_manifest(
+        "https://simsat.test/data/image/sentinel",
+        tmp_path,
+        scenario_ids=("hero_port_disruption",),
+    )
+
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    record = manifest["cases"][0]
+    assert record["current"]["response_metadata"]["image_available"] is False
+    assert record["current"]["image_path"] is None
+    assert record["current"]["response_metadata"]["timestamp"] == "2026-04-14T18:40:00Z"
+    assert record["baseline"]["response_metadata"]["image_available"] is True
+
+
 def test_capture_main_requires_historical_endpoint(tmp_path: Path, monkeypatch) -> None:
     monkeypatch.chdir(tmp_path)
     monkeypatch.delenv("SIMSAT_BASELINE_ENDPOINT", raising=False)

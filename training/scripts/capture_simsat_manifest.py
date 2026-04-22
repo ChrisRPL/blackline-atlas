@@ -4,6 +4,7 @@ import argparse
 import json
 import sys
 from pathlib import Path
+from urllib.error import HTTPError, URLError
 from urllib.parse import urlencode
 from urllib.request import urlopen
 
@@ -285,15 +286,28 @@ def _capture_frame(
         size_km=size_km,
         window_seconds=window_seconds,
     )
-    with urlopen(request_url, timeout=timeout_seconds) as response:
-        status = getattr(response, "status", response.getcode())
-        if status != 200:
-            raise ValueError(f"SimSat request failed with status {status}: {request_url}")
-        metadata_header = response.headers.get("sentinel_metadata")
-        if not metadata_header:
-            raise ValueError(f"SimSat response missing sentinel_metadata header: {request_url}")
-        metadata = SimSatSentinelMetadata.model_validate(json.loads(metadata_header))
-        body = response.read()
+    try:
+        with urlopen(request_url, timeout=timeout_seconds) as response:
+            status = getattr(response, "status", response.getcode())
+            if status != 200:
+                raise ValueError(f"SimSat request failed with status {status}: {request_url}")
+            metadata_header = response.headers.get("sentinel_metadata")
+            if not metadata_header:
+                raise ValueError(f"SimSat response missing sentinel_metadata header: {request_url}")
+            metadata = SimSatSentinelMetadata.model_validate(json.loads(metadata_header))
+            body = response.read()
+    except (TimeoutError, URLError, HTTPError):
+        metadata = SimSatSentinelMetadata(
+            image_available=False,
+            source=None,
+            spectral_bands=list(spectral_bands),
+            footprint=[],
+            size_km=size_km,
+            cloud_cover=None,
+            datetime=None,
+            timestamp=requested_timestamp,
+        )
+        body = b""
 
     metadata_path = output_dir / f"{variant}-metadata.json"
     metadata_path.write_text(metadata.model_dump_json(indent=2), encoding="utf-8")
