@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import subprocess
 import tarfile
 import tempfile
@@ -72,6 +73,7 @@ def main(argv: list[str] | None = None) -> int:
             repo_url=args.leap_repo,
             ref=args.leap_ref,
         )
+        sanitize_leap_repo_for_hf_jobs(repo_dir=leap_repo_dir)
         run_leap_train(
             repo_dir=leap_repo_dir,
             config_path=leap_config_path,
@@ -151,6 +153,48 @@ def clone_leap_finetune(*, workspace: Path, repo_url: str, ref: str) -> Path:
         check=True,
     )
     return repo_dir
+
+
+def sanitize_leap_repo_for_hf_jobs(*, repo_dir: Path) -> None:
+    pyproject_path = repo_dir / "pyproject.toml"
+    pyproject = pyproject_path.read_text(encoding="utf-8")
+    sanitized = pyproject
+    for dependency_name in ("flash-attn", "deepspeed"):
+        sanitized = re.sub(
+            rf'^\s*"{re.escape(dependency_name)}>=.*\n',
+            "",
+            sanitized,
+            flags=re.MULTILINE,
+        )
+    if sanitized != pyproject:
+        pyproject_path.write_text(sanitized, encoding="utf-8")
+        print("hf_job_dependency_sanitized=1", flush=True)
+    lockfile = repo_dir / "uv.lock"
+    if lockfile.exists():
+        lockfile.unlink()
+        print("uv_lock_removed=1", flush=True)
+    patch_text_file(
+        path=repo_dir / "src" / "leap_finetune" / "utils" / "logging_utils.py",
+        before="except ImportError:",
+        after="except Exception:",
+        log_token="deepspeed_import_guard_widened=1",
+    )
+    patch_text_file(
+        path=repo_dir / "src" / "leap_finetune" / "training_configs" / "vlm_sft_config.py",
+        before='    "deepspeed": DEEPSPEED_CONFIG,\n',
+        after="",
+        log_token="vlm_deepspeed_removed=1",
+    )
+
+
+def patch_text_file(*, path: Path, before: str, after: str, log_token: str) -> None:
+    if not path.exists():
+        return
+    text = path.read_text(encoding="utf-8")
+    patched = text.replace(before, after)
+    if patched != text:
+        path.write_text(patched, encoding="utf-8")
+        print(log_token, flush=True)
 
 
 def run_leap_train(*, repo_dir: Path, config_path: Path, output_dir: str) -> None:

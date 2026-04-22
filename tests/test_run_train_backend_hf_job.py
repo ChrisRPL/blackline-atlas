@@ -70,6 +70,52 @@ def test_clone_leap_finetune_uses_git_clone(monkeypatch, tmp_path: Path) -> None
     ]
 
 
+def test_sanitize_leap_repo_for_hf_jobs_strips_optional_gpu_deps_and_patches_vlm(
+    tmp_path: Path,
+) -> None:
+    repo_dir = tmp_path / "leap-finetune"
+    (repo_dir / "src" / "leap_finetune" / "utils").mkdir(parents=True)
+    (repo_dir / "src" / "leap_finetune" / "training_configs").mkdir(parents=True)
+    pyproject_path = repo_dir / "pyproject.toml"
+    pyproject_path.write_text(
+        "\n".join(
+            [
+                "[project]",
+                "dependencies = [",
+                '    "torch>=2.8.0",',
+                '    "deepspeed>=0.18.0; sys_platform == \\"linux\\"",',
+                '    "flash-attn>=2.8.0; sys_platform == \\"linux\\"",',
+                '    "transformers>=5.0.0",',
+                "]",
+            ]
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    logging_utils_path = repo_dir / "src" / "leap_finetune" / "utils" / "logging_utils.py"
+    logging_utils_path.write_text(
+        "try:\n    import deepspeed\nexcept ImportError:\n    pass\n",
+        encoding="utf-8",
+    )
+    vlm_config_path = repo_dir / "src" / "leap_finetune" / "training_configs" / "vlm_sft_config.py"
+    vlm_config_path.write_text(
+        'DEFAULT_VLM_SFT = {\n    "deepspeed": DEEPSPEED_CONFIG,\n}\n',
+        encoding="utf-8",
+    )
+    lockfile = repo_dir / "uv.lock"
+    lockfile.write_text("lock", encoding="utf-8")
+
+    run_train_backend_hf_job.sanitize_leap_repo_for_hf_jobs(repo_dir=repo_dir)
+
+    pyproject = pyproject_path.read_text(encoding="utf-8")
+    assert "flash-attn" not in pyproject
+    assert "deepspeed" not in pyproject
+    assert "torch>=2.8.0" in pyproject
+    assert not lockfile.exists()
+    assert "except Exception:" in logging_utils_path.read_text(encoding="utf-8")
+    assert '"deepspeed": DEEPSPEED_CONFIG' not in vlm_config_path.read_text(encoding="utf-8")
+
+
 def test_run_leap_train_uses_uv_project_run(monkeypatch, tmp_path: Path) -> None:
     calls: list[tuple[list[str], dict[str, str]]] = []
 
