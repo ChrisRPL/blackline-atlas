@@ -118,7 +118,7 @@ def build_leap_config_from_bundle(
     dataset_limit = job_spec.get("dataset_limit")
     payload: dict[str, object] = {
         "project_name": job_spec["project_name"],
-        "model_name": job_spec["model_id"],
+        "model_name": normalize_model_name_for_leap(str(job_spec["model_id"])),
         "training_type": "vlm_sft",
         "dataset": {
             "path": str((bundle_dir / "train.jsonl").resolve()),
@@ -132,6 +132,12 @@ def build_leap_config_from_bundle(
     if dataset_limit is not None:
         payload["dataset"]["limit"] = dataset_limit
     return payload
+
+
+def normalize_model_name_for_leap(model_id: str) -> str:
+    if model_id.startswith("LiquidAI/"):
+        return model_id.split("/", 1)[1]
+    return model_id
 
 
 def write_yaml(path: Path, payload: dict[str, object]) -> None:

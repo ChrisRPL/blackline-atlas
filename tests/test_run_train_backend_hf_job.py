@@ -34,11 +34,22 @@ def test_build_leap_config_from_bundle_uses_bundle_paths(tmp_path: Path) -> None
         bundle_dir=bundle_dir,
     )
 
+    assert payload["model_name"] == "LFM2.5-VL-450M"
     assert payload["dataset"]["path"] == str((bundle_dir / "train.jsonl").resolve())
     assert payload["dataset"]["image_root"] == str(bundle_dir.resolve())
     assert payload["dataset"]["limit"] == 16
     assert payload["training_config"]["extends"] == "DEFAULT_VLM_SFT"
     assert payload["peft_config"]["extends"] == "DEFAULT_VLM_LORA"
+
+
+def test_normalize_model_name_for_leap_strips_liquid_prefix() -> None:
+    assert (
+        run_train_backend_hf_job.normalize_model_name_for_leap("LiquidAI/LFM2.5-VL-450M")
+        == "LFM2.5-VL-450M"
+    )
+    assert (
+        run_train_backend_hf_job.normalize_model_name_for_leap("LFM2.5-VL-450M") == "LFM2.5-VL-450M"
+    )
 
 
 def test_clone_leap_finetune_uses_git_clone(monkeypatch, tmp_path: Path) -> None:
