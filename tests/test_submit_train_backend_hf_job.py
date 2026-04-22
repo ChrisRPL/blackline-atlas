@@ -25,6 +25,21 @@ def test_default_bundle_repo_id_uses_hf_username(monkeypatch) -> None:
     assert repo_id == "ChrisRPL/blackline-atlas-training-bundles"
 
 
+def test_default_adapter_repo_id_uses_hf_username_and_run_name(monkeypatch) -> None:
+    monkeypatch.setattr(
+        submit_train_backend_hf_job,
+        "whoami",
+        lambda token=None: {"name": "ChrisRPL"},
+    )
+
+    repo_id = submit_train_backend_hf_job.default_adapter_repo_id(
+        token="hf_test",
+        run_name="lfm25_vl_sft_train_hf",
+    )
+
+    assert repo_id == "ChrisRPL/blackline-atlas-lfm25-vl-sft-train-hf-adapter"
+
+
 def test_build_bundle_repo_path_uses_run_name_and_archive_name() -> None:
     path_in_repo = submit_train_backend_hf_job.build_bundle_repo_path(
         bundle_prefix="train-bundles",
@@ -108,6 +123,11 @@ def test_main_reports_credit_failure_after_bundle_upload(
     monkeypatch.setattr(submit_train_backend_hf_job, "HfApi", lambda token: _FakeApi())
     monkeypatch.setattr(submit_train_backend_hf_job, "HfHubHTTPError", _FakeHfHubHTTPError)
     monkeypatch.setattr(submit_train_backend_hf_job, "get_token", lambda: "hf_test")
+    monkeypatch.setattr(
+        submit_train_backend_hf_job,
+        "default_adapter_repo_id",
+        lambda *, token, run_name: f"ChrisRPL/{run_name}-adapter",
+    )
     monkeypatch.setattr(
         submit_train_backend_hf_job.run_train_backend,
         "materialize_train_backend",

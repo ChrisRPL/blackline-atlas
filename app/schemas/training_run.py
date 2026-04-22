@@ -37,6 +37,8 @@ class TrainAdapterRuntimeConfig(BaseModel):
 class TrainAdapterHFJobConfig(BaseModel):
     flavor: str = "l4x1"
     timeout: str = "4h"
+    publish_adapter_repo_id: str | None = None
+    publish_adapter_private: bool = True
 
 
 class TrainAdapterTrainerTrainingConfig(BaseModel):

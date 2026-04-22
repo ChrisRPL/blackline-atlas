@@ -8,12 +8,21 @@ import subprocess
 import tarfile
 import tempfile
 from pathlib import Path
+from shutil import copy2
 
-from huggingface_hub import hf_hub_download
+from huggingface_hub import HfApi, hf_hub_download
 
 DEFAULT_LEAP_REPO = "https://github.com/Liquid4All/leap-finetune.git"
 DEFAULT_LEAP_REF = "d017458"
 DEFAULT_OUTPUT_DIR = "/outputs/blackline-train"
+ADAPTER_REQUIRED_FILES = ("adapter_config.json",)
+ADAPTER_WEIGHT_FILES = ("adapter_model.safetensors", "adapter_model.bin")
+ADAPTER_PUBLISH_FILES = (
+    "adapter_config.json",
+    "adapter_model.safetensors",
+    "adapter_model.bin",
+    "trainer_state.json",
+)
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
@@ -45,6 +54,16 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         "--leap-ref",
         default=DEFAULT_LEAP_REF,
         help=f'Leap git ref to install. Default: "{DEFAULT_LEAP_REF}".',
+    )
+    parser.add_argument(
+        "--publish-adapter-repo-id",
+        default=None,
+        help="Optional Hub model repo id for published PEFT adapter artifacts.",
+    )
+    parser.add_argument(
+        "--publish-adapter-private",
+        default="true",
+        help='Whether the published adapter repo should be private. Default: "true".',
     )
     return parser.parse_args(argv)
 
@@ -78,6 +97,14 @@ def main(argv: list[str] | None = None) -> int:
             repo_dir=leap_repo_dir,
             config_path=leap_config_path,
             output_dir=args.output_dir,
+        )
+        maybe_publish_adapter_artifacts(
+            workspace=workspace,
+            output_dir=Path(args.output_dir),
+            repo_id=args.publish_adapter_repo_id,
+            private=parse_bool_arg(args.publish_adapter_private),
+            base_model_id=str(job_spec["model_id"]),
+            run_name=str(job_spec["run_name"]),
         )
         print(f"bundle_dir={bundle_dir}")
         print(f"generated_config={leap_config_path}")
@@ -138,6 +165,10 @@ def normalize_model_name_for_leap(model_id: str) -> str:
     if model_id.startswith("LiquidAI/"):
         return model_id.split("/", 1)[1]
     return model_id
+
+
+def parse_bool_arg(value: str) -> bool:
+    return value.strip().lower() not in {"0", "false", "no", "off"}
 
 
 def write_yaml(path: Path, payload: dict[str, object]) -> None:
@@ -201,6 +232,144 @@ def patch_text_file(*, path: Path, before: str, after: str, log_token: str) -> N
     if patched != text:
         path.write_text(patched, encoding="utf-8")
         print(log_token, flush=True)
+
+
+def maybe_publish_adapter_artifacts(
+    *,
+    workspace: Path,
+    output_dir: Path,
+    repo_id: str | None,
+    private: bool,
+    base_model_id: str,
+    run_name: str,
+) -> None:
+    if not repo_id:
+        return
+    checkpoint_dir = find_latest_checkpoint_dir(output_dir)
+    publish_dir = workspace / "publish_adapter"
+    publish_dir.mkdir(parents=True, exist_ok=True)
+    copied = 0
+    for filename in ADAPTER_PUBLISH_FILES:
+        source = checkpoint_dir / filename
+        if not source.exists():
+            continue
+        copy2(source, publish_dir / filename)
+        copied += 1
+    if copied == 0:
+        raise FileNotFoundError(f"no adapter files found in checkpoint dir: {checkpoint_dir}")
+    validate_published_adapter_dir(publish_dir=publish_dir, checkpoint_dir=checkpoint_dir)
+    readme_path = publish_dir / "README.md"
+    readme_path.write_text(
+        build_adapter_model_card(
+            repo_id=repo_id,
+            base_model_id=base_model_id,
+            run_name=run_name,
+            checkpoint_dir=checkpoint_dir,
+        ),
+        encoding="utf-8",
+    )
+    manifest_path = publish_dir / "training_output_manifest.json"
+    manifest_path.write_text(
+        json.dumps(
+            {
+                "run_name": run_name,
+                "base_model_id": base_model_id,
+                "adapter_repo_id": repo_id,
+                "checkpoint_name": checkpoint_dir.name,
+                "source_output_dir": str(output_dir),
+            },
+            indent=2,
+            sort_keys=True,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    token = os.environ.get("HF_TOKEN")
+    api = HfApi(token=token)
+    print(f"adapter_publish_repo_id={repo_id}", flush=True)
+    try:
+        api.create_repo(repo_id=repo_id, repo_type="model", private=private, exist_ok=True)
+        api.upload_folder(
+            repo_id=repo_id,
+            repo_type="model",
+            folder_path=str(publish_dir),
+            token=token,
+            commit_message=f"Upload Blackline adapter artifacts for {run_name}",
+        )
+    except Exception as exc:
+        print("adapter_publish_failed=1", flush=True)
+        print(f"adapter_publish_error={type(exc).__name__}", flush=True)
+        raise RuntimeError(f"failed to publish adapter artifacts to {repo_id}") from exc
+    print(f"published_adapter_repo_id={repo_id}", flush=True)
+    print(f"published_adapter_checkpoint={checkpoint_dir}", flush=True)
+
+
+def validate_published_adapter_dir(*, publish_dir: Path, checkpoint_dir: Path) -> None:
+    missing_required = [
+        filename for filename in ADAPTER_REQUIRED_FILES if not (publish_dir / filename).exists()
+    ]
+    if missing_required:
+        raise FileNotFoundError(
+            "adapter checkpoint missing required files: "
+            f"{', '.join(missing_required)} in {checkpoint_dir}"
+        )
+    if not any((publish_dir / filename).exists() for filename in ADAPTER_WEIGHT_FILES):
+        raise FileNotFoundError(f"adapter checkpoint missing weights in {checkpoint_dir}")
+
+
+def find_latest_checkpoint_dir(output_dir: Path) -> Path:
+    run_dirs = (
+        [path for path in output_dir.iterdir() if path.is_dir()] if output_dir.exists() else []
+    )
+    if not run_dirs:
+        raise FileNotFoundError(f"training output dir missing or empty: {output_dir}")
+    sorted_run_dirs = sorted(run_dirs, key=lambda path: path.stat().st_mtime, reverse=True)
+    for run_dir in sorted_run_dirs:
+        checkpoint_dirs = sorted(
+            [path for path in run_dir.glob("checkpoint-*") if path.is_dir()],
+            key=checkpoint_sort_key,
+            reverse=True,
+        )
+        if checkpoint_dirs:
+            return checkpoint_dirs[0]
+    raise FileNotFoundError(f"no checkpoint directories found under {output_dir}")
+
+
+def checkpoint_sort_key(path: Path) -> int:
+    suffix = path.name.split("-")[-1]
+    try:
+        return int(suffix)
+    except ValueError:
+        return -1
+
+
+def build_adapter_model_card(
+    *,
+    repo_id: str,
+    base_model_id: str,
+    run_name: str,
+    checkpoint_dir: Path,
+) -> str:
+    return "\n".join(
+        [
+            "---",
+            "library_name: peft",
+            f"base_model: {base_model_id}",
+            "tags:",
+            "- blackline-atlas",
+            "- peft",
+            "- lora",
+            "---",
+            "",
+            f"# {repo_id}",
+            "",
+            f"PEFT adapter artifacts for `{run_name}`.",
+            "",
+            f"- Base model: `{base_model_id}`",
+            f"- Source checkpoint: `{checkpoint_dir.name}`",
+            "",
+        ]
+    )
 
 
 def run_leap_train(*, repo_dir: Path, config_path: Path, output_dir: str) -> None:

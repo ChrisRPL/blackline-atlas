@@ -18,6 +18,7 @@ from training.scripts import run_train_backend, train_adapter  # noqa: E402
 DEFAULT_CONFIG_PATH = ROOT / "training" / "configs" / "lfm25_vl_sft_train_hf.yaml"
 DEFAULT_BUNDLE_PREFIX = "train-bundles"
 DEFAULT_BUNDLE_REPO_SUFFIX = "blackline-atlas-training-bundles"
+DEFAULT_ADAPTER_REPO_PREFIX = "blackline-atlas"
 DEFAULT_REMOTE_SCRIPT = ROOT / "training" / "scripts" / "run_train_backend_hf_job.py"
 DEFAULT_LEAP_REF = "d017458"
 
@@ -76,6 +77,19 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         default=DEFAULT_LEAP_REF,
         help=f'Leap git ref for the remote job install. Default: "{DEFAULT_LEAP_REF}".',
     )
+    parser.add_argument(
+        "--publish-adapter-repo-id",
+        default=None,
+        help=(
+            "Optional Hub model repo id for published adapter artifacts. "
+            "Default: derived from HF username + run name."
+        ),
+    )
+    parser.add_argument(
+        "--publish-adapter-public",
+        action="store_true",
+        help="Publish the adapter model repo as public. Default: private.",
+    )
     return parser.parse_args(argv)
 
 
@@ -88,6 +102,14 @@ def main(argv: list[str] | None = None) -> int:
     if config.trainer is None:
         raise ValueError(f"missing trainer section in config: {args.config}")
     bundle_repo_id = args.bundle_repo_id or default_bundle_repo_id(token=token)
+    publish_adapter_repo_id = (
+        args.publish_adapter_repo_id
+        or config.hf_job.publish_adapter_repo_id
+        or default_adapter_repo_id(token=token, run_name=config.run_name)
+    )
+    publish_adapter_private = (
+        config.hf_job.publish_adapter_private and not args.publish_adapter_public
+    )
     plan, bundle_manifest = run_train_backend.materialize_train_backend(
         config_path=args.config,
         skip_capture=args.skip_capture,
@@ -104,6 +126,7 @@ def main(argv: list[str] | None = None) -> int:
         print(f"bundle_repo_id={bundle_repo_id}")
         print(f"bundle_path={path_in_repo}")
         print(f"remote_script={args.remote_script}")
+        print(f"publish_adapter_repo_id={publish_adapter_repo_id}")
         print(json.dumps(job_spec, indent=2, sort_keys=True))
         return 0
 
@@ -138,6 +161,10 @@ def main(argv: list[str] | None = None) -> int:
                 config.runtime.output_dir,
                 "--leap-ref",
                 args.leap_ref,
+                "--publish-adapter-repo-id",
+                publish_adapter_repo_id,
+                "--publish-adapter-private",
+                json.dumps(publish_adapter_private),
             ],
             dependencies=[
                 "huggingface-hub>=0.35.0",
@@ -182,6 +209,7 @@ def main(argv: list[str] | None = None) -> int:
     print(f"job_url={job_url}")
     print(f"bundle_repo_id={bundle_repo_id}")
     print(f"bundle_path={path_in_repo}")
+    print(f"publish_adapter_repo_id={publish_adapter_repo_id}")
     print(f"generated_config={plan.generated_config_path}")
     return 0
 
@@ -192,6 +220,15 @@ def default_bundle_repo_id(*, token: str) -> str:
     if not username:
         raise RuntimeError("failed to resolve HF username for bundle repo")
     return f"{username}/{DEFAULT_BUNDLE_REPO_SUFFIX}"
+
+
+def default_adapter_repo_id(*, token: str, run_name: str) -> str:
+    payload = whoami(token=token)
+    username = payload.get("name") or payload.get("fullname")
+    if not username:
+        raise RuntimeError("failed to resolve HF username for adapter repo")
+    slug = run_name.replace("_", "-")
+    return f"{username}/{DEFAULT_ADAPTER_REPO_PREFIX}-{slug}-adapter"
 
 
 def build_bundle_repo_path(*, bundle_prefix: str, run_name: str, archive_path: Path) -> str:

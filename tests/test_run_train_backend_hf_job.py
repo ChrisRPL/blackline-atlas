@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 import sys
+import types
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -196,3 +197,95 @@ def test_run_leap_train_retries_with_source_fallback(monkeypatch, tmp_path: Path
     ]
     assert second_env["OUTPUT_DIR"] == "/outputs/blackline-train"
     assert second_env["PYTHONPATH"] == str((tmp_path / "leap-finetune" / "src").resolve())
+
+
+def test_find_latest_checkpoint_dir_picks_highest_checkpoint(tmp_path: Path) -> None:
+    run_dir = tmp_path / "run-01"
+    (run_dir / "checkpoint-3").mkdir(parents=True)
+    (run_dir / "checkpoint-5").mkdir()
+
+    checkpoint_dir = run_train_backend_hf_job.find_latest_checkpoint_dir(tmp_path)
+
+    assert checkpoint_dir == run_dir / "checkpoint-5"
+
+
+def test_maybe_publish_adapter_artifacts_uploads_filtered_checkpoint(
+    monkeypatch, tmp_path: Path
+) -> None:
+    checkpoint_dir = tmp_path / "outputs" / "run-01" / "checkpoint-5"
+    checkpoint_dir.mkdir(parents=True)
+    (checkpoint_dir / "adapter_config.json").write_text("{}", encoding="utf-8")
+    (checkpoint_dir / "adapter_model.safetensors").write_text("weights", encoding="utf-8")
+    api_calls: dict[str, object] = {}
+
+    class _FakeApi:
+        def create_repo(self, **kwargs) -> None:
+            api_calls["create_repo"] = kwargs
+
+        def upload_folder(self, **kwargs) -> None:
+            api_calls["upload_folder"] = kwargs
+
+    monkeypatch.setattr(run_train_backend_hf_job, "HfApi", lambda token=None: _FakeApi())
+    monkeypatch.setenv("HF_TOKEN", "hf_test")
+
+    workspace = tmp_path / "workspace"
+    workspace.mkdir()
+    run_train_backend_hf_job.maybe_publish_adapter_artifacts(
+        workspace=workspace,
+        output_dir=tmp_path / "outputs",
+        repo_id="ChrisRPL/blackline-atlas-train-adapter",
+        private=True,
+        base_model_id="LiquidAI/LFM2.5-VL-450M",
+        run_name="lfm25_vl_sft_train_hf",
+    )
+
+    publish_dir = workspace / "publish_adapter"
+    assert (publish_dir / "adapter_config.json").exists()
+    assert (publish_dir / "adapter_model.safetensors").exists()
+    assert (publish_dir / "README.md").exists()
+    assert (publish_dir / "training_output_manifest.json").exists()
+    assert api_calls["create_repo"] == {
+        "repo_id": "ChrisRPL/blackline-atlas-train-adapter",
+        "repo_type": "model",
+        "private": True,
+        "exist_ok": True,
+    }
+    upload_kwargs = types.SimpleNamespace(**api_calls["upload_folder"])
+    assert upload_kwargs.repo_id == "ChrisRPL/blackline-atlas-train-adapter"
+    assert upload_kwargs.repo_type == "model"
+    assert Path(upload_kwargs.folder_path) == publish_dir
+
+
+def test_maybe_publish_adapter_artifacts_rejects_checkpoint_without_weights(
+    monkeypatch, tmp_path: Path
+) -> None:
+    checkpoint_dir = tmp_path / "outputs" / "run-01" / "checkpoint-5"
+    checkpoint_dir.mkdir(parents=True)
+    (checkpoint_dir / "adapter_config.json").write_text("{}", encoding="utf-8")
+
+    class _FakeApi:
+        def create_repo(self, **kwargs) -> None:
+            _ = kwargs
+
+        def upload_folder(self, **kwargs) -> None:
+            _ = kwargs
+
+    monkeypatch.setattr(run_train_backend_hf_job, "HfApi", lambda token=None: _FakeApi())
+    monkeypatch.setenv("HF_TOKEN", "hf_test")
+
+    workspace = tmp_path / "workspace"
+    workspace.mkdir()
+
+    try:
+        run_train_backend_hf_job.maybe_publish_adapter_artifacts(
+            workspace=workspace,
+            output_dir=tmp_path / "outputs",
+            repo_id="ChrisRPL/blackline-atlas-train-adapter",
+            private=True,
+            base_model_id="LiquidAI/LFM2.5-VL-450M",
+            run_name="lfm25_vl_sft_train_hf",
+        )
+    except FileNotFoundError as exc:
+        assert "missing weights" in str(exc)
+    else:  # pragma: no cover
+        raise AssertionError("expected missing adapter weights to fail publish")
