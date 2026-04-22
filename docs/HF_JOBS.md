@@ -64,6 +64,8 @@ What the submitter does:
 - materializes the same checked-in prep seam locally
 - packages a self-contained train bundle
 - uploads the bundle to a private HF dataset repo by default
+- writes a root dataset card plus a per-run manifest there
+- stores archives as `bundles/<run_name>.tar.gz`, not nested transfer folders
 - submits the remote runner with `HF_TOKEN` secret injection
 - installs `leap-finetune` inside the job and trains there
 

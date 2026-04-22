@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+import tempfile
 from pathlib import Path
 
 from huggingface_hub import HfApi, get_token, whoami
@@ -16,7 +17,7 @@ from app.schemas.training_run import TrainBundleManifest  # noqa: E402
 from training.scripts import run_train_backend, train_adapter  # noqa: E402
 
 DEFAULT_CONFIG_PATH = ROOT / "training" / "configs" / "lfm25_vl_sft_train_hf.yaml"
-DEFAULT_BUNDLE_PREFIX = "train-bundles"
+DEFAULT_BUNDLE_PREFIX = "bundles"
 DEFAULT_BUNDLE_REPO_SUFFIX = "blackline-atlas-training-bundles"
 DEFAULT_ADAPTER_REPO_PREFIX = "blackline-atlas"
 DEFAULT_REMOTE_SCRIPT = ROOT / "training" / "scripts" / "run_train_backend_hf_job.py"
@@ -137,6 +138,14 @@ def main(argv: list[str] | None = None) -> int:
         private=not args.bundle_public,
         exist_ok=True,
     )
+    sync_bundle_repo_metadata(
+        api=api,
+        token=token,
+        repo_id=bundle_repo_id,
+        run_name=config.run_name,
+        bundle_path=path_in_repo,
+        bundle_manifest=bundle_manifest,
+    )
     api.upload_file(
         path_or_fileobj=bundle_manifest.bundle_archive,
         path_in_repo=path_in_repo,
@@ -232,7 +241,106 @@ def default_adapter_repo_id(*, token: str, run_name: str) -> str:
 
 
 def build_bundle_repo_path(*, bundle_prefix: str, run_name: str, archive_path: Path) -> str:
-    return f"{bundle_prefix}/{run_name}/{archive_path.name}"
+    suffix = "".join(archive_path.suffixes) or ".tar.gz"
+    return f"{bundle_prefix}/{run_name}{suffix}"
+
+
+def sync_bundle_repo_metadata(
+    *,
+    api: HfApi,
+    token: str,
+    repo_id: str,
+    run_name: str,
+    bundle_path: str,
+    bundle_manifest: TrainBundleManifest,
+) -> None:
+    readme_payload = build_bundle_dataset_card(repo_id=repo_id)
+    run_manifest_payload = build_bundle_run_manifest(
+        repo_id=repo_id,
+        run_name=run_name,
+        bundle_path=bundle_path,
+        bundle_manifest=bundle_manifest,
+    )
+    with tempfile.TemporaryDirectory(prefix="blackline-bundle-repo-") as temp_dir:
+        temp_root = Path(temp_dir)
+        readme_path = temp_root / "README.md"
+        run_manifest_path = temp_root / f"{run_name}.json"
+        readme_path.write_text(readme_payload, encoding="utf-8")
+        run_manifest_path.write_text(
+            json.dumps(run_manifest_payload, indent=2, sort_keys=True) + "\n",
+            encoding="utf-8",
+        )
+        api.upload_file(
+            path_or_fileobj=readme_path,
+            path_in_repo="README.md",
+            repo_id=repo_id,
+            repo_type="dataset",
+            token=token,
+            commit_message=f"Update bundle repo card for {run_name}",
+        )
+        api.upload_file(
+            path_or_fileobj=run_manifest_path,
+            path_in_repo=f"runs/{run_name}.json",
+            repo_id=repo_id,
+            repo_type="dataset",
+            token=token,
+            commit_message=f"Add run manifest for {run_name}",
+        )
+
+
+def build_bundle_dataset_card(*, repo_id: str) -> str:
+    return "\n".join(
+        [
+            "---",
+            "pretty_name: Blackline Atlas Training Bundles",
+            "language:",
+            "- en",
+            "license: other",
+            "task_categories:",
+            "- image-to-text",
+            "tags:",
+            "- remote-sensing",
+            "- satellite-imagery",
+            "- internal-transfer",
+            "- blackline-atlas",
+            "---",
+            "",
+            f"# {repo_id}",
+            "",
+            "Internal transfer store for Blackline Atlas HF Jobs train bundles.",
+            "",
+            "This repo is not the public benchmark dataset.",
+            (
+                "It holds self-contained `.tar.gz` handoff bundles used to launch "
+                "remote training jobs."
+            ),
+            "",
+            "Layout:",
+            "- `bundles/<run_name>.tar.gz`: immutable train bundle archive",
+            "- `runs/<run_name>.json`: lightweight run manifest with counts and paths",
+            "",
+            "Public-facing evaluation data and benchmark slices live elsewhere in the project.",
+            "",
+        ]
+    )
+
+
+def build_bundle_run_manifest(
+    *,
+    repo_id: str,
+    run_name: str,
+    bundle_path: str,
+    bundle_manifest: TrainBundleManifest,
+) -> dict[str, object]:
+    return {
+        "repo_id": repo_id,
+        "run_name": run_name,
+        "bundle_path": bundle_path,
+        "backend": bundle_manifest.backend,
+        "train_records": bundle_manifest.train_records,
+        "eval_records": bundle_manifest.eval_records,
+        "authoritative_eval_note": bundle_manifest.authoritative_eval_note,
+    }
 
 
 def build_remote_job_spec(*, config) -> dict[str, object]:

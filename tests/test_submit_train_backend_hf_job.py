@@ -42,15 +42,58 @@ def test_default_adapter_repo_id_uses_hf_username_and_run_name(monkeypatch) -> N
 
 def test_build_bundle_repo_path_uses_run_name_and_archive_name() -> None:
     path_in_repo = submit_train_backend_hf_job.build_bundle_repo_path(
-        bundle_prefix="train-bundles",
+        bundle_prefix="bundles",
         run_name="lfm25_vl_sft_train_hf",
         archive_path=Path("/tmp/lfm25_vl_sft_train_hf_trainer_bundle.tar.gz"),
     )
 
-    assert (
-        path_in_repo
-        == "train-bundles/lfm25_vl_sft_train_hf/lfm25_vl_sft_train_hf_trainer_bundle.tar.gz"
+    assert path_in_repo == "bundles/lfm25_vl_sft_train_hf.tar.gz"
+
+
+def test_build_bundle_dataset_card_is_honest_transfer_repo_copy() -> None:
+    payload = submit_train_backend_hf_job.build_bundle_dataset_card(
+        repo_id="ChrisRPL/blackline-atlas-training-bundles"
     )
+
+    assert "# ChrisRPL/blackline-atlas-training-bundles" in payload
+    assert "not the public benchmark dataset" in payload
+    assert "bundles/<run_name>.tar.gz" in payload
+    assert "runs/<run_name>.json" in payload
+
+
+def test_build_bundle_run_manifest_tracks_core_run_fields() -> None:
+    manifest = TrainBundleManifest(
+        version="blackline-train-bundle-v1",
+        run_name="lfm25_vl_sft_train_hf",
+        backend="leap_finetune",
+        dataset_manifest="/tmp/dataset_manifest.json",
+        train_jsonl="/tmp/train.jsonl",
+        eval_jsonl="/tmp/eval.jsonl",
+        summary_json="/tmp/summary.json",
+        image_root="/tmp/images",
+        bundle_dir="/tmp/bundle",
+        bundle_archive="/tmp/bundle.tar.gz",
+        train_records=23,
+        eval_records=0,
+        authoritative_eval_note="Frozen eval stays separate.",
+    )
+
+    payload = submit_train_backend_hf_job.build_bundle_run_manifest(
+        repo_id="ChrisRPL/blackline-atlas-training-bundles",
+        run_name="lfm25_vl_sft_train_hf",
+        bundle_path="bundles/lfm25_vl_sft_train_hf.tar.gz",
+        bundle_manifest=manifest,
+    )
+
+    assert payload == {
+        "repo_id": "ChrisRPL/blackline-atlas-training-bundles",
+        "run_name": "lfm25_vl_sft_train_hf",
+        "bundle_path": "bundles/lfm25_vl_sft_train_hf.tar.gz",
+        "backend": "leap_finetune",
+        "train_records": 23,
+        "eval_records": 0,
+        "authoritative_eval_note": "Frozen eval stays separate.",
+    }
 
 
 def test_build_remote_job_spec_from_hf_train_config() -> None:

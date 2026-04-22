@@ -225,6 +225,8 @@ Current rule:
 - use `training/scripts/train_adapter.py` as the config-first prep seam
 - use `training/scripts/run_train_backend.py` to generate the real LEAP handoff plus a portable train bundle
 - use `training/scripts/submit_train_backend_hf_job.py` for remote GPU submission
+- the HF bundle repo is an internal transfer store, not the public benchmark dataset
+- that repo should stay readable: root card + `bundles/<run_name>.tar.gz` + `runs/<run_name>.json`
 - local macOS stays prep/bundle/orchestration only; actual `leap-finetune` training is remote-first because the trainer requires CUDA
 - start train acquisition in a separate tranche, not by mutating gold rows
 - first promoted train rows now live in [training/replay_pack/train_01.jsonl](training/replay_pack/train_01.jsonl)
