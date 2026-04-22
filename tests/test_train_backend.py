@@ -58,6 +58,19 @@ def test_build_leap_job_config_payload_from_smoke_config(tmp_path: Path) -> None
     assert payload["peft_config"]["use_peft"] is True
 
 
+def test_resolve_output_dir_uses_repo_stage_dir_for_hf_jobs() -> None:
+    config = train_adapter.load_train_adapter_config(
+        ROOT / "training" / "configs" / "lfm25_vl_sft_train_hf.yaml"
+    )
+
+    output_dir = run_train_backend.resolve_output_dir(
+        config_path=ROOT / "training" / "configs" / "lfm25_vl_sft_train_hf.yaml",
+        config=config,
+    )
+
+    assert output_dir == (ROOT / "training" / "eval_runs" / "lfm25_vl_sft_train_hf").resolve()
+
+
 def test_package_train_bundle_copies_only_referenced_images(tmp_path: Path) -> None:
     image_root = tmp_path / "corpus"
     image_dir = image_root / "images" / "port_case"

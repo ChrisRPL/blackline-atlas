@@ -225,6 +225,8 @@ def build_leap_job_config_payload(
 
 
 def resolve_output_dir(*, config_path: Path, config: TrainAdapterConfig) -> Path:
+    if config.runtime.execution_environment == "hf_jobs":
+        return (ROOT / "training" / "eval_runs" / config.run_name).resolve()
     output_path = Path(config.runtime.output_dir)
     if output_path.is_absolute():
         return output_path

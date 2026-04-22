@@ -221,7 +221,201 @@ def test_write_simsat_capture_manifest_supports_external_cases_dataset(
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
     assert manifest["case_count"] == 1
     assert manifest["cases"][0]["case_id"] == "beirut_port_blast"
-    assert manifest["cases"][0]["asset"]["asset_id"] == "beirut_port_01"
+
+
+def test_write_simsat_capture_manifest_uses_all_external_cases_by_default(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    def fake_urlopen(url: str, timeout: float):
+        _ = url, timeout
+        return _FakeResponse(
+            body=b"png",
+            metadata={
+                "image_available": True,
+                "source": "sentinel-2c",
+                "spectral_bands": ["red", "green", "blue"],
+                "footprint": [35.50, 33.88, 35.54, 33.92],
+                "size_km": 5.0,
+                "cloud_cover": 0.12,
+                "datetime": "2020-08-03T08:30:51Z",
+            },
+        )
+
+    monkeypatch.setattr(capture_simsat_manifest, "urlopen", fake_urlopen)
+    dataset_path = tmp_path / "train_01.jsonl"
+    rows = [
+        {
+            "case_id": "train_case_a",
+            "asset": {
+                "asset_id": "asset_a",
+                "asset_name": "Asset A",
+                "asset_type": "bridge",
+                "region": "Test",
+                "latitude": 1.0,
+                "longitude": 2.0,
+                "hero": False,
+            },
+            "hero": False,
+            "current_frame": {
+                "frame": {
+                    "frame_id": "cur_a",
+                    "asset_id": "asset_a",
+                    "captured_at": "2020-08-05T10:00:00Z",
+                    "image_ref": "pending://a/current.png",
+                    "cloud_cover": 0.12,
+                    "source": "seed",
+                },
+                "baseline_frame_id": "base_a",
+            },
+            "baseline_frame": {
+                "frame": {
+                    "frame_id": "base_a",
+                    "asset_id": "asset_a",
+                    "captured_at": "2020-07-25T10:00:00Z",
+                    "image_ref": "pending://a/baseline.png",
+                    "cloud_cover": 0.44,
+                    "source": "seed",
+                }
+            },
+            "model_output_text": (
+                '{"event_type":"probable_access_obstruction","severity":"high",'
+                '"confidence":0.9,"bbox":[0.1,0.1,0.9,0.9],'
+                '"civilian_impact":"public_mobility_disruption",'
+                '"why":"Broken span.","action":"downlink_now"}'
+            ),
+            "expected_candidate": {
+                "event_type": "probable_access_obstruction",
+                "severity": "high",
+                "confidence": 0.9,
+                "bbox": [0.1, 0.1, 0.9, 0.9],
+                "civilian_impact": "public_mobility_disruption",
+                "why": "Broken span.",
+                "action": "downlink_now",
+            },
+            "expected_alert": {
+                "alert_id": "blk_a",
+                "timestamp": "2020-08-05T10:00:00Z",
+                "asset_id": "asset_a",
+                "asset_name": "Asset A",
+                "asset_type": "bridge",
+                "event_type": "probable_access_obstruction",
+                "severity": "high",
+                "confidence": 0.9,
+                "bbox": [0.1, 0.1, 0.9, 0.9],
+                "civilian_impact": "public_mobility_disruption",
+                "why": "Broken span.",
+                "action": "downlink_now",
+                "source": {
+                    "current_frame_id": "cur_a",
+                    "baseline_frame_id": "base_a",
+                    "model_version": "lfm2.5-vl-450m-prompted",
+                },
+                "mapbox_context_ref": None,
+            },
+            "expected_action": "downlink_now",
+            "expected_metrics": {
+                "frames_scanned": 12,
+                "alerts_emitted": 1,
+                "raw_frames_suppressed": 11,
+                "downlink_rate": 0.08,
+            },
+            "split": "train",
+            "annotation_source": "manual",
+        },
+        {
+            "case_id": "train_case_b",
+            "asset": {
+                "asset_id": "asset_b",
+                "asset_name": "Asset B",
+                "asset_type": "container_port",
+                "region": "Test",
+                "latitude": 3.0,
+                "longitude": 4.0,
+                "hero": False,
+            },
+            "hero": False,
+            "current_frame": {
+                "frame": {
+                    "frame_id": "cur_b",
+                    "asset_id": "asset_b",
+                    "captured_at": "2020-08-06T10:00:00Z",
+                    "image_ref": "pending://b/current.png",
+                    "cloud_cover": 0.22,
+                    "source": "seed",
+                },
+                "baseline_frame_id": "base_b",
+            },
+            "baseline_frame": {
+                "frame": {
+                    "frame_id": "base_b",
+                    "asset_id": "asset_b",
+                    "captured_at": "2020-07-26T10:00:00Z",
+                    "image_ref": "pending://b/baseline.png",
+                    "cloud_cover": 0.54,
+                    "source": "seed",
+                }
+            },
+            "model_output_text": (
+                '{"event_type":"probable_large_scale_disruption","severity":"high",'
+                '"confidence":0.92,"bbox":[0.2,0.2,0.8,0.8],'
+                '"civilian_impact":"shipping_or_aid_disruption",'
+                '"why":"Blast scar.","action":"downlink_now"}'
+            ),
+            "expected_candidate": {
+                "event_type": "probable_large_scale_disruption",
+                "severity": "high",
+                "confidence": 0.92,
+                "bbox": [0.2, 0.2, 0.8, 0.8],
+                "civilian_impact": "shipping_or_aid_disruption",
+                "why": "Blast scar.",
+                "action": "downlink_now",
+            },
+            "expected_alert": {
+                "alert_id": "blk_b",
+                "timestamp": "2020-08-06T10:00:00Z",
+                "asset_id": "asset_b",
+                "asset_name": "Asset B",
+                "asset_type": "container_port",
+                "event_type": "probable_large_scale_disruption",
+                "severity": "high",
+                "confidence": 0.92,
+                "bbox": [0.2, 0.2, 0.8, 0.8],
+                "civilian_impact": "shipping_or_aid_disruption",
+                "why": "Blast scar.",
+                "action": "downlink_now",
+                "source": {
+                    "current_frame_id": "cur_b",
+                    "baseline_frame_id": "base_b",
+                    "model_version": "lfm2.5-vl-450m-prompted",
+                },
+                "mapbox_context_ref": None,
+            },
+            "expected_action": "downlink_now",
+            "expected_metrics": {
+                "frames_scanned": 14,
+                "alerts_emitted": 1,
+                "raw_frames_suppressed": 13,
+                "downlink_rate": 0.07,
+            },
+            "split": "train",
+            "annotation_source": "manual",
+        },
+    ]
+    dataset_path.write_text(
+        "".join(json.dumps(row) + "\n" for row in rows),
+        encoding="utf-8",
+    )
+
+    manifest_path, _ = capture_simsat_manifest.write_simsat_capture_manifest(
+        "https://simsat.test/data/image/sentinel",
+        tmp_path / "captures",
+        cases_dataset_path=dataset_path,
+    )
+
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    assert manifest["case_count"] == 2
+    assert {case["case_id"] for case in manifest["cases"]} == {"train_case_a", "train_case_b"}
 
 
 def test_write_simsat_capture_manifest_applies_case_capture_override(

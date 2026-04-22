@@ -42,11 +42,15 @@ def build_simsat_capture_manifest(
     size_km: float = DEFAULT_SIZE_KM,
     window_seconds: float = DEFAULT_WINDOW_SECONDS,
     timeout_seconds: float = DEFAULT_TIMEOUT_SECONDS,
-    scenario_ids: tuple[str, ...] = SCENARIO_ORDER,
+    scenario_ids: tuple[str, ...] | None = None,
 ) -> list[dict[str, object]]:
-    cases = _load_capture_cases(
+    resolved_scenario_ids = _resolve_scenario_ids(
         cases_dataset_path=cases_dataset_path,
         scenario_ids=scenario_ids,
+    )
+    cases = _load_capture_cases(
+        cases_dataset_path=cases_dataset_path,
+        scenario_ids=resolved_scenario_ids,
     )
     capture_overrides = _load_capture_overrides(capture_overrides_path)
 
@@ -112,7 +116,7 @@ def write_simsat_capture_manifest(
     size_km: float = DEFAULT_SIZE_KM,
     window_seconds: float = DEFAULT_WINDOW_SECONDS,
     timeout_seconds: float = DEFAULT_TIMEOUT_SECONDS,
-    scenario_ids: tuple[str, ...] = SCENARIO_ORDER,
+    scenario_ids: tuple[str, ...] | None = None,
 ) -> tuple[Path, Path]:
     output_dir.mkdir(parents=True, exist_ok=True)
     records = build_simsat_capture_manifest(
@@ -376,6 +380,18 @@ def _load_capture_cases(
     if missing:
         raise ValueError(f"missing case_id(s) in {cases_dataset_path}: {', '.join(missing)}")
     return [case for case in cases if case.case_id in selected]
+
+
+def _resolve_scenario_ids(
+    *,
+    cases_dataset_path: Path | None,
+    scenario_ids: tuple[str, ...] | None,
+) -> tuple[str, ...]:
+    if scenario_ids is not None:
+        return scenario_ids
+    if cases_dataset_path is not None:
+        return ()
+    return SCENARIO_ORDER
 
 
 def _load_capture_overrides(
