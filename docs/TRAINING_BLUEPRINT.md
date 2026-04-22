@@ -25,6 +25,7 @@ Dataset-shape rule:
 
 - one canonical row format for both train and benchmark when possible
 - prefer timestamp cutoffs over random splits once train rows exist
+- use public auxiliary lanes for fast trainer-side widening, but keep them out of Blackline gold scorecards
 - for active conflict facilities, use a before-conflict baseline pass if near-event pre frames are weak
 - promote only after human review; model-generated labels can accelerate drafts, not replace the gate
 - keep the training row itself minimal:
@@ -140,6 +141,7 @@ Keep separate eval tracks:
 - smoke/demo pack: `training/replay_pack/hero_eval.jsonl`
 - first non-demo pack: `training/replay_pack/non_demo_eval.jsonl`
 - prompted baseline runner: `training/scripts/run_lfm25_vl_prompted_eval.py`
+- Ukraine auxiliary-train materializer: `training/scripts/materialize_ukraine_damage_aux_slice.py`
 
 Current state:
 

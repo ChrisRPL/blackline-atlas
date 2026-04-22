@@ -55,6 +55,11 @@ Purpose:
 - current first sources:
   - `xBD`
   - `SpaceNet 8`
+  - `KOlegaBB/damage_assessment_ukraine`
+- current auxiliary pool, after materialization:
+  - `20` train rows
+- current practical trainer-side pool:
+  - `25` internal + `20` auxiliary = `45`
 - materialize them through:
   - `python3 training/scripts/materialize_aux_train_slice.py`
 - rule:
@@ -191,3 +196,4 @@ Rule:
 5. materialize the first auxiliary-train slice from checked-in `xBD` and `SpaceNet 8` public seeds
 6. merge auxiliary gain only in trainer-side runs, never in the frozen Blackline scorecard
 7. keep `Nasser` as the next long-range hospital follow-up; `European Gaza` now counts as a successful before-conflict hospital variant
+8. widen auxiliary train aggressively with public Ukraine building-damage rows before spending more bounded time on soft internal candidates

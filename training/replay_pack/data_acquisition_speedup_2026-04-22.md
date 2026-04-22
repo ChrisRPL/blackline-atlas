@@ -114,6 +114,17 @@ Current result from the long-range pass:
   - [SpaceNet 8 challenge](https://spacenet.ai/sn8-challenge/)
   - [CVPR paper](https://openaccess.thecvf.com/content/CVPR2022W/EarthVision/papers/Hansch_SpaceNet_8_-_The_Detection_of_Flooded_Roads_and_Buildings_CVPRW_2022_paper.pdf)
 
+#### `KOlegaBB/damage_assessment_ukraine`
+
+- strong public before/after war-damage source
+- useful for auxiliary train widening with exact building crops
+- good fit for rapid trainer-side scale because files are individually accessible on Hugging Face
+- keep auxiliary-only; do not treat it as a Blackline gold replacement
+- source:
+  - [HF dataset](https://huggingface.co/datasets/KOlegaBB/damage_assessment_ukraine)
+- current result:
+  - first deterministic fold-0 materialization yields `12` train-only rows
+
 ### Weak-supervision / context sources
 
 #### `Sen1Floods11`
@@ -164,7 +175,7 @@ Do this, in order:
 2. probe exact public facility leads, not whole cities
 3. if current conflict sites have weak near-event pre frames, use a before-conflict baseline pass
 4. widen train by family depth first
-5. use `xBD` and `SpaceNet 8` as auxiliary train / benchmark inputs
+5. use `xBD`, `SpaceNet 8`, and `KOlegaBB/damage_assessment_ukraine` as auxiliary train / benchmark inputs
 6. keep `LEVIR-CD` and `S2Looking` benchmark-only
 
 ## Immediate next work
