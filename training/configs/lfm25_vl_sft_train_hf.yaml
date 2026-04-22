@@ -1,6 +1,6 @@
 version: "2026-04-22"
-run_name: "lfm25_vl_sft_smoke"
-purpose: "Prepare Train 01 artifacts for a cheap local or HF Jobs smoke run."
+run_name: "lfm25_vl_sft_train_hf"
+purpose: "Prepare and submit a remote LEAP VLM train run for Train 01 on HF Jobs."
 dataset:
   historical_endpoint: "http://localhost:9005/data/image/sentinel"
   replay_dataset: "training/replay_pack/train_01.jsonl"
@@ -18,25 +18,25 @@ eval:
   max_eval_cases: 8
   save_full_predictions: false
 runtime:
-  execution_environment: "local"
+  execution_environment: "hf_jobs"
   editable_extras: "dev,vlm,train"
-  output_dir: "training/eval_runs/lfm25-vl-sft-smoke"
+  output_dir: "/outputs/blackline-train"
 hf_job:
   flavor: "l4x1"
-  timeout: "4h"
+  timeout: "6h"
 trainer:
   backend: "leap_finetune"
   project_name: "blackline-atlas"
   dataset_test_size: 0.1
-  dataset_limit: 12
+  dataset_limit: null
   authoritative_eval_note: "Frozen Blackline eval stays separate. The trainer-side test_size split is diagnostics only."
   training_config:
     extends: "DEFAULT_VLM_SFT"
-    num_train_epochs: 1
+    num_train_epochs: 2
     per_device_train_batch_size: 1
-    gradient_accumulation_steps: 4
+    gradient_accumulation_steps: 8
     learning_rate: 2.0e-5
-    logging_steps: 1
+    logging_steps: 5
     eval_on_start: true
     eval_strategy: "epoch"
     save_strategy: "epoch"

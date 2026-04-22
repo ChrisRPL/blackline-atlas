@@ -19,6 +19,9 @@ def test_load_train_adapter_config_from_checked_in_smoke_yaml() -> None:
     assert config.run_name == "lfm25_vl_sft_smoke"
     assert config.eval.mode == "smoke"
     assert config.dataset.replay_dataset == "training/replay_pack/train_01.jsonl"
+    assert config.trainer is not None
+    assert config.trainer.backend == "leap_finetune"
+    assert config.trainer.dataset_limit == 12
 
 
 def test_build_train_adapter_plan_resolves_paths() -> None:
@@ -33,6 +36,17 @@ def test_build_train_adapter_plan_resolves_paths() -> None:
     assert plan.capture_manifest.endswith(
         "/training/corpus/lfm25-vl-non-demo/capture/simsat_capture_manifest.json"
     )
+
+
+def test_load_train_adapter_config_from_checked_in_hf_train_yaml() -> None:
+    config_path = ROOT / "training" / "configs" / "lfm25_vl_sft_train_hf.yaml"
+
+    config = train_adapter.load_train_adapter_config(config_path)
+
+    assert config.run_name == "lfm25_vl_sft_train_hf"
+    assert config.runtime.execution_environment == "hf_jobs"
+    assert config.trainer is not None
+    assert config.trainer.training_config.num_train_epochs == 2
 
 
 def test_prepare_training_artifacts_writes_dataset_manifest(

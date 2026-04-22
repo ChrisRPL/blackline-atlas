@@ -146,6 +146,8 @@ Current state:
 - next step is local capture freeze plus the first train-prep corpus build
 - LEAP-compatible VLM SFT export now comes from the same frozen candidate corpus, not a parallel ad hoc format
 - `training/scripts/train_adapter.py` is now the config-first prep seam for train/eval artifacts and run metadata
+- `training/scripts/run_train_backend.py` now turns that prep seam into a real LEAP backend handoff plus a portable bundle
+- `training/scripts/submit_train_backend_hf_job.py` is the remote-first path for actual trainer execution
 
 ## Train 01 opening contract
 
@@ -163,6 +165,19 @@ Current state:
 ## Future trainer fit
 
 When the first real train split exists, prefer adapting it into an existing VLM SFT path like `leap-finetune` rather than building custom trainer plumbing.
+
+Current honest boundary:
+
+1. local machine:
+   - capture freeze
+   - corpus build
+   - LEAP export
+   - bundle creation
+2. remote GPU:
+   - actual `leap-finetune` run
+3. authoritative eval:
+   - stays outside the trainer
+   - frozen Blackline held-out slices, not the trainer's internal random split
 
 Use the trainer only after:
 
@@ -197,7 +212,9 @@ This means Blackline should keep:
 2. `build_lfm25_vl_corpus.py` as the row materializer
 3. `export_leap_vlm_sft.py` as the trainer-format exporter
 4. `train_adapter.py` as the config-first prep and run-manifest seam
-4. our stricter structured eval outside the trainer:
+5. `run_train_backend.py` as the LEAP handoff + bundle seam
+6. `submit_train_backend_hf_job.py` as the HF remote execution seam
+7. our stricter structured eval outside the trainer:
    - action accuracy
    - schema-valid rate
    - bbox-valid rate
@@ -207,6 +224,7 @@ This means Blackline should keep:
 Current config files:
 
 - `training/configs/lfm25_vl_sft_smoke.yaml`
+- `training/configs/lfm25_vl_sft_train_hf.yaml`
 - `training/configs/lfm25_vl_full_eval.yaml`
 
 ## New data needs from the globe-first concept

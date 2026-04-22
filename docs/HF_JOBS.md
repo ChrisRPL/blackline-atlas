@@ -20,24 +20,16 @@ Local owns:
 Current local path:
 
 ```bash
-python3 training/scripts/build_lfm25_vl_corpus.py \
-  --capture-manifest /tmp/non_demo_simsat_capture/simsat_capture_manifest.json \
-  --replay-dataset training/replay_pack/train_01.jsonl \
-  --output-dir /tmp/train_01_corpus
-
-python3 training/scripts/export_leap_vlm_sft.py \
-  --candidate-eval-dataset /tmp/train_01_corpus/blackline_candidate_eval.jsonl \
-  --output-dir /tmp/train_01_leap
-
-python3 training/scripts/train_adapter.py \
-  --config training/configs/lfm25_vl_sft_smoke.yaml \
-  --print-plan
+python3 training/scripts/run_train_backend.py \
+  --config training/configs/lfm25_vl_sft_smoke.yaml
 ```
 
 Boundary:
 
 - `training/replay_pack/train_01.jsonl` is acquisition truth
 - trainer-facing handoff is exported LEAP data, not replay-pack JSONL directly
+- the generated bundle is the remote handoff
+- local macOS is not the trainer runtime; `leap-finetune` requires CUDA for actual local training
 
 ## HF Jobs
 
@@ -46,16 +38,34 @@ HF Jobs owns:
 - long GPU runs
 - larger eval sweeps
 - durable artifact retention
+- actual `leap-finetune` execution for Blackline
 
-Same path, remote machine:
+Current remote path:
 
-- use the same config files
-- point output to `/outputs/...`
-- keep heavy runs there
+```bash
+python3 training/scripts/submit_train_backend_hf_job.py \
+  --config training/configs/lfm25_vl_sft_train_hf.yaml
+```
+
+Submit for real:
+
+```bash
+python3 training/scripts/submit_train_backend_hf_job.py \
+  --config training/configs/lfm25_vl_sft_train_hf.yaml \
+  --submit
+```
 
 Recommended first remote config:
 
-- `training/configs/lfm25_vl_full_eval.yaml`
+- `training/configs/lfm25_vl_sft_train_hf.yaml`
+
+What the submitter does:
+
+- materializes the same checked-in prep seam locally
+- packages a self-contained train bundle
+- uploads the bundle to a private HF dataset repo by default
+- submits the remote runner with `HF_TOKEN` secret injection
+- installs `leap-finetune` inside the job and trains there
 
 Guidance:
 
@@ -64,3 +74,5 @@ Guidance:
 - prefer short smoke loops first
 - do not make training the critical path
 - keep benchmark compare as a separate explicit step
+- treat the trainer's `test_size` split as diagnostics only
+- keep authoritative Blackline eval on the frozen held-out slices

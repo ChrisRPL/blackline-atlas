@@ -151,6 +151,18 @@ This keeps one canonical row family for:
 - benchmark
 - later LEAP fine-tune
 
+Current trainer path:
+
+1. `training/scripts/train_adapter.py`
+2. `training/scripts/run_train_backend.py`
+3. `training/scripts/submit_train_backend_hf_job.py`
+
+Rule:
+
+- local machine prepares and bundles
+- HF GPU runs the actual trainer
+- frozen Blackline eval stays outside the trainer
+
 ## Immediate next work
 
 1. widen inland `food` next, not another bridge or port family

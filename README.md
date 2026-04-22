@@ -147,12 +147,26 @@ python3 training/scripts/run_lfm25_vl_prompted_eval.py \
   --output-dir /tmp/non_demo_eval_run
 ```
 
-Prepare a config-first adapter run bundle:
+Prepare the config-first train/eval artifacts:
 
 ```bash
 python3 training/scripts/train_adapter.py \
   --config training/configs/lfm25_vl_sft_smoke.yaml \
   --print-plan
+```
+
+Materialize a real LEAP train backend handoff plus a self-contained bundle:
+
+```bash
+python3 training/scripts/run_train_backend.py \
+  --config training/configs/lfm25_vl_sft_smoke.yaml
+```
+
+Print the remote HF Jobs plan without spending cloud time:
+
+```bash
+python3 training/scripts/submit_train_backend_hf_job.py \
+  --config training/configs/lfm25_vl_sft_train_hf.yaml
 ```
 
 Refresh the local lead registry seed:
@@ -198,7 +212,10 @@ Current rule:
 - keep the `22`-row non-demo gold eval set frozen
 - export LEAP-compatible VLM SFT from the same frozen corpus shape
 - keep trainer-facing image paths relative and carry `image_root` in the export summary / dataset manifest
-- use `training/scripts/train_adapter.py` as the config-first prep seam, not as a claim that local fine-tuning is already wired end to end
+- use `training/scripts/train_adapter.py` as the config-first prep seam
+- use `training/scripts/run_train_backend.py` to generate the real LEAP handoff plus a portable train bundle
+- use `training/scripts/submit_train_backend_hf_job.py` for remote GPU submission
+- local macOS stays prep/bundle/orchestration only; actual `leap-finetune` training is remote-first because the trainer requires CUDA
 - start train acquisition in a separate tranche, not by mutating gold rows
 - first promoted train rows now live in [training/replay_pack/train_01.jsonl](training/replay_pack/train_01.jsonl)
 - current Train 01 count: `23`
