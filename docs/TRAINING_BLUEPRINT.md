@@ -145,6 +145,7 @@ Current state:
 - the non-demo gold eval pack is now frozen at `22` exact-site rows
 - next step is local capture freeze plus the first train-prep corpus build
 - LEAP-compatible VLM SFT export now comes from the same frozen candidate corpus, not a parallel ad hoc format
+- `training/scripts/train_adapter.py` is now the config-first prep seam for train/eval artifacts and run metadata
 
 ## Train 01 opening contract
 
@@ -194,13 +195,19 @@ This means Blackline should keep:
 
 1. exact-site annotated truth as canonical
 2. `build_lfm25_vl_corpus.py` as the row materializer
-3. `export_leap_vlm_sft.py` as the trainer adapter
+3. `export_leap_vlm_sft.py` as the trainer-format exporter
+4. `train_adapter.py` as the config-first prep and run-manifest seam
 4. our stricter structured eval outside the trainer:
    - action accuracy
    - schema-valid rate
    - bbox-valid rate
    - false-positive rate
    - `defer` calibration
+
+Current config files:
+
+- `training/configs/lfm25_vl_sft_smoke.yaml`
+- `training/configs/lfm25_vl_full_eval.yaml`
 
 ## New data needs from the globe-first concept
 

@@ -147,6 +147,14 @@ python3 training/scripts/run_lfm25_vl_prompted_eval.py \
   --output-dir /tmp/non_demo_eval_run
 ```
 
+Prepare a config-first adapter run bundle:
+
+```bash
+python3 training/scripts/train_adapter.py \
+  --config training/configs/lfm25_vl_sft_smoke.yaml \
+  --print-plan
+```
+
 Refresh the local lead registry seed:
 
 ```bash
@@ -189,6 +197,8 @@ Current rule:
 
 - keep the `22`-row non-demo gold eval set frozen
 - export LEAP-compatible VLM SFT from the same frozen corpus shape
+- keep trainer-facing image paths relative and carry `image_root` in the export summary / dataset manifest
+- use `training/scripts/train_adapter.py` as the config-first prep seam, not as a claim that local fine-tuning is already wired end to end
 - start train acquisition in a separate tranche, not by mutating gold rows
 - first promoted train rows now live in [training/replay_pack/train_01.jsonl](training/replay_pack/train_01.jsonl)
 - current Train 01 count: `23`

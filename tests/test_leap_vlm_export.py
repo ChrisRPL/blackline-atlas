@@ -28,12 +28,13 @@ def test_write_leap_vlm_sft_records_splits_train_and_eval(tmp_path: Path) -> Non
     assert train_rows[0]["target_split"] == "train"
     assert eval_rows[0]["target_split"] == "eval"
     assert train_rows[0]["messages"][0]["role"] == "system"
-    assert train_rows[0]["messages"][1]["content"][1]["image"].endswith("images/base.png")
-    assert train_rows[0]["messages"][1]["content"][2]["image"].endswith("images/current.png")
+    assert train_rows[0]["messages"][1]["content"][1]["image"] == "images/base.png"
+    assert train_rows[0]["messages"][1]["content"][2]["image"] == "images/current.png"
     assert (
         "Baseline image is first. Current image is second."
         in train_rows[0]["messages"][1]["content"][0]["text"]
     )
+    assert summary["image_root"] == str(dataset_path.parent.resolve())
     assert summary["train_records"] == 1
     assert summary["eval_records"] == 1
     assert summary["source_split_counts"] == {

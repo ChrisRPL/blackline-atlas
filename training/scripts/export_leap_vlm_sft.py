@@ -30,6 +30,7 @@ PAIR_ORDER_NOTE = (
 def build_leap_vlm_sft_records(
     *,
     candidate_eval_path: Path = DEFAULT_INPUT_DATASET,
+    absolute_image_paths: bool = False,
 ) -> tuple[list[dict[str, object]], list[dict[str, object]], dict[str, object]]:
     rows = _load_candidate_rows(candidate_eval_path)
     dataset_root = candidate_eval_path.parent.resolve()
@@ -38,7 +39,11 @@ def build_leap_vlm_sft_records(
     eval_records: list[dict[str, object]] = []
 
     for row in rows:
-        record = _build_leap_record(row=row, dataset_root=dataset_root)
+        record = _build_leap_record(
+            row=row,
+            dataset_root=dataset_root,
+            absolute_image_paths=absolute_image_paths,
+        )
         if row.split == "train":
             train_records.append(record.model_dump(mode="json"))
         else:
@@ -46,6 +51,7 @@ def build_leap_vlm_sft_records(
 
     summary = {
         "source_dataset": str(candidate_eval_path),
+        "image_root": str(dataset_root),
         "total_records": len(rows),
         "train_records": len(train_records),
         "eval_records": len(eval_records),
@@ -65,10 +71,12 @@ def write_leap_vlm_sft_records(
     train_name: str = DEFAULT_TRAIN_NAME,
     eval_name: str = DEFAULT_EVAL_NAME,
     summary_name: str = DEFAULT_SUMMARY_NAME,
+    absolute_image_paths: bool = False,
 ) -> tuple[Path, Path, Path]:
     output_dir.mkdir(parents=True, exist_ok=True)
     train_records, eval_records, summary = build_leap_vlm_sft_records(
-        candidate_eval_path=candidate_eval_path
+        candidate_eval_path=candidate_eval_path,
+        absolute_image_paths=absolute_image_paths,
     )
 
     train_path = output_dir / train_name
@@ -125,9 +133,13 @@ def _build_leap_record(
     *,
     row: BlacklineCandidateEvalRecord,
     dataset_root: Path,
+    absolute_image_paths: bool,
 ) -> LeapVLMSFTRecord:
-    baseline_path = str((dataset_root / row.baseline_image_path).resolve())
-    current_path = str((dataset_root / row.current_image_path).resolve())
+    baseline_path = row.baseline_image_path
+    current_path = row.current_image_path
+    if absolute_image_paths:
+        baseline_path = str((dataset_root / row.baseline_image_path).resolve())
+        current_path = str((dataset_root / row.current_image_path).resolve())
     user_text = f"{PAIR_ORDER_NOTE}\n\n{row.prompt['user']}"
     target_split = "train" if row.split == "train" else "eval"
     return LeapVLMSFTRecord(

@@ -18,8 +18,12 @@ dependencies = [
 dev = [
   "black>=25.0.0",
   "httpx>=0.28.0",
+  "PyYAML>=6.0.3",
   "pytest>=8.4.0",
   "ruff>=0.12.0",
+]
+train = [
+  "PyYAML>=6.0.3",
 ]
 vlm = [
   "pillow>=10.0.0",
