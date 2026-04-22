@@ -147,6 +147,16 @@ python3 training/scripts/run_lfm25_vl_prompted_eval.py \
   --output-dir /tmp/non_demo_eval_run
 ```
 
+Score a trained adapter checkpoint on the same held-out slice:
+
+```bash
+python3 training/scripts/run_lfm25_vl_prompted_eval.py \
+  --dataset /tmp/non_demo_corpus/blackline_candidate_eval.jsonl \
+  --output-dir /tmp/non_demo_eval_run_adapter \
+  --model-id LiquidAI/LFM2.5-VL-450M \
+  --adapter-ref /path/to/adapter-or-hub-repo
+```
+
 Prepare the config-first train/eval artifacts:
 
 ```bash

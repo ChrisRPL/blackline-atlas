@@ -28,6 +28,7 @@ train = [
   "PyYAML>=6.0.3",
 ]
 vlm = [
+  "peft>=0.17.0",
   "pillow>=10.0.0",
   "torch>=2.8.0",
   "transformers>=5.1.0",

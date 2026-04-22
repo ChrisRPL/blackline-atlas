@@ -6,11 +6,13 @@ import sys
 from pathlib import Path
 
 from huggingface_hub import HfApi, get_token, whoami
+from huggingface_hub.errors import HfHubHTTPError
 
 ROOT = Path(__file__).resolve().parents[2]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
+from app.schemas.training_run import TrainBundleManifest  # noqa: E402
 from training.scripts import run_train_backend, train_adapter  # noqa: E402
 
 DEFAULT_CONFIG_PATH = ROOT / "training" / "configs" / "lfm25_vl_sft_train_hf.yaml"
@@ -119,31 +121,60 @@ def main(argv: list[str] | None = None) -> int:
         token=token,
         commit_message=f"Upload Blackline train bundle for {config.run_name}",
     )
-    job_info = api.run_uv_job(
-        script=str(args.remote_script),
-        script_args=[
-            "--job-spec",
-            json.dumps(job_spec, separators=(",", ":")),
-            "--bundle-repo-id",
-            bundle_repo_id,
-            "--bundle-path",
-            path_in_repo,
-            "--bundle-repo-type",
-            "dataset",
-            "--output-dir",
-            config.runtime.output_dir,
-            "--leap-ref",
-            args.leap_ref,
-        ],
-        dependencies=[
-            "huggingface-hub>=0.35.0",
-            "PyYAML>=6.0.3",
-        ],
-        python="3.12",
-        flavor=config.hf_job.flavor,
-        timeout=config.hf_job.timeout,
-        env={"PYTHONUNBUFFERED": "1"},
-        secrets={"HF_TOKEN": token},
+    try:
+        job_info = api.run_uv_job(
+            script=str(args.remote_script),
+            script_args=[
+                "--job-spec",
+                json.dumps(job_spec, separators=(",", ":")),
+                "--bundle-repo-id",
+                bundle_repo_id,
+                "--bundle-path",
+                path_in_repo,
+                "--bundle-repo-type",
+                "dataset",
+                "--output-dir",
+                config.runtime.output_dir,
+                "--leap-ref",
+                args.leap_ref,
+            ],
+            dependencies=[
+                "huggingface-hub>=0.35.0",
+                "PyYAML>=6.0.3",
+            ],
+            python="3.12",
+            flavor=config.hf_job.flavor,
+            timeout=config.hf_job.timeout,
+            env={"PYTHONUNBUFFERED": "1"},
+            secrets={"HF_TOKEN": token},
+        )
+    except HfHubHTTPError as exc:
+        if _is_hf_jobs_credit_error(exc):
+            _write_bundle_submit_status(
+                bundle_manifest=bundle_manifest,
+                bundle_repo_id=bundle_repo_id,
+                bundle_path=path_in_repo,
+                submit_status="upload_succeeded_submit_failed",
+                submit_error="hf_jobs_insufficient_credits",
+            )
+            print("status=upload_succeeded_submit_failed")
+            print("failure_reason=hf_jobs_insufficient_credits")
+            print(f"bundle_repo_id={bundle_repo_id}")
+            print(f"bundle_path={path_in_repo}")
+            print(f"generated_config={plan.generated_config_path}")
+            print(
+                "next_step=add Hugging Face Jobs credits, then rerun the same command "
+                "with --skip-prepare --submit"
+            )
+            return 2
+        raise
+
+    _write_bundle_submit_status(
+        bundle_manifest=bundle_manifest,
+        bundle_repo_id=bundle_repo_id,
+        bundle_path=path_in_repo,
+        submit_status="submitted",
+        submit_error=None,
     )
     job_url = getattr(job_info, "url", None) or f"https://huggingface.co/jobs/{job_info.id}"
     print(f"job_id={job_info.id}")
@@ -180,6 +211,39 @@ def build_remote_job_spec(*, config) -> dict[str, object]:
         "training_config": trainer.training_config.model_dump(mode="json"),
         "peft_config": trainer.peft_config.model_dump(mode="json"),
     }
+
+
+def _bundle_manifest_path(bundle_manifest: TrainBundleManifest) -> Path:
+    return Path(bundle_manifest.bundle_dir) / run_train_backend.LEAP_BUNDLE_MANIFEST_NAME
+
+
+def _write_bundle_submit_status(
+    *,
+    bundle_manifest: TrainBundleManifest,
+    bundle_repo_id: str,
+    bundle_path: str,
+    submit_status: str,
+    submit_error: str | None,
+) -> None:
+    manifest_path = _bundle_manifest_path(bundle_manifest)
+    updated_manifest = bundle_manifest.model_copy(
+        update={
+            "uploaded_bundle_repo_id": bundle_repo_id,
+            "uploaded_bundle_path": bundle_path,
+            "last_submit_status": submit_status,
+            "last_submit_error": submit_error,
+        }
+    )
+    manifest_path.write_text(
+        json.dumps(updated_manifest.model_dump(mode="json"), indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
+
+
+def _is_hf_jobs_credit_error(exc: HfHubHTTPError) -> bool:
+    status_code = getattr(getattr(exc, "response", None), "status_code", None)
+    message = str(exc).lower()
+    return status_code == 402 or ("credit" in message and "insufficient" in message)
 
 
 if __name__ == "__main__":

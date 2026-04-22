@@ -36,28 +36,19 @@ class CandidateTextGenerator(Protocol):
 
 
 class TransformersLfm25Runner:
-    def __init__(self, *, model_id: str, max_new_tokens: int = 196) -> None:
+    def __init__(
+        self,
+        *,
+        model_id: str,
+        adapter_ref: str | None = None,
+        max_new_tokens: int = 196,
+    ) -> None:
         self.model_id = model_id
+        self.adapter_ref = adapter_ref
         self.max_new_tokens = max_new_tokens
-
-        try:
-            import torch
-            from PIL import Image
-            from transformers import AutoModelForImageTextToText, AutoProcessor
-        except ImportError as exc:
-            raise RuntimeError(
-                "Missing local VLM dependencies. Install torch, pillow, and transformers>=5.1."
-            ) from exc
-
-        token = os.getenv("HF_TOKEN")
-        self._torch = torch
-        self._image_open = Image.open
-        self._processor = AutoProcessor.from_pretrained(model_id, token=token)
-        self._model = AutoModelForImageTextToText.from_pretrained(
-            model_id,
-            token=token,
-            device_map="auto",
-            dtype="auto",
+        self._torch, self._image_open, self._processor, self._model = _load_transformers_runner(
+            model_id=model_id,
+            adapter_ref=adapter_ref,
         )
 
     def generate(self, case: BlacklineCandidateEvalRecord) -> str:
@@ -238,6 +229,7 @@ def run_prompted_eval(
     dataset_path: Path,
     output_dir: Path,
     model_id: str = DEFAULT_MODEL_ID,
+    adapter_ref: str | None = None,
     limit: int | None = None,
     predictions_name: str = DEFAULT_PREDICTIONS_NAME,
     summary_name: str = DEFAULT_SUMMARY_NAME,
@@ -247,7 +239,10 @@ def run_prompted_eval(
     predictions_path = output_dir / predictions_name
     summary_path = output_dir / summary_name
 
-    generator = generator or TransformersLfm25Runner(model_id=model_id)
+    generator = generator or TransformersLfm25Runner(
+        model_id=model_id,
+        adapter_ref=adapter_ref,
+    )
     predictions_path, case_ids = write_prompted_predictions(
         dataset_path=dataset_path,
         output_path=predictions_path,
@@ -287,6 +282,11 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         help=f"Hugging Face model id. Default: {DEFAULT_MODEL_ID}",
     )
     parser.add_argument(
+        "--adapter-ref",
+        default=None,
+        help="Optional PEFT adapter path or Hub repo id to evaluate on top of the base model.",
+    )
+    parser.add_argument(
         "--limit",
         type=int,
         default=None,
@@ -301,6 +301,7 @@ def main(argv: list[str] | None = None) -> int:
         dataset_path=args.dataset,
         output_dir=args.output_dir,
         model_id=args.model_id,
+        adapter_ref=args.adapter_ref,
         limit=args.limit,
     )
     print(f"wrote {predictions_path}")
@@ -334,6 +335,39 @@ def _write_dataset_subset(
         encoding="utf-8",
     )
     return output_path
+
+
+def _load_transformers_runner(
+    *,
+    model_id: str,
+    adapter_ref: str | None,
+) -> tuple[object, object, object, object]:
+    try:
+        import torch
+        from PIL import Image
+        from transformers import AutoModelForImageTextToText, AutoProcessor
+    except ImportError as exc:
+        raise RuntimeError(
+            "Missing local VLM dependencies. Install torch, pillow, and transformers>=5.1."
+        ) from exc
+
+    token = os.getenv("HF_TOKEN")
+    processor = AutoProcessor.from_pretrained(model_id, token=token)
+    model = AutoModelForImageTextToText.from_pretrained(
+        model_id,
+        token=token,
+        device_map="auto",
+        dtype="auto",
+    )
+    if adapter_ref is not None:
+        try:
+            from peft import PeftModel
+        except ImportError as exc:
+            raise RuntimeError(
+                "Missing PEFT dependency. Install peft to evaluate adapter checkpoints."
+            ) from exc
+        model = PeftModel.from_pretrained(model, adapter_ref, token=token)
+    return torch, Image.open, processor, model
 
 
 if __name__ == "__main__":

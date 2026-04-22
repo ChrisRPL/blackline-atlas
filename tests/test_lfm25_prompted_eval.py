@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import sys
+import types
 from pathlib import Path
 from urllib.error import URLError
 from urllib.request import Request
@@ -335,6 +336,119 @@ def test_http_candidate_text_runner_does_not_fallback_to_expected_output(tmp_pat
     assert runner.generate(case) == ""
     assert telemetry[0].fallback_reason == "http_error"
     assert telemetry[0].parse_ok is False
+
+
+def test_parse_args_accepts_adapter_ref() -> None:
+    args = run_lfm25_vl_prompted_eval.parse_args(
+        ["--adapter-ref", "ChrisRPL/blackline-atlas-adapter"]
+    )
+
+    assert args.adapter_ref == "ChrisRPL/blackline-atlas-adapter"
+
+
+def test_load_transformers_runner_wraps_base_model_with_peft_adapter(monkeypatch) -> None:
+    processor_calls: list[tuple[str, str | None]] = []
+    model_calls: list[tuple[str, str | None, str, str]] = []
+    peft_calls: list[tuple[object, str, str | None]] = []
+
+    class _FakeAutoProcessor:
+        @classmethod
+        def from_pretrained(cls, model_id: str, token: str | None = None):
+            processor_calls.append((model_id, token))
+            return "processor"
+
+    class _FakeAutoModelForImageTextToText:
+        @classmethod
+        def from_pretrained(
+            cls,
+            model_id: str,
+            token: str | None = None,
+            device_map: str = "auto",
+            dtype: str = "auto",
+        ):
+            model_calls.append((model_id, token, device_map, dtype))
+            return {"base_model_id": model_id}
+
+    class _FakePeftModel:
+        @classmethod
+        def from_pretrained(cls, model: object, adapter_ref: str, token: str | None = None):
+            peft_calls.append((model, adapter_ref, token))
+            return {"wrapped_model": model, "adapter_ref": adapter_ref}
+
+    monkeypatch.setenv("HF_TOKEN", "hf_test")
+    monkeypatch.setitem(sys.modules, "torch", types.SimpleNamespace())
+    monkeypatch.setitem(
+        sys.modules,
+        "PIL",
+        types.SimpleNamespace(Image=types.SimpleNamespace(open=lambda path: path)),
+    )
+    monkeypatch.setitem(
+        sys.modules,
+        "transformers",
+        types.SimpleNamespace(
+            AutoModelForImageTextToText=_FakeAutoModelForImageTextToText,
+            AutoProcessor=_FakeAutoProcessor,
+        ),
+    )
+    monkeypatch.setitem(sys.modules, "peft", types.SimpleNamespace(PeftModel=_FakePeftModel))
+
+    _, _, processor, model = run_lfm25_vl_prompted_eval._load_transformers_runner(
+        model_id="LiquidAI/LFM2.5-VL-450M",
+        adapter_ref="ChrisRPL/blackline-atlas-adapter",
+    )
+
+    assert processor == "processor"
+    assert model["adapter_ref"] == "ChrisRPL/blackline-atlas-adapter"
+    assert processor_calls == [("LiquidAI/LFM2.5-VL-450M", "hf_test")]
+    assert model_calls == [("LiquidAI/LFM2.5-VL-450M", "hf_test", "auto", "auto")]
+    assert peft_calls == [
+        (
+            {"base_model_id": "LiquidAI/LFM2.5-VL-450M"},
+            "ChrisRPL/blackline-atlas-adapter",
+            "hf_test",
+        )
+    ]
+
+
+def test_load_transformers_runner_requires_peft_for_adapter(monkeypatch) -> None:
+    class _FakeAutoProcessor:
+        @classmethod
+        def from_pretrained(cls, model_id: str, token: str | None = None):
+            _ = model_id, token
+            return "processor"
+
+    class _FakeAutoModelForImageTextToText:
+        @classmethod
+        def from_pretrained(cls, model_id: str, **kwargs):
+            _ = model_id, kwargs
+            return {"base_model_id": model_id}
+
+    monkeypatch.delenv("HF_TOKEN", raising=False)
+    monkeypatch.setitem(sys.modules, "torch", types.SimpleNamespace())
+    monkeypatch.setitem(
+        sys.modules,
+        "PIL",
+        types.SimpleNamespace(Image=types.SimpleNamespace(open=lambda path: path)),
+    )
+    monkeypatch.setitem(
+        sys.modules,
+        "transformers",
+        types.SimpleNamespace(
+            AutoModelForImageTextToText=_FakeAutoModelForImageTextToText,
+            AutoProcessor=_FakeAutoProcessor,
+        ),
+    )
+    monkeypatch.delitem(sys.modules, "peft", raising=False)
+
+    try:
+        run_lfm25_vl_prompted_eval._load_transformers_runner(
+            model_id="LiquidAI/LFM2.5-VL-450M",
+            adapter_ref="ChrisRPL/blackline-atlas-adapter",
+        )
+    except RuntimeError as exc:
+        assert "Missing PEFT dependency" in str(exc)
+    else:  # pragma: no cover - defensive
+        raise AssertionError("expected missing PEFT dependency error")
 
 
 def _write_eval_case_dataset(

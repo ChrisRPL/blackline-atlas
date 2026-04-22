@@ -67,6 +67,23 @@ What the submitter does:
 - submits the remote runner with `HF_TOKEN` secret injection
 - installs `leap-finetune` inside the job and trains there
 
+If submit fails after upload:
+
+- the uploaded bundle is still the durable handoff
+- local `bundle_manifest.json` records:
+  - uploaded repo id
+  - uploaded repo path
+  - last submit status
+  - last submit error
+- if the failure is `hf_jobs_insufficient_credits`, add HF Jobs credits and rerun:
+
+```bash
+python3 training/scripts/submit_train_backend_hf_job.py \
+  --config training/configs/lfm25_vl_sft_train_hf.yaml \
+  --skip-prepare \
+  --submit
+```
+
 Guidance:
 
 - run eval before training

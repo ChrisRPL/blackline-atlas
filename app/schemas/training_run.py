@@ -193,3 +193,7 @@ class TrainBundleManifest(BaseModel):
     train_records: int
     eval_records: int
     authoritative_eval_note: str
+    uploaded_bundle_repo_id: str | None = None
+    uploaded_bundle_path: str | None = None
+    last_submit_status: str | None = None
+    last_submit_error: str | None = None

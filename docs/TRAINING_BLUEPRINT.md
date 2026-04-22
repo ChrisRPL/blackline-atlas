@@ -179,6 +179,12 @@ Current honest boundary:
    - stays outside the trainer
    - frozen Blackline held-out slices, not the trainer's internal random split
 
+Checkpoint eval rule:
+
+- when an adapter checkpoint lands, keep the base model fixed and score it with:
+  - `python3 training/scripts/run_lfm25_vl_prompted_eval.py --model-id LiquidAI/LFM2.5-VL-450M --adapter-ref <adapter_dir_or_hub_repo>`
+- do not overload `--model-id` to mean both base and adapter
+
 Use the trainer only after:
 
 1. exact-site registry is stable
