@@ -8,9 +8,9 @@ Purpose:
 
 ## Current status
 
-- promoted train rows: `22`
+- promoted train rows: `23`
 - current mix:
-  - positives: `13`
+  - positives: `14`
   - controls: `9`
 - promoted dataset:
   - [train_01.jsonl](/Users/krzysztof/blackline-atlas/training/replay_pack/train_01.jsonl)
@@ -31,9 +31,10 @@ Purpose:
   - `Gedaref Grain Silos`
   - `Manbij Grain Silo Complex`
   - `Vasyshcheve ATB Distribution Center`
+  - `Mondelez Trostianets Confectionery Factory`
 - still blocked / not yet promotable:
   - `Roshen Yahotyn Logistics Center`
-  - `Mondelez Trostianets Confectionery Factory`
+  - `Arbaat Dam`
 
 ## Rule first
 
@@ -124,6 +125,19 @@ For each control family:
   - timestamp cutoff
   - no near-duplicate frames across splits
 
+## Family scaling rule
+
+- scale by family depth, not by random new leads
+- positive family:
+  - require at least `2` honest non-gold train windows on the same exact parcel
+  - a `3rd` variant is optional if it adds a harder-but-honest read
+- control family:
+  - require `1` clean no-event or signal-soft variant
+  - add a `2nd` only if it adds a distinct failure mode
+- same exact parcel center
+- capture changes belong in overrides and family policy, not in the row JSONL
+- lead-registry or current web ingest never enters VLM train rows directly
+
 ## Export path
 
 Use the same frozen candidate corpus shape first, then export it to LEAP-compatible VLM SFT:
@@ -140,7 +154,7 @@ This keeps one canonical row family for:
 ## Immediate next work
 
 1. widen inland `food` next, not another bridge or port family
-2. probe `Roshen` and `Mondelez` first with `training/scripts/probe_train_family_windows.py`
-3. use `Arbaat` as the water backup lane if food stays weather- or leakage-blocked
+2. keep `Roshen` blocked until a genuinely non-gold clean pair exists
+3. use `Arbaat` as the water backup lane only if a non-gold pre-event pair appears
 4. hold `Khan Younis` until a genuinely non-gold clean pair exists
-5. first `12`-row train mini-pack is closed; current pack is `22`, and the next push should preferentially add a food positive before another water/aid repeat
+5. first `12`-row train mini-pack is closed; current pack is `23`, and the next push should prefer under-depth food families or a fresh non-leaky control

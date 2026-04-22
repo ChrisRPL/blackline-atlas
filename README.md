@@ -46,7 +46,7 @@ Current reality:
 - internal annotated eval set exists and drives the core product
 - external benchmark seeds exist for auxiliary transfer testing
 - prompted baseline and benchmark runners exist
-- no trustworthy train split yet
+- a provisional train split exists and is still underweight
 - the biggest bottleneck is now train-row acquisition and freeze discipline, not framework work
 
 ## Repo layout
@@ -191,7 +191,7 @@ Current rule:
 - export LEAP-compatible VLM SFT from the same frozen corpus shape
 - start train acquisition in a separate tranche, not by mutating gold rows
 - first promoted train rows now live in [training/replay_pack/train_01.jsonl](training/replay_pack/train_01.jsonl)
-- current Train 01 count: `22`
+- current Train 01 count: `23`
 
 Working doc:
 

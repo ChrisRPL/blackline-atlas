@@ -1,0 +1,40 @@
+{
+  "positive_families": [
+    {
+      "family_id": "mondelez",
+      "asset_id": "mondelez_trostianets_01",
+      "gold_case_id": "mondelez_trostianets_factory_strike",
+      "excluded_frame_ids": [
+        "base_mondelez_trostianets_01_20210913",
+        "cur_mondelez_trostianets_01_20220322"
+      ],
+      "target_train_variants": 3,
+      "preferred_time_direction": "earlier_pre_later_current",
+      "blocked_reason": null
+    },
+    {
+      "family_id": "roshen",
+      "asset_id": "roshen_yahotyn_01",
+      "gold_case_id": "roshen_yahotyn_logistics_center_strike",
+      "excluded_frame_ids": [
+        "base_roshen_yahotyn_01_20250831",
+        "cur_roshen_yahotyn_01_20260314"
+      ],
+      "target_train_variants": 3,
+      "preferred_time_direction": "earlier_pre_later_current",
+      "blocked_reason": "available non-gold alternates are obscured, snow-dominated, or gold-adjacent"
+    },
+    {
+      "family_id": "arbaat",
+      "asset_id": "arbaat_dam_01",
+      "gold_case_id": "arbaat_dam_breach",
+      "excluded_frame_ids": [
+        "base_arbaat_dam_01_20240717",
+        "cur_arbaat_dam_01_20240930"
+      ],
+      "target_train_variants": 2,
+      "preferred_time_direction": "non_gold_pre_required",
+      "blocked_reason": "current candidate set lacks a clean non-gold pre-event baseline"
+    }
+  ]
+}

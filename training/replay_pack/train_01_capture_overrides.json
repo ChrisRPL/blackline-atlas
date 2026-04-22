@@ -108,5 +108,10 @@
     "latitude": 46.776336,
     "longitude": 33.371477,
     "size_km": 5.0
+  },
+  "mondelez_trostianets_factory_train_20210715_20220715": {
+    "latitude": 50.485456,
+    "longitude": 34.943761,
+    "size_km": 0.8
   }
 }
