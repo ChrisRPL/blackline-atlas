@@ -151,7 +151,7 @@ def _build_leap_record(
         messages=[
             {
                 "role": "system",
-                "content": row.prompt["system"],
+                "content": [{"type": "text", "text": row.prompt["system"]}],
             },
             {
                 "role": "user",
@@ -163,7 +163,7 @@ def _build_leap_record(
             },
             {
                 "role": "assistant",
-                "content": row.model_output_text,
+                "content": [{"type": "text", "text": row.model_output_text}],
             },
         ],
     )

@@ -28,8 +28,22 @@ def test_write_leap_vlm_sft_records_splits_train_and_eval(tmp_path: Path) -> Non
     assert train_rows[0]["target_split"] == "train"
     assert eval_rows[0]["target_split"] == "eval"
     assert train_rows[0]["messages"][0]["role"] == "system"
+    assert train_rows[0]["messages"][0]["content"] == [
+        {"type": "text", "text": "You are Blackline Atlas candidate generation."}
+    ]
     assert train_rows[0]["messages"][1]["content"][1]["image"] == "images/base.png"
     assert train_rows[0]["messages"][1]["content"][2]["image"] == "images/current.png"
+    assert train_rows[0]["messages"][2]["content"] == [
+        {
+            "type": "text",
+            "text": (
+                '{"event_type":"probable_access_obstruction","severity":"high",'
+                '"confidence":0.95,"bbox":[0.1,0.2,0.8,0.9],'
+                '"civilian_impact":"public_mobility_disruption",'
+                '"why":"Bridge span is broken.","action":"downlink_now"}'
+            ),
+        }
+    ]
     assert (
         "Baseline image is first. Current image is second."
         in train_rows[0]["messages"][1]["content"][0]["text"]
