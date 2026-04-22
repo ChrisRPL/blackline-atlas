@@ -318,20 +318,15 @@ def validate_published_adapter_dir(*, publish_dir: Path, checkpoint_dir: Path) -
 
 
 def find_latest_checkpoint_dir(output_dir: Path) -> Path:
-    run_dirs = (
-        [path for path in output_dir.iterdir() if path.is_dir()] if output_dir.exists() else []
-    )
-    if not run_dirs:
+    if not output_dir.exists():
         raise FileNotFoundError(f"training output dir missing or empty: {output_dir}")
-    sorted_run_dirs = sorted(run_dirs, key=lambda path: path.stat().st_mtime, reverse=True)
-    for run_dir in sorted_run_dirs:
-        checkpoint_dirs = sorted(
-            [path for path in run_dir.glob("checkpoint-*") if path.is_dir()],
-            key=checkpoint_sort_key,
-            reverse=True,
-        )
-        if checkpoint_dirs:
-            return checkpoint_dirs[0]
+    checkpoint_dirs = sorted(
+        [path for path in output_dir.rglob("checkpoint-*") if path.is_dir()],
+        key=lambda path: (checkpoint_sort_key(path), path.stat().st_mtime),
+        reverse=True,
+    )
+    if checkpoint_dirs:
+        return checkpoint_dirs[0]
     raise FileNotFoundError(f"no checkpoint directories found under {output_dir}")
 
 

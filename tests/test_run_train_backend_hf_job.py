@@ -209,6 +209,15 @@ def test_find_latest_checkpoint_dir_picks_highest_checkpoint(tmp_path: Path) -> 
     assert checkpoint_dir == run_dir / "checkpoint-5"
 
 
+def test_find_latest_checkpoint_dir_finds_nested_checkpoint_dirs(tmp_path: Path) -> None:
+    run_dir = tmp_path / "nested" / "run-01"
+    (run_dir / "checkpoint-5").mkdir(parents=True)
+
+    checkpoint_dir = run_train_backend_hf_job.find_latest_checkpoint_dir(tmp_path)
+
+    assert checkpoint_dir == run_dir / "checkpoint-5"
+
+
 def test_maybe_publish_adapter_artifacts_uploads_filtered_checkpoint(
     monkeypatch, tmp_path: Path
 ) -> None:
