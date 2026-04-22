@@ -43,6 +43,22 @@ Purpose:
 - train rows live in a separate train dataset once they are promoted
 - no random split
 - use timestamp cutoffs and fixed site families
+- current-source lead intake stays separate from train promotion
+
+## Auxiliary lane
+
+- auxiliary-train rows are allowed
+- keep them out of core Blackline gold metrics
+- current first sources:
+  - `xBD`
+  - `SpaceNet 8`
+- materialize them through:
+  - `python3 training/scripts/materialize_aux_train_slice.py`
+- rule:
+  - same canonical `blackline_candidate_eval.jsonl` row shape
+  - copied local images
+  - split forced to `train`
+  - separate from internal gold / holdout reporting
 
 ## First target
 
@@ -165,8 +181,9 @@ Rule:
 
 ## Immediate next work
 
-1. widen inland `food` next, not another bridge or port family
+1. keep widening under-depth internal positive families
 2. keep `Roshen` blocked until a genuinely non-gold clean pair exists
 3. use `Arbaat` as the water backup lane only if a non-gold pre-event pair appears
-4. hold `Khan Younis` until a genuinely non-gold clean pair exists
-5. first `12`-row train mini-pack is closed; current pack is `23`, and the next push should prefer under-depth food families or a fresh non-leaky control
+4. keep `Khan Younis` and `Okhmatdyt` strict on leakage
+5. materialize the first auxiliary-train slice from checked-in `xBD` and `SpaceNet 8` public seeds
+6. merge auxiliary gain only in trainer-side runs, never in the frozen Blackline scorecard

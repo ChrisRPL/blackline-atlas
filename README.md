@@ -239,6 +239,10 @@ Current rule:
 - start train acquisition in a separate tranche, not by mutating gold rows
 - first promoted train rows now live in [training/replay_pack/train_01.jsonl](training/replay_pack/train_01.jsonl)
 - current Train 01 count: `23`
+- auxiliary-train widening now has a separate materializer:
+  - `python3 training/scripts/materialize_aux_train_slice.py`
+  - current checked-in public seed gain: `8` auxiliary train rows from `xBD` + `SpaceNet 8`
+  - keep this lane out of frozen Blackline scorecards
 
 Working doc:
 

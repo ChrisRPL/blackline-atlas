@@ -137,6 +137,10 @@ Working train-row board:
 - VLM: freeze gold eval, then data-first toward train rows
 - planner: eval-first
 - both: no fine-tune rush
+- fastest extra training breadth:
+  - exact internal family depth first
+  - plus a separate auxiliary-train lane from checked-in `xBD` and `SpaceNet 8` public seeds
+  - never mix auxiliary rows into frozen Blackline scorecards
 
 ## External reference
 

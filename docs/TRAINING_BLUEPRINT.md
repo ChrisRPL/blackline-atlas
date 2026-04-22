@@ -157,6 +157,9 @@ Current state:
 - no random split
 - no hero/demo rows
 - no external benchmark rows in the first train tranche
+- external slices may still widen training in a separate auxiliary lane:
+  - materialize them with `training/scripts/materialize_aux_train_slice.py`
+  - keep them out of frozen Blackline eval reporting
 - use the same exact-site pair shape for:
   - prompted eval
   - benchmark
