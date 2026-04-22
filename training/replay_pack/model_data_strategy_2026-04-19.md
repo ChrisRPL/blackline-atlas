@@ -224,3 +224,35 @@ Use them this way, not literally:
   - bbox-valid rate
   - false-positive rate
   - `defer` calibration
+
+## Cookbook-specific notes from Liquid's official repo
+
+From `Liquid4All/cookbook`:
+
+1. `examples/satellite-vlm/prepare_vrsbench.py` keeps the trainer row dead simple
+   - one `messages` conversation
+   - image path
+   - text instruction
+   - text answer
+2. trainer config owns the rest
+   - `image_root`
+   - eval limits
+   - metrics
+   - checkpoint cadence
+3. grounding uses normalized `0-1` JSON boxes
+   - aligned with our current bbox contract
+4. benchmark-on-start is worth copying
+   - fast signal before wasting a full fine-tune run
+5. local computer should act like an orchestrator for heavy jobs
+   - prepare
+   - launch
+   - monitor
+   - retrieve artifacts
+
+Blackline adaptation:
+
+- keep `AnnotatedCaseRecord` and frozen replay packs canonical
+- materialize trainer rows from that source, never the other way around
+- keep small capped eval subsets for quick training iteration
+- keep full structured eval as a separate gate after trainer-side metrics
+- prioritize food-family widening next because Train 01 is still underweight on inland food positives

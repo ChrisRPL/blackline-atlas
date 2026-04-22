@@ -122,6 +122,9 @@ Probe candidate Train 01 positive windows before promoting a new row:
 ```bash
 python3 training/scripts/probe_train_family_windows.py \
   --historical-endpoint http://localhost:9005/data/image/sentinel \
+  --family roshen \
+  --family mondelez \
+  --family arbaat \
   --family okhmatdyt \
   --family baltimore \
   --family port_sudan

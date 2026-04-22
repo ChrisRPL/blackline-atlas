@@ -17,6 +17,49 @@ DEFAULT_WINDOW_SECONDS = 14 * 24 * 60 * 60
 DEFAULT_SPECTRAL_BANDS = ("red", "green", "blue")
 
 TRAIN_FAMILY_CANDIDATES: dict[str, dict[str, object]] = {
+    "roshen": {
+        "label": "Roshen Yahotyn Logistics Center",
+        "asset_id": "roshen_yahotyn_01",
+        "latitude": 50.245008,
+        "longitude": 31.814647,
+        "size_km": 0.5,
+        "timestamps": (
+            "2025-08-31T09:06:35Z",
+            "2025-11-14T08:56:33Z",
+            "2026-01-16T09:06:21Z",
+            "2026-03-14T08:56:26Z",
+            "2026-04-03T08:56:24Z",
+        ),
+    },
+    "mondelez": {
+        "label": "Mondelez Trostianets Confectionery Factory",
+        "asset_id": "mondelez_trostianets_01",
+        "latitude": 50.485456,
+        "longitude": 34.943761,
+        "size_km": 0.8,
+        "timestamps": (
+            "2021-10-01T09:00:00Z",
+            "2021-09-13T08:46:20Z",
+            "2022-04-05T09:00:00Z",
+            "2022-03-22T08:46:22Z",
+            "2022-05-20T09:00:00Z",
+        ),
+    },
+    "arbaat": {
+        "label": "Arbaat Dam",
+        "asset_id": "arbaat_dam_01",
+        "latitude": 19.833554,
+        "longitude": 36.941204,
+        "size_km": 5.0,
+        "timestamps": (
+            "2024-07-17T08:14:43Z",
+            "2024-08-26T08:14:40Z",
+            "2024-08-31T08:14:44Z",
+            "2024-09-15T08:14:41Z",
+            "2024-09-30T08:14:43Z",
+            "2024-10-15T08:14:42Z",
+        ),
+    },
     "okhmatdyt": {
         "label": "Okhmatdyt Children's Hospital",
         "asset_id": "okhmatdyt_hospital_01",

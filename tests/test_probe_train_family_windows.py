@@ -103,3 +103,11 @@ def test_resolve_families_rejects_unknown_family() -> None:
         assert "unknown family id(s): nope" in str(exc)
     else:
         raise AssertionError("Expected ValueError for unknown family")
+
+
+def test_resolve_families_accepts_new_food_and_water_probe_families() -> None:
+    assert probe_train_family_windows.resolve_families(["roshen", "mondelez", "arbaat"]) == (
+        "roshen",
+        "mondelez",
+        "arbaat",
+    )

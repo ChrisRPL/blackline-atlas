@@ -26,6 +26,12 @@ Dataset-shape rule:
 - one canonical row format for both train and benchmark when possible
 - prefer timestamp cutoffs over random splits once train rows exist
 - promote only after human review; model-generated labels can accelerate drafts, not replace the gate
+- keep the training row itself minimal:
+  - `messages`
+  - image reference
+  - text instruction
+  - text answer
+  - trainer-side metadata such as `image_root`, metrics, and limits should stay in config, not be baked into each row
 
 ## Model-role split
 
@@ -162,6 +168,39 @@ Use the trainer only after:
 1. exact-site registry is stable
 2. timestamp-aware splits are frozen
 3. the same row shape can serve both train and benchmark
+4. the first trainer config can benchmark on start against held-out eval slices before burning a full run
+
+## Liquid cookbook notes we should actually copy
+
+From Liquid's official cookbook:
+
+- `examples/satellite-vlm` confirms the right split of work:
+  - data prep
+  - JSONL conversion
+  - trainer config
+  - benchmark config
+  - checkpoint retrieval
+- keep grounding outputs in normalized `0-1` JSON bbox form
+  - that matches our current structured candidate format already
+- trainer eval should stay cheap and frequent
+  - small capped eval slices during iteration
+  - full eval as a separate explicit run
+- heavy prep and training can run remote
+  - local machine should mostly launch jobs, stream logs, and inspect artifacts
+- do not mutate row format just to satisfy one trainer
+  - adapt the exporter to the trainer, not the annotated truth
+
+This means Blackline should keep:
+
+1. exact-site annotated truth as canonical
+2. `build_lfm25_vl_corpus.py` as the row materializer
+3. `export_leap_vlm_sft.py` as the trainer adapter
+4. our stricter structured eval outside the trainer:
+   - action accuracy
+   - schema-valid rate
+   - bbox-valid rate
+   - false-positive rate
+   - `defer` calibration
 
 ## New data needs from the globe-first concept
 
