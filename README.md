@@ -238,7 +238,7 @@ Current rule:
 - local macOS stays prep/bundle/orchestration only; actual `leap-finetune` training is remote-first because the trainer requires CUDA
 - start train acquisition in a separate tranche, not by mutating gold rows
 - first promoted train rows now live in [training/replay_pack/train_01.jsonl](training/replay_pack/train_01.jsonl)
-- current Train 01 count: `23`
+- current Train 01 count: `25`
 - auxiliary-train widening now has a separate materializer:
   - `python3 training/scripts/materialize_aux_train_slice.py`
   - current checked-in public seed gain: `8` auxiliary train rows from `xBD` + `SpaceNet 8`

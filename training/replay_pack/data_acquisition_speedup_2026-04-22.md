@@ -79,6 +79,12 @@ These are good because they are:
 
 They are **not** automatically good train rows.
 
+Current result from the long-range pass:
+
+- `Al-Ahli Arab Hospital` promoted as a before-conflict hospital train row
+- `European Gaza Hospital` promoted as a second before-conflict hospital train row
+- `Nasser Medical Complex` still queued, but remains the softer of the three
+
 ## What external datasets are worth using
 
 ### Direct row-promotion candidates
@@ -156,17 +162,19 @@ Do this, in order:
 
 1. keep current-source lead intake alive through `lead_registry`
 2. probe exact public facility leads, not whole cities
-3. widen train by family depth first
-4. use `xBD` and `SpaceNet 8` as auxiliary train / benchmark inputs
-5. keep `LEVIR-CD` and `S2Looking` benchmark-only
+3. if current conflict sites have weak near-event pre frames, use a before-conflict baseline pass
+4. widen train by family depth first
+5. use `xBD` and `SpaceNet 8` as auxiliary train / benchmark inputs
+6. keep `LEVIR-CD` and `S2Looking` benchmark-only
 
 ## Immediate next work
 
 1. `Bahri` stays exact control after the 2025 exact-site probe; stop treating it like a likely positive reopening
-2. rank `Al-Ahli` ahead of `Nasser` for the next hospital-scale bounded review
-3. keep widening under-depth positive families in `train_01`
-4. materialize an auxiliary-train slice from checked-in `xBD` and `SpaceNet 8` seeds
-5. use current-source ingest to feed the lead board, not the train file
+2. `Al-Ahli` is now the first successful before-conflict hospital-train variant
+3. `Nasser` stays the next long-range hospital follow-up
+4. keep widening under-depth positive families in `train_01`
+5. materialize an auxiliary-train slice from checked-in `xBD` and `SpaceNet 8` seeds
+6. use current-source ingest to feed the lead board, not the train file
 
 ## Do I need help from Krzysztof?
 

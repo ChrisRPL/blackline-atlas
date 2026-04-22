@@ -92,14 +92,40 @@ Rules:
   - compound roof damage
   - triage-yard / warehouse burn scar
   - destroyed service-vehicle yard
-- why not promoted yet:
-  - bounded exact-site probe found clean windows and this is now the stronger Gaza hospital candidate
-  - still needs one honest parcel-scale Sentinel read before promotion
+- result:
+  - bounded exact-site probe found clean 2025 windows
+  - tighter `0.5 km` before-conflict-vs-current pass with a `2021-04-30` baseline and `2025-05-21` current frame was strong enough for a hard-but-honest train promotion
+  - promoted into `train_01.jsonl` as `al_ahli_arab_hospital_train_20210430_20250521`
 - sources:
   - [WHO, 2025-05-22](https://www.who.int/news/item/22-05-2025-health-system-at-breaking-point-as-hostilities-further-intensify--who-warns)
   - [Al-Ahli Arab Hospital coordinates reference](https://commons.wikimedia.org/wiki/Category:Al-Ahli_Arab_Hospital)
 - status:
-  - `probe_exact_windows_rank_1`
+  - `promoted_train_long_range_variant`
+
+### European Gaza Hospital
+- raw reporting:
+  - Al-Fukhari, Khan Younis
+- likely asset type:
+  - `medical_aid_node`
+- why a civilian nearby would care:
+  - major specialty and oncology referral campus
+  - severe damage and road loss cut access to advanced care in southern Gaza
+- exact public clue:
+  - fixed hospital campus
+  - exact coords: `31.30363, 34.31985`
+- what Sentinel could honestly show:
+  - campus-scale light-toned scar
+  - damaged internal departments / yard area
+  - access-road disruption around the complex
+- result:
+  - bounded exact-site probe found clean 2025 windows
+  - tighter before-conflict-vs-current pass with a `2021-04-30` baseline and `2025-06-08` current frame was strong enough for a hard-but-honest train promotion
+  - promoted into `train_01.jsonl` as `european_gaza_hospital_train_20210430_20250608`
+- sources:
+  - [WHO, 2025-05-22](https://www.who.int/news/item/22-05-2025-health-system-at-breaking-point-as-hostilities-further-intensify--who-warns)
+  - [AP, 2025-05-15](https://apnews.com/article/b32d055195ffec2b349a0948582c68e3)
+- status:
+  - `promoted_train_long_range_variant`
 
 ## Needs narrowing
 

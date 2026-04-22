@@ -47,5 +47,55 @@
       "2025-05-22T08:00:00Z",
       "2025-06-05T08:00:00Z"
     ]
+  },
+  {
+    "probe_id": "al_ahli_arab_hospital_preconflict_2021_2025",
+    "label": "Al-Ahli Arab Hospital",
+    "lead_id": "lead_al_ahli_arab_hospital_202505",
+    "category": "medical_aid_node",
+    "latitude": 31.504889,
+    "longitude": 34.461639,
+    "size_km": 0.5,
+    "timestamps": [
+      "2021-05-01T08:00:00Z",
+      "2022-05-01T08:00:00Z",
+      "2023-05-01T08:00:00Z",
+      "2025-05-13T08:00:00Z",
+      "2025-05-22T08:00:00Z"
+    ]
+  },
+  {
+    "probe_id": "nasser_medical_complex_preconflict_2021_2025",
+    "label": "Nasser Medical Complex",
+    "lead_id": "lead_nasser_medical_complex_202506",
+    "category": "medical_aid_node",
+    "latitude": 31.3471,
+    "longitude": 34.293,
+    "size_km": 0.5,
+    "timestamps": [
+      "2021-05-01T08:00:00Z",
+      "2022-05-01T08:00:00Z",
+      "2023-05-01T08:00:00Z",
+      "2025-05-20T08:00:00Z",
+      "2025-06-20T08:00:00Z",
+      "2025-07-05T08:00:00Z"
+    ]
+  },
+  {
+    "probe_id": "european_gaza_hospital_preconflict_2021_2025",
+    "label": "European Gaza Hospital",
+    "lead_id": "lead_european_gaza_hospital_202505",
+    "category": "medical_aid_node",
+    "latitude": 31.30363,
+    "longitude": 34.31985,
+    "size_km": 0.8,
+    "timestamps": [
+      "2021-05-01T08:00:00Z",
+      "2022-05-01T08:00:00Z",
+      "2023-05-01T08:00:00Z",
+      "2025-05-13T08:00:00Z",
+      "2025-05-22T08:00:00Z",
+      "2025-06-10T08:00:00Z"
+    ]
   }
 ]

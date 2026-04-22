@@ -109,6 +109,16 @@
     "longitude": 33.371477,
     "size_km": 5.0
   },
+  "al_ahli_arab_hospital_train_20210430_20250521": {
+    "latitude": 31.504889,
+    "longitude": 34.461639,
+    "size_km": 0.5
+  },
+  "european_gaza_hospital_train_20210430_20250608": {
+    "latitude": 31.30363,
+    "longitude": 34.31985,
+    "size_km": 0.8
+  },
   "mondelez_trostianets_factory_train_20210715_20220715": {
     "latitude": 50.485456,
     "longitude": 34.943761,

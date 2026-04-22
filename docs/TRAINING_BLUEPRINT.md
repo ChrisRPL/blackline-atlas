@@ -25,6 +25,7 @@ Dataset-shape rule:
 
 - one canonical row format for both train and benchmark when possible
 - prefer timestamp cutoffs over random splits once train rows exist
+- for active conflict facilities, use a before-conflict baseline pass if near-event pre frames are weak
 - promote only after human review; model-generated labels can accelerate drafts, not replace the gate
 - keep the training row itself minimal:
   - `messages`

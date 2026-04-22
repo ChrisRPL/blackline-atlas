@@ -8,15 +8,17 @@ Purpose:
 
 ## Current status
 
-- promoted train rows: `23`
+- promoted train rows: `25`
 - current mix:
-  - positives: `14`
+  - positives: `16`
   - controls: `9`
 - promoted dataset:
   - [train_01.jsonl](/Users/krzysztof/blackline-atlas/training/replay_pack/train_01.jsonl)
 - first active families with real rows:
+  - `Al-Ahli Arab Hospital`
   - `Baltimore Bridge`
   - `Beirut Grain Silos`
+  - `European Gaza Hospital`
   - `Morandi Bridge`
   - `Kakhovka Dam`
   - `Khan Younis Training Centre`
@@ -44,6 +46,7 @@ Purpose:
 - no random split
 - use timestamp cutoffs and fixed site families
 - current-source lead intake stays separate from train promotion
+- for active conflict facilities, try a before-war baseline if near-event pre frames stay weak
 
 ## Auxiliary lane
 
@@ -187,3 +190,4 @@ Rule:
 4. keep `Khan Younis` and `Okhmatdyt` strict on leakage
 5. materialize the first auxiliary-train slice from checked-in `xBD` and `SpaceNet 8` public seeds
 6. merge auxiliary gain only in trainer-side runs, never in the frozen Blackline scorecard
+7. keep `Nasser` as the next long-range hospital follow-up; `European Gaza` now counts as a successful before-conflict hospital variant
