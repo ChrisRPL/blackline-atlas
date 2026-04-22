@@ -4,7 +4,6 @@ import argparse
 import json
 import os
 import subprocess
-import sys
 import tarfile
 import tempfile
 from pathlib import Path
@@ -12,6 +11,7 @@ from pathlib import Path
 from huggingface_hub import hf_hub_download
 
 DEFAULT_LEAP_REPO = "https://github.com/Liquid4All/leap-finetune.git"
+DEFAULT_LEAP_REF = "d017458"
 DEFAULT_OUTPUT_DIR = "/outputs/blackline-train"
 
 
@@ -42,8 +42,8 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     )
     parser.add_argument(
         "--leap-ref",
-        default="main",
-        help='Leap git ref to install. Default: "main".',
+        default=DEFAULT_LEAP_REF,
+        help=f'Leap git ref to install. Default: "{DEFAULT_LEAP_REF}".',
     )
     return parser.parse_args(argv)
 
@@ -67,8 +67,16 @@ def main(argv: list[str] | None = None) -> int:
                 bundle_dir=bundle_dir,
             ),
         )
-        install_leap_finetune(repo_url=args.leap_repo, ref=args.leap_ref)
-        run_leap_train(config_path=leap_config_path, output_dir=args.output_dir)
+        leap_repo_dir = clone_leap_finetune(
+            workspace=workspace,
+            repo_url=args.leap_repo,
+            ref=args.leap_ref,
+        )
+        run_leap_train(
+            repo_dir=leap_repo_dir,
+            config_path=leap_config_path,
+            output_dir=args.output_dir,
+        )
         print(f"bundle_dir={bundle_dir}")
         print(f"generated_config={leap_config_path}")
         print(f"output_dir={args.output_dir}")
@@ -132,19 +140,56 @@ def write_yaml(path: Path, payload: dict[str, object]) -> None:
     path.write_text(yaml.safe_dump(payload, sort_keys=False), encoding="utf-8")
 
 
-def install_leap_finetune(*, repo_url: str, ref: str) -> None:
-    target = f"git+{repo_url}@{ref}"
+def clone_leap_finetune(*, workspace: Path, repo_url: str, ref: str) -> Path:
+    repo_dir = workspace / "leap-finetune"
     subprocess.run(
-        [sys.executable, "-m", "pip", "install", target],
+        ["git", "clone", "--depth", "1", repo_url, str(repo_dir)],
         check=True,
     )
+    subprocess.run(
+        ["git", "-C", str(repo_dir), "checkout", ref],
+        check=True,
+    )
+    return repo_dir
 
 
-def run_leap_train(*, config_path: Path, output_dir: str) -> None:
+def run_leap_train(*, repo_dir: Path, config_path: Path, output_dir: str) -> None:
+    try:
+        run_leap_train_entrypoint(repo_dir=repo_dir, config_path=config_path, output_dir=output_dir)
+    except subprocess.CalledProcessError:
+        print("entrypoint_failed=1 source_fallback=1", flush=True)
+        run_leap_train_source_fallback(
+            repo_dir=repo_dir,
+            config_path=config_path,
+            output_dir=output_dir,
+        )
+
+
+def run_leap_train_entrypoint(*, repo_dir: Path, config_path: Path, output_dir: str) -> None:
     env = os.environ.copy()
     env["OUTPUT_DIR"] = output_dir
     subprocess.run(
-        ["leap-finetune", str(config_path)],
+        ["uv", "run", "--directory", str(repo_dir), "leap-finetune", str(config_path)],
+        check=True,
+        env=env,
+    )
+
+
+def run_leap_train_source_fallback(*, repo_dir: Path, config_path: Path, output_dir: str) -> None:
+    env = os.environ.copy()
+    env["OUTPUT_DIR"] = output_dir
+    env["PYTHONPATH"] = str((repo_dir / "src").resolve())
+    subprocess.run(
+        [
+            "uv",
+            "run",
+            "--directory",
+            str(repo_dir),
+            "python",
+            "-c",
+            "from leap_finetune import main; main()",
+            str(config_path),
+        ],
         check=True,
         env=env,
     )

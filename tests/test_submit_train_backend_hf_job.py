@@ -51,6 +51,12 @@ def test_build_remote_job_spec_from_hf_train_config() -> None:
     assert payload["training_config"]["num_train_epochs"] == 2
 
 
+def test_default_leap_ref_is_pinned() -> None:
+    args = submit_train_backend_hf_job.parse_args([])
+
+    assert args.leap_ref == "d017458"
+
+
 def test_main_reports_credit_failure_after_bundle_upload(
     tmp_path: Path,
     monkeypatch,

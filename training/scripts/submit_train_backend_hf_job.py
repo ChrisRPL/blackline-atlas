@@ -19,6 +19,7 @@ DEFAULT_CONFIG_PATH = ROOT / "training" / "configs" / "lfm25_vl_sft_train_hf.yam
 DEFAULT_BUNDLE_PREFIX = "train-bundles"
 DEFAULT_BUNDLE_REPO_SUFFIX = "blackline-atlas-training-bundles"
 DEFAULT_REMOTE_SCRIPT = ROOT / "training" / "scripts" / "run_train_backend_hf_job.py"
+DEFAULT_LEAP_REF = "d017458"
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
@@ -72,8 +73,8 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     )
     parser.add_argument(
         "--leap-ref",
-        default="main",
-        help='Leap git ref for the remote job install. Default: "main".',
+        default=DEFAULT_LEAP_REF,
+        help=f'Leap git ref for the remote job install. Default: "{DEFAULT_LEAP_REF}".',
     )
     return parser.parse_args(argv)
 
