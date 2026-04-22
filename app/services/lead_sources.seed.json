@@ -110,5 +110,17 @@
     "summary": "Hospital campus in Gaza City damaged in May 2025, with triage tents, warehouse supplies, and vehicles burned or destroyed after attack.",
     "source_url": "https://www.who.int/news/item/22-05-2025-health-system-at-breaking-point-as-hostilities-further-intensify--who-warns",
     "source_date": "2025-05-22"
+  },
+  {
+    "lead_id": "lead_bahri_water_station_202502",
+    "title": "Khartoum Bahri Water Station",
+    "region": "Bahri, Khartoum North",
+    "latitude": 15.6169,
+    "longitude": 32.5347,
+    "category_guess": "water_infrastructure",
+    "status": "lead_only",
+    "summary": "Named Khartoum North water station reportedly heavily damaged in early February 2025, with transformers, pumps, cables, and tanks affected.",
+    "source_url": "https://sudantribune.com/article/296726",
+    "source_date": "2025-02-04"
   }
 ]

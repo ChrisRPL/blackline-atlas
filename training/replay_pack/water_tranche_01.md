@@ -500,11 +500,11 @@ Rule:
   - strongest new water-positive reopening clue since `Kakhovka` / `Mansour`
   - better fit than generic outage stories because the damage claim is tied to one fixed plant
 - status:
-  - `probe_next_exact_damage_claim`
+  - `probe_exact_windows_soft_keep_control`
 - next action:
-  - bounded SimSat pass only
-  - promote only if plant-scale macro scar is honestly visible
-  - if the read stays soft, keep the existing Bahri control and stop
+  - exact-site probe already returned very clean Jan-Mar 2025 windows
+  - local visual review still did not show a defendable plant-scale macro scar
+  - keep the existing Bahri control and stop unless a stronger parcel anchor appears
 - sources:
   - [Sudan Tribune, 2025-02-04](https://sudantribune.com/article/296726)
 

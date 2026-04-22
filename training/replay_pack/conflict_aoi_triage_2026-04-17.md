@@ -68,13 +68,14 @@ Rules:
   - burn scar
   - destroyed triage / service yard area
 - why not promoted yet:
-  - current source proves urgency, not yet parcel-scale visual truth
-  - still needs bounded SimSat probe with non-leaky pair
+  - bounded exact-site probe found clean windows
+  - current read still looks more like access / operations pressure than a defendable parcel-scale structural scar
+  - keep behind `Al-Ahli` for the next promotion pass
 - sources:
   - [WHO, 2025-06-05](https://www.who.int/news/item/05-06-2025-who-calls-for-urgent-protection-of-nasser-medical-complex-and-al-amal-hospital-in-the-gaza-strip)
   - [Nasser Hospital coordinates reference](https://en.wikipedia.org/wiki/Nasser_Hospital)
 - status:
-  - `probe`
+  - `probe_exact_windows_soft`
 
 ### Al-Ahli Arab Hospital
 - raw reporting:
@@ -92,13 +93,13 @@ Rules:
   - triage-yard / warehouse burn scar
   - destroyed service-vehicle yard
 - why not promoted yet:
-  - report confirms damage but not yet an honest parcel-scale Sentinel read in repo
-  - still needs bounded probe, same as `Nasser`
+  - bounded exact-site probe found clean windows and this is now the stronger Gaza hospital candidate
+  - still needs one honest parcel-scale Sentinel read before promotion
 - sources:
   - [WHO, 2025-05-22](https://www.who.int/news/item/22-05-2025-health-system-at-breaking-point-as-hostilities-further-intensify--who-warns)
   - [Al-Ahli Arab Hospital coordinates reference](https://commons.wikimedia.org/wiki/Category:Al-Ahli_Arab_Hospital)
 - status:
-  - `probe`
+  - `probe_exact_windows_rank_1`
 
 ## Needs narrowing
 

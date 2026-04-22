@@ -1,0 +1,51 @@
+[
+  {
+    "probe_id": "bahri_water_station_2025_damage_claim",
+    "label": "Khartoum Bahri Water Station",
+    "lead_id": "lead_bahri_water_station_202502",
+    "asset_id": "bahri_water_01",
+    "category": "water_infrastructure",
+    "latitude": 15.6169,
+    "longitude": 32.5347,
+    "size_km": 5.0,
+    "timestamps": [
+      "2024-12-31T08:26:00Z",
+      "2025-01-15T08:26:00Z",
+      "2025-01-30T08:26:00Z",
+      "2025-02-04T08:26:00Z",
+      "2025-02-20T08:26:00Z",
+      "2025-03-05T08:26:00Z"
+    ]
+  },
+  {
+    "probe_id": "nasser_medical_complex_2025_june_access_risk",
+    "label": "Nasser Medical Complex",
+    "lead_id": "lead_nasser_medical_complex_202506",
+    "category": "medical_aid_node",
+    "latitude": 31.3471,
+    "longitude": 34.293,
+    "size_km": 0.6,
+    "timestamps": [
+      "2025-05-01T08:00:00Z",
+      "2025-05-20T08:00:00Z",
+      "2025-06-05T08:00:00Z",
+      "2025-06-20T08:00:00Z",
+      "2025-07-05T08:00:00Z"
+    ]
+  },
+  {
+    "probe_id": "al_ahli_arab_hospital_2025_may_attack",
+    "label": "Al-Ahli Arab Hospital",
+    "lead_id": "lead_al_ahli_arab_hospital_202505",
+    "category": "medical_aid_node",
+    "latitude": 31.504889,
+    "longitude": 34.461639,
+    "size_km": 0.6,
+    "timestamps": [
+      "2025-05-01T08:00:00Z",
+      "2025-05-13T08:00:00Z",
+      "2025-05-22T08:00:00Z",
+      "2025-06-05T08:00:00Z"
+    ]
+  }
+]

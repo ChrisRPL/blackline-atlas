@@ -162,10 +162,11 @@ Do this, in order:
 
 ## Immediate next work
 
-1. probe `Khartoum Bahri Water Station` as the best new water-positive reopening clue
-2. keep `Nasser` and `Al-Ahli` as `lead_only` until parcel-scale visual truth is checked
+1. `Bahri` stays exact control after the 2025 exact-site probe; stop treating it like a likely positive reopening
+2. rank `Al-Ahli` ahead of `Nasser` for the next hospital-scale bounded review
 3. keep widening under-depth positive families in `train_01`
-4. use current-source ingest to feed the lead board, not the train file
+4. materialize an auxiliary-train slice from checked-in `xBD` and `SpaceNet 8` seeds
+5. use current-source ingest to feed the lead board, not the train file
 
 ## Do I need help from Krzysztof?
 
