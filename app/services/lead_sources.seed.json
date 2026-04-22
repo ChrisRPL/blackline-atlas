@@ -86,5 +86,29 @@
     "summary": "Last major maternity hospital in El Fasher repeatedly attacked; exact campus queued for future VLM review.",
     "source_url": "https://www.who.int/macaochina/news/detail-global/29-10-2025-who-condemns-killings-of-patients-and-civilians-amid-escalating-violence-in-el-fasher--sudan",
     "source_date": "2025-10-29"
+  },
+  {
+    "lead_id": "lead_nasser_medical_complex_202506",
+    "title": "Nasser Medical Complex",
+    "region": "Khan Younis, Gaza Strip",
+    "latitude": 31.3471,
+    "longitude": 34.293,
+    "category_guess": "medical_aid_node",
+    "status": "lead_only",
+    "summary": "Major referral hospital in Khan Younis at risk of becoming non-functional after repeated attacks, access obstruction, and resupply failure.",
+    "source_url": "https://www.who.int/news/item/05-06-2025-who-calls-for-urgent-protection-of-nasser-medical-complex-and-al-amal-hospital-in-the-gaza-strip",
+    "source_date": "2025-06-05"
+  },
+  {
+    "lead_id": "lead_al_ahli_arab_hospital_202505",
+    "title": "Al-Ahli Arab Hospital",
+    "region": "Gaza City",
+    "latitude": 31.504889,
+    "longitude": 34.461639,
+    "category_guess": "medical_aid_node",
+    "status": "lead_only",
+    "summary": "Hospital campus in Gaza City damaged in May 2025, with triage tents, warehouse supplies, and vehicles burned or destroyed after attack.",
+    "source_url": "https://www.who.int/news/item/22-05-2025-health-system-at-breaking-point-as-hostilities-further-intensify--who-warns",
+    "source_date": "2025-05-22"
   }
 ]

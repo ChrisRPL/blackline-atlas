@@ -170,6 +170,10 @@ Net:
 - core Blackline priority does not change
 - next core move is fresh gold-row acquisition, not more benchmark churn
 
+For the faster current view on why data growth slows down, how current-source lead intake should stay separate from VLM rows, and which external datasets are worth using right now:
+
+- see [data_acquisition_speedup_2026-04-22.md](./data_acquisition_speedup_2026-04-22.md)
+
 ## External dataset-generation findings to keep
 
 From the `leap-finetune` repo plus Pau Labarta Bajo's VLM dataset recipe:

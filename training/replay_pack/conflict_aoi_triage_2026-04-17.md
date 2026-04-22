@@ -52,6 +52,54 @@ Rules:
 - status:
   - `probe`
 
+### Nasser Medical Complex
+- raw reporting:
+  - Khan Younis
+- likely asset type:
+  - `medical_aid_node`
+- why a civilian nearby would care:
+  - major referral hospital
+  - surgery, ICU, dialysis, transfusion, and cancer-care loss
+- exact public clue:
+  - fixed hospital campus
+  - exact coords: `31.3471, 34.2930`
+- what Sentinel could honestly show:
+  - compound-scale roof loss
+  - burn scar
+  - destroyed triage / service yard area
+- why not promoted yet:
+  - current source proves urgency, not yet parcel-scale visual truth
+  - still needs bounded SimSat probe with non-leaky pair
+- sources:
+  - [WHO, 2025-06-05](https://www.who.int/news/item/05-06-2025-who-calls-for-urgent-protection-of-nasser-medical-complex-and-al-amal-hospital-in-the-gaza-strip)
+  - [Nasser Hospital coordinates reference](https://en.wikipedia.org/wiki/Nasser_Hospital)
+- status:
+  - `probe`
+
+### Al-Ahli Arab Hospital
+- raw reporting:
+  - Gaza City
+- likely asset type:
+  - `medical_aid_node`
+- why a civilian nearby would care:
+  - one of the last functioning hospitals in Gaza City
+  - repeated attacks degrade northern access to care
+- exact public clue:
+  - fixed hospital campus
+  - exact coords: `31.504889, 34.461639`
+- what Sentinel could honestly show:
+  - compound roof damage
+  - triage-yard / warehouse burn scar
+  - destroyed service-vehicle yard
+- why not promoted yet:
+  - report confirms damage but not yet an honest parcel-scale Sentinel read in repo
+  - still needs bounded probe, same as `Nasser`
+- sources:
+  - [WHO, 2025-05-22](https://www.who.int/news/item/22-05-2025-health-system-at-breaking-point-as-hostilities-further-intensify--who-warns)
+  - [Al-Ahli Arab Hospital coordinates reference](https://commons.wikimedia.org/wiki/Category:Al-Ahli_Arab_Hospital)
+- status:
+  - `probe`
+
 ## Needs narrowing
 
 These are real conflict signals, but still too broad for Blackline until narrowed to one civilian lifeline facility.

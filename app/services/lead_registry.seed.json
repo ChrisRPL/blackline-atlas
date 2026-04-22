@@ -11,7 +11,7 @@
     "source_url": "https://apnews.com/article/libya-floods-dams-storm-daniel-derna-6988c0502c713af29989ce8118b618e6",
     "source_date": "2023-09-13",
     "linked_asset_id": "mansour_dam_01",
-    "last_refreshed_at": "2026-04-21T21:59:14Z"
+    "last_refreshed_at": "2026-04-22T20:48:24Z"
   },
   {
     "lead_id": "lead_kakhovka_dam_202306",
@@ -25,7 +25,7 @@
     "source_url": "https://apnews.com/article/russia-ukraine-war-dam-collapse-kakhovka-kherson-daacdc431f42912dfb91548794f03a3c",
     "source_date": "2023-06-06",
     "linked_asset_id": "kakhovka_dam_01",
-    "last_refreshed_at": "2026-04-21T21:59:14Z"
+    "last_refreshed_at": "2026-04-22T20:48:24Z"
   },
   {
     "lead_id": "lead_okhmatdyt_202407",
@@ -39,7 +39,7 @@
     "source_url": "https://apnews.com/article/russia-ukraine-war-kyiv-childrens-hospital-attack-5273809f9d6483a4399d0a44e568f5a4",
     "source_date": "2024-07-08",
     "linked_asset_id": "okhmatdyt_01",
-    "last_refreshed_at": "2026-04-21T21:59:14Z"
+    "last_refreshed_at": "2026-04-22T20:48:24Z"
   },
   {
     "lead_id": "lead_kytc_202403",
@@ -53,7 +53,7 @@
     "source_url": "https://www.unrwa.org/newsroom/official-statements/unrwa-condemns-strikes-khan-younis-training-centre-and-shelter",
     "source_date": "2024-03-05",
     "linked_asset_id": "khan_younis_kytc_01",
-    "last_refreshed_at": "2026-04-21T21:59:14Z"
+    "last_refreshed_at": "2026-04-22T20:48:24Z"
   },
   {
     "lead_id": "lead_qasmiyeh_bridge_202604",
@@ -66,7 +66,7 @@
     "summary": "Reported bridge strike on a major civilian crossing into southern Lebanon; still needs an honest non-artifact satellite pair.",
     "source_url": "https://wsau.com/2026/04/16/israeli-strike-severs-last-bridge-linking-southern-lebanon-to-rest-of-country-lebanese-security-official-says/",
     "source_date": "2026-04-16",
-    "last_refreshed_at": "2026-04-21T21:59:14Z"
+    "last_refreshed_at": "2026-04-22T20:48:24Z"
   },
   {
     "lead_id": "lead_european_gaza_hospital_202505",
@@ -79,7 +79,7 @@
     "summary": "Hospital campus in Khan Younis forced out of service after repeated attacks in May 2025; exact site queued for future VLM review.",
     "source_url": "https://www.who.int/news/item/22-05-2025-health-system-at-breaking-point-as-hostilities-further-intensify--who-warns",
     "source_date": "2025-05-22",
-    "last_refreshed_at": "2026-04-21T21:59:14Z"
+    "last_refreshed_at": "2026-04-22T20:48:24Z"
   },
   {
     "lead_id": "lead_saudi_maternity_elfasher_202510",
@@ -92,6 +92,32 @@
     "summary": "Last major maternity hospital in El Fasher repeatedly attacked; exact campus queued for future VLM review.",
     "source_url": "https://www.who.int/macaochina/news/detail-global/29-10-2025-who-condemns-killings-of-patients-and-civilians-amid-escalating-violence-in-el-fasher--sudan",
     "source_date": "2025-10-29",
-    "last_refreshed_at": "2026-04-21T21:59:14Z"
+    "last_refreshed_at": "2026-04-22T20:48:24Z"
+  },
+  {
+    "lead_id": "lead_nasser_medical_complex_202506",
+    "title": "Nasser Medical Complex",
+    "region": "Khan Younis, Gaza Strip",
+    "latitude": 31.3471,
+    "longitude": 34.293,
+    "category_guess": "medical_aid_node",
+    "status": "lead_only",
+    "summary": "Major referral hospital in Khan Younis at risk of becoming non-functional after repeated attacks, access obstruction, and resupply failure.",
+    "source_url": "https://www.who.int/news/item/05-06-2025-who-calls-for-urgent-protection-of-nasser-medical-complex-and-al-amal-hospital-in-the-gaza-strip",
+    "source_date": "2025-06-05",
+    "last_refreshed_at": "2026-04-22T20:48:24Z"
+  },
+  {
+    "lead_id": "lead_al_ahli_arab_hospital_202505",
+    "title": "Al-Ahli Arab Hospital",
+    "region": "Gaza City",
+    "latitude": 31.504889,
+    "longitude": 34.461639,
+    "category_guess": "medical_aid_node",
+    "status": "lead_only",
+    "summary": "Hospital campus in Gaza City damaged in May 2025, with triage tents, warehouse supplies, and vehicles burned or destroyed after attack.",
+    "source_url": "https://www.who.int/news/item/22-05-2025-health-system-at-breaking-point-as-hostilities-further-intensify--who-warns",
+    "source_date": "2025-05-22",
+    "last_refreshed_at": "2026-04-22T20:48:24Z"
   }
 ]

@@ -839,6 +839,8 @@ def test_leads_endpoint_returns_seeded_lead_registry() -> None:
         "lead_okhmatdyt_202407",
         "lead_kytc_202403",
         "lead_qasmiyeh_bridge_202604",
+        "lead_nasser_medical_complex_202506",
+        "lead_al_ahli_arab_hospital_202505",
     } <= lead_ids
 
 

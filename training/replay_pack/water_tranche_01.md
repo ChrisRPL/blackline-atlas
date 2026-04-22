@@ -480,6 +480,34 @@ Rule:
   - [SNHR on partial structural damage and pumping-line damage](https://news.snhr.org/2022/01/02/russian-air-attack-targeted-a-water-station-in-idlib-city-on-january-2/)
   - [UNICEF whole-of-Syria sitrep on Arshani water-station disruption](https://www.unicef.org/media/120251/file/Whole-of-Syria-Humanitarian-SitRep-March-2022.pdf)
 
+### `water_07` Khartoum Bahri Water Station
+
+- country:
+  - `Sudan`
+- type:
+  - water station
+- why:
+  - exact named utility site, not a vague city-wide outage
+  - direct civilian-service role for Khartoum North
+  - public reporting explicitly says the station was heavily damaged
+- parcel state:
+  - existing exact family already in repo as `Bahri Water Station`
+  - this means row shape and control history are already known
+- source truth:
+  - damage window reported between `2025-01-30` and `2025-02-04`
+  - transformers, pumps, cables, tanks, and operations were all reported hit
+- why this matters:
+  - strongest new water-positive reopening clue since `Kakhovka` / `Mansour`
+  - better fit than generic outage stories because the damage claim is tied to one fixed plant
+- status:
+  - `probe_next_exact_damage_claim`
+- next action:
+  - bounded SimSat pass only
+  - promote only if plant-scale macro scar is honestly visible
+  - if the read stays soft, keep the existing Bahri control and stop
+- sources:
+  - [Sudan Tribune, 2025-02-04](https://sudantribune.com/article/296726)
+
 ## Control candidates
 
 ### `control_ambig_water_01` Ras Abu Jarjur Desalination Plant
