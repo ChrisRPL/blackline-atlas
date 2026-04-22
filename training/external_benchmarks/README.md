@@ -51,3 +51,10 @@ Recommended first slices:
 - `SpaceNet 8`
   - flooded road-segment cases
   - flooded building-cluster cases
+
+Public publishing rule:
+
+- public benchmark repo should carry only canonical runnable slice rows
+- keep `blackline_candidate_eval.jsonl`, `images/`, and `source_labels/`
+- do not mix in train bundles, replay packs, or repo-local helper docs
+- use `python3 training/scripts/publish_public_benchmark_repo.py --public --publish`

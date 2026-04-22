@@ -215,6 +215,14 @@ Important:
 - they do not replace the internal Blackline gold set
 - the full internal non-demo benchmark still needs frozen SimSat bytes or a capture manifest
 
+Publish the clean public benchmark seed repo:
+
+```bash
+python3 training/scripts/publish_public_benchmark_repo.py \
+  --public \
+  --publish
+```
+
 ## Train-prep
 
 Current rule:
