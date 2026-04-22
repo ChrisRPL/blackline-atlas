@@ -26,6 +26,7 @@ Dataset-shape rule:
 - one canonical row format for both train and benchmark when possible
 - prefer timestamp cutoffs over random splits once train rows exist
 - use public auxiliary lanes for fast trainer-side widening, but keep them out of Blackline gold scorecards
+- current practical trainer-side pool can be widened much faster with public auxiliary rows than with bounded exact-site probing alone
 - for active conflict facilities, use a before-conflict baseline pass if near-event pre frames are weak
 - promote only after human review; model-generated labels can accelerate drafts, not replace the gate
 - keep the training row itself minimal:

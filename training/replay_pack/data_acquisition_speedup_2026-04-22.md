@@ -123,7 +123,7 @@ Current result from the long-range pass:
 - source:
   - [HF dataset](https://huggingface.co/datasets/KOlegaBB/damage_assessment_ukraine)
 - current result:
-  - first deterministic fold-0 materialization yields `12` train-only rows
+  - first deterministic 3-fold materialization yields `36` train-only rows
 
 ### Weak-supervision / context sources
 

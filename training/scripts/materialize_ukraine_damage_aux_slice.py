@@ -72,8 +72,20 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         default=None,
         help="Location root like kamianka_data. Repeat for multiple.",
     )
-    parser.add_argument("--fold", type=int, default=0)
-    parser.add_argument("--max-per-damage", type=int, default=1)
+    parser.add_argument(
+        "--fold",
+        action="append",
+        dest="folds",
+        type=int,
+        default=None,
+        help="Fold index to include. Repeat for multiple. Default: 0",
+    )
+    parser.add_argument(
+        "--max-per-damage",
+        type=int,
+        default=1,
+        help="Target rows per damage class per location across all selected folds.",
+    )
     parser.add_argument("--output-dir", type=Path, default=DEFAULT_OUTPUT_DIR)
     return parser.parse_args(argv)
 
@@ -84,7 +96,7 @@ def main(argv: list[str] | None = None) -> int:
         repo_id=args.repo_id,
         output_dir=args.output_dir,
         location_roots=tuple(args.location_roots or tuple(LOCATION_METADATA)),
-        fold=args.fold,
+        folds=tuple(args.folds or (0,)),
         max_per_damage=args.max_per_damage,
     )
     print(f"wrote {dataset_path}")
@@ -97,7 +109,7 @@ def materialize_ukraine_damage_aux_slice(
     repo_id: str,
     output_dir: Path,
     location_roots: tuple[str, ...] = tuple(LOCATION_METADATA),
-    fold: int = 0,
+    folds: tuple[int, ...] = (0,),
     max_per_damage: int = 1,
     summary_name: str = DEFAULT_SUMMARY_NAME,
 ) -> tuple[Path, Path]:
@@ -105,13 +117,18 @@ def materialize_ukraine_damage_aux_slice(
     summary_rows: list[dict[str, object]] = []
 
     for location_root in location_roots:
-        rows = _load_fold_rows(repo_id=repo_id, location_root=location_root, fold=fold)
-        selected = _select_rows(rows=rows, max_per_damage=max_per_damage)
+        selected = _select_rows_across_folds(
+            repo_id=repo_id,
+            location_root=location_root,
+            folds=folds,
+            max_per_damage=max_per_damage,
+        )
         summary_rows.append(
             {
                 "location_root": location_root,
                 "selected_count": len(selected),
                 "selected_damages": dict(Counter(row["damage"] for row in selected)),
+                "selected_folds": sorted({int(row["source_fold"]) for row in selected}),
             }
         )
         for row in selected:
@@ -119,7 +136,7 @@ def materialize_ukraine_damage_aux_slice(
                 _build_record(
                     repo_id=repo_id,
                     location_root=location_root,
-                    fold=fold,
+                    fold=int(row["source_fold"]),
                     row=row,
                 )
             )
@@ -131,14 +148,17 @@ def materialize_ukraine_damage_aux_slice(
             {
                 "version": "ukraine-damage-public-v0",
                 "repo_id": repo_id,
-                "fold": fold,
+                "folds": list(folds),
                 "max_per_damage": max_per_damage,
                 "row_count": len(records),
                 "location_roots": list(location_roots),
                 "locations": summary_rows,
                 "notes": [
                     "Auxiliary-train only. Keep separate from core Blackline gold metrics.",
-                    "Rows are selected deterministically from one public fold per location.",
+                    (
+                        "Rows are selected deterministically across public folds "
+                        "with per-location stem dedupe."
+                    ),
                 ],
             },
             indent=2,
@@ -171,6 +191,42 @@ def _select_rows(*, rows: list[dict[str, str]], max_per_damage: int) -> list[dic
                 break
             selected.append(row)
             counts[damage] += 1
+    return selected
+
+
+def _select_rows_across_folds(
+    *,
+    repo_id: str,
+    location_root: str,
+    folds: tuple[int, ...],
+    max_per_damage: int,
+) -> list[dict[str, str]]:
+    selected: list[dict[str, str]] = []
+    counts: Counter[str] = Counter()
+    seen_stems: set[str] = set()
+    rows_by_fold = {
+        fold: _load_fold_rows(repo_id=repo_id, location_root=location_root, fold=fold)
+        for fold in folds
+    }
+    for damage in DAMAGE_ORDER:
+        while counts[damage] < max_per_damage:
+            added_in_pass = False
+            for fold in folds:
+                for row in rows_by_fold[fold]:
+                    stem = Path(row["pre_image"]).stem
+                    if row["damage"] != damage:
+                        continue
+                    if stem in seen_stems:
+                        continue
+                    selected.append({**row, "source_fold": str(fold)})
+                    counts[damage] += 1
+                    seen_stems.add(stem)
+                    added_in_pass = True
+                    break
+                if counts[damage] >= max_per_damage:
+                    break
+            if not added_in_pass:
+                break
     return selected
 
 
