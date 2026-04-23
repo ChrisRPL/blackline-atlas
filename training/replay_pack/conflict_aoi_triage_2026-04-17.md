@@ -70,12 +70,13 @@ Rules:
 - why not promoted yet:
   - bounded exact-site probe found clean windows
   - current read still looks more like access / operations pressure than a defendable parcel-scale structural scar
-  - keep behind `Al-Ahli` for the next promotion pass
+  - long-range recheck still stays too dark / soft for a hard train promotion
+  - stop here unless a clearly better parcel-scale current frame appears
 - sources:
   - [WHO, 2025-06-05](https://www.who.int/news/item/05-06-2025-who-calls-for-urgent-protection-of-nasser-medical-complex-and-al-amal-hospital-in-the-gaza-strip)
   - [Nasser Hospital coordinates reference](https://en.wikipedia.org/wiki/Nasser_Hospital)
 - status:
-  - `probe_exact_windows_soft`
+  - `soft_stop_after_long_range_recheck`
 
 ### Al-Ahli Arab Hospital
 - raw reporting:

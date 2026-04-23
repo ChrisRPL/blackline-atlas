@@ -83,7 +83,7 @@ Current result from the long-range pass:
 
 - `Al-Ahli Arab Hospital` promoted as a before-conflict hospital train row
 - `European Gaza Hospital` promoted as a second before-conflict hospital train row
-- `Nasser Medical Complex` still queued, but remains the softer of the three
+- `Nasser Medical Complex` rechecked again; still soft, not worth more bounded time right now
 
 ## What external datasets are worth using
 
@@ -124,6 +124,7 @@ Current result from the long-range pass:
   - [HF dataset](https://huggingface.co/datasets/KOlegaBB/damage_assessment_ukraine)
 - current result:
   - first deterministic 3-fold materialization yields `36` train-only rows
+  - widened 10-fold pass now yields `72` train-only rows
 
 ### Weak-supervision / context sources
 
@@ -182,9 +183,9 @@ Do this, in order:
 
 1. `Bahri` stays exact control after the 2025 exact-site probe; stop treating it like a likely positive reopening
 2. `Al-Ahli` is now the first successful before-conflict hospital-train variant
-3. `Nasser` stays the next long-range hospital follow-up
-4. keep widening under-depth positive families in `train_01`
-5. materialize an auxiliary-train slice from checked-in `xBD` and `SpaceNet 8` seeds
+3. stop spending more time on `Nasser` unless a clearly better parcel-scale read appears
+4. keep widening auxiliary train first; current practical trainer-side pool is now `105`
+5. keep `Novus` as the next internal exact-site retry once aux widening stops being the best ROI
 6. use current-source ingest to feed the lead board, not the train file
 
 ## Do I need help from Krzysztof?

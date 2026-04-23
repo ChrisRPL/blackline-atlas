@@ -57,9 +57,9 @@ Purpose:
   - `SpaceNet 8`
   - `KOlegaBB/damage_assessment_ukraine`
 - current auxiliary pool, after materialization:
-  - `44` train rows
+  - `80` train rows
 - current practical trainer-side pool:
-  - `25` internal + `44` auxiliary = `69`
+  - `25` internal + `80` auxiliary = `105`
 - materialize them through:
   - `python3 training/scripts/materialize_aux_train_slice.py`
 - rule:
@@ -195,6 +195,6 @@ Rule:
 4. keep `Khan Younis` and `Okhmatdyt` strict on leakage
 5. materialize the first auxiliary-train slice from checked-in `xBD` and `SpaceNet 8` public seeds
 6. merge auxiliary gain only in trainer-side runs, never in the frozen Blackline scorecard
-7. keep `Nasser` as the next long-range hospital follow-up; `European Gaza` now counts as a successful before-conflict hospital variant
+7. treat `Nasser` as soft-stopped after the long-range recheck; do not spend more internal time there without a clearly better parcel read
 8. widen auxiliary train aggressively with public Ukraine building-damage rows before spending more bounded time on soft internal candidates
-9. keep `Nasser` as the next internal exact-site lane, but only after the aux pool stops being the highest-ROI move
+9. keep `Novus Logistics Center` as the next internal exact-site retry once aux widening stops being the highest-ROI move
