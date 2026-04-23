@@ -245,8 +245,8 @@ Current rule:
 - public Ukraine building-damage source is now supported through:
   - `python3 training/scripts/materialize_ukraine_damage_aux_slice.py`
 - current widened auxiliary pool on disk:
-  - `80` train rows from `xBD + SpaceNet 8 + KOlegaBB/damage_assessment_ukraine`
-  - current practical trainer-side pool: `25` internal + `80` auxiliary = `105`
+  - `128` train rows from `xBD + SpaceNet 8 + KOlegaBB/damage_assessment_ukraine`
+  - current practical trainer-side pool: `25` internal + `128` auxiliary = `153`
   - keep this lane out of frozen Blackline scorecards
 
 Working doc:

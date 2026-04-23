@@ -57,9 +57,9 @@ Purpose:
   - `SpaceNet 8`
   - `KOlegaBB/damage_assessment_ukraine`
 - current auxiliary pool, after materialization:
-  - `80` train rows
+  - `128` train rows
 - current practical trainer-side pool:
-  - `25` internal + `80` auxiliary = `105`
+  - `25` internal + `128` auxiliary = `153`
 - materialize them through:
   - `python3 training/scripts/materialize_aux_train_slice.py`
 - rule:
@@ -198,3 +198,6 @@ Rule:
 7. treat `Nasser` as soft-stopped after the long-range recheck; do not spend more internal time there without a clearly better parcel read
 8. widen auxiliary train aggressively with public Ukraine building-damage rows before spending more bounded time on soft internal candidates
 9. keep `Novus Logistics Center` as the next internal exact-site retry once aux widening stops being the highest-ROI move
+10. next public-source scouts, after Ukraine:
+  - `WayBob/Disaster_Recognition_RemoteSense_EN_CN_JA` for xBD-derived widening
+  - `Sen1Floods11` for flood-heavy auxiliary transfer rows

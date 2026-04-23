@@ -125,6 +125,23 @@ Current result from the long-range pass:
 - current result:
   - first deterministic 3-fold materialization yields `36` train-only rows
   - widened 10-fold pass now yields `72` train-only rows
+  - aggressive 10-fold pass at `10` rows per damage/location now yields `120` train-only rows
+
+#### `WayBob/Disaster_Recognition_RemoteSense_EN_CN_JA`
+
+- useful xBD-derived widening source
+- more VLM-native packaging than raw xBD
+- heavier than KOlegaBB, so use after the direct Ukraine lane
+- source:
+  - [HF dataset](https://huggingface.co/datasets/WayBob/Disaster_Recognition_RemoteSense_EN_CN_JA)
+
+#### `Sen1Floods11`
+
+- good low-friction flood auxiliary source
+- useful for water / inundation transfer, not a Blackline gold replacement
+- source:
+  - [HF README mirror](https://huggingface.co/datasets/harshinde/sen1floods11/blame/main/README.md)
+  - [CVPR paper](https://openaccess.thecvf.com/content_CVPRW_2020/papers/w11/Bonafilia_Sen1Floods11_A_Georeferenced_Dataset_to_Train_and_Test_Deep_Learning_CVPRW_2020_paper.pdf)
 
 ### Weak-supervision / context sources
 
@@ -184,9 +201,10 @@ Do this, in order:
 1. `Bahri` stays exact control after the 2025 exact-site probe; stop treating it like a likely positive reopening
 2. `Al-Ahli` is now the first successful before-conflict hospital-train variant
 3. stop spending more time on `Nasser` unless a clearly better parcel-scale read appears
-4. keep widening auxiliary train first; current practical trainer-side pool is now `105`
+4. keep widening auxiliary train first; current practical trainer-side pool is now `153`
 5. keep `Novus` as the next internal exact-site retry once aux widening stops being the best ROI
-6. use current-source ingest to feed the lead board, not the train file
+6. after Ukraine, try `WayBob` or `Sen1Floods11` before reopening slower gated sources
+7. use current-source ingest to feed the lead board, not the train file
 
 ## Do I need help from Krzysztof?
 
