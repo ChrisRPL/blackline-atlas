@@ -44,20 +44,20 @@ Current remote path:
 
 ```bash
 python3 training/scripts/submit_train_backend_hf_job.py \
-  --config training/configs/lfm25_vl_sft_train_hf.yaml
+  --config training/configs/lfm25_vl_sft_train_hf_aux_v4.yaml
 ```
 
 Submit for real:
 
 ```bash
 python3 training/scripts/submit_train_backend_hf_job.py \
-  --config training/configs/lfm25_vl_sft_train_hf.yaml \
+  --config training/configs/lfm25_vl_sft_train_hf_aux_v4.yaml \
   --submit
 ```
 
 Recommended first remote config:
 
-- `training/configs/lfm25_vl_sft_train_hf.yaml`
+- `training/configs/lfm25_vl_sft_train_hf_aux_v4.yaml`
 
 What the submitter does:
 

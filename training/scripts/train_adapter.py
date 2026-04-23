@@ -18,6 +18,7 @@ from app.schemas.training_run import (  # noqa: E402
 from training.scripts.build_lfm25_vl_corpus import write_lfm25_vl_corpus  # noqa: E402
 from training.scripts.capture_simsat_manifest import write_simsat_capture_manifest  # noqa: E402
 from training.scripts.export_leap_vlm_sft import write_leap_vlm_sft_records  # noqa: E402
+from training.scripts.materialize_aux_train_slice import materialize_aux_train_slice  # noqa: E402
 
 DEFAULT_CONFIG_PATH = ROOT / "training" / "configs" / "lfm25_vl_sft_smoke.yaml"
 
@@ -95,6 +96,10 @@ def build_train_adapter_plan(
         purpose=config.purpose,
         historical_endpoint=config.dataset.historical_endpoint,
         replay_dataset=str(_resolve_path(base_dir, config.dataset.replay_dataset)),
+        aux_candidate_eval_datasets=[
+            str(_resolve_path(base_dir, dataset_path))
+            for dataset_path in config.dataset.aux_candidate_eval_datasets
+        ],
         capture_overrides=(
             str(_resolve_path(base_dir, config.dataset.capture_overrides))
             if config.dataset.capture_overrides
@@ -145,11 +150,21 @@ def prepare_training_artifacts(
             ),
         )
 
-    grounding_path, candidate_eval_path, splits_path = write_lfm25_vl_corpus(
+    grounding_path, internal_candidate_eval_path, splits_path = write_lfm25_vl_corpus(
         output_dir=Path(plan.corpus_output_dir),
         capture_manifest_path=capture_manifest_path,
         replay_dataset_path=Path(plan.replay_dataset),
     )
+    candidate_eval_path = internal_candidate_eval_path
+    if plan.aux_candidate_eval_datasets:
+        merged_output_dir = Path(plan.corpus_output_dir) / "merged_candidate_eval"
+        candidate_eval_path, _ = materialize_aux_train_slice(
+            source_datasets=(
+                internal_candidate_eval_path,
+                *(Path(dataset_path) for dataset_path in plan.aux_candidate_eval_datasets),
+            ),
+            output_dir=merged_output_dir,
+        )
     leap_train_path, leap_eval_path, leap_summary_path = write_leap_vlm_sft_records(
         candidate_eval_path=candidate_eval_path,
         output_dir=Path(plan.leap_output_dir),
@@ -158,6 +173,7 @@ def prepare_training_artifacts(
         plan=plan,
         liquid_grounding_path=grounding_path,
         candidate_eval_path=candidate_eval_path,
+        internal_candidate_eval_path=internal_candidate_eval_path,
         splits_path=splits_path,
         leap_train_path=leap_train_path,
         leap_eval_path=leap_eval_path,
@@ -182,6 +198,7 @@ def write_dataset_manifest(
     plan: TrainAdapterPlan,
     liquid_grounding_path: Path,
     candidate_eval_path: Path,
+    internal_candidate_eval_path: Path,
     splits_path: Path,
     leap_train_path: Path,
     leap_eval_path: Path,
@@ -198,8 +215,10 @@ def write_dataset_manifest(
         model_id=plan.model_id,
         task_kind=plan.task_kind,
         source_replay_dataset=plan.replay_dataset,
+        source_aux_candidate_eval_datasets=plan.aux_candidate_eval_datasets,
         capture_manifest=str(capture_manifest_path),
         liquid_grounding_dataset=str(liquid_grounding_path),
+        source_internal_candidate_eval_dataset=str(internal_candidate_eval_path),
         candidate_eval_dataset=str(candidate_eval_path),
         splits_manifest=str(splits_path),
         image_root=str(candidate_eval_path.parent.resolve()),

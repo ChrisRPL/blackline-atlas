@@ -246,7 +246,8 @@ Current rule:
   - `python3 training/scripts/materialize_ukraine_damage_aux_slice.py`
 - current widened auxiliary pool on disk:
   - `128` train rows from `xBD + SpaceNet 8 + KOlegaBB/damage_assessment_ukraine`
-  - current practical trainer-side pool: `25` internal + `128` auxiliary = `153`
+  - raw trainer-side pool math: `25` internal + `128` auxiliary = `153`
+  - current LEAP-exportable train pool: `151`
   - keep this lane out of frozen Blackline scorecards
 
 Working doc:

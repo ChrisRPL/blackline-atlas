@@ -8,6 +8,7 @@ from pydantic import BaseModel, Field, field_validator
 class TrainAdapterDatasetConfig(BaseModel):
     historical_endpoint: str | None = None
     replay_dataset: str
+    aux_candidate_eval_datasets: list[str] = Field(default_factory=list)
     capture_overrides: str | None = None
     capture_output_dir: str
     capture_manifest: str | None = None
@@ -108,6 +109,7 @@ class TrainAdapterPlan(BaseModel):
     purpose: str
     historical_endpoint: str | None = None
     replay_dataset: str
+    aux_candidate_eval_datasets: list[str] = Field(default_factory=list)
     capture_overrides: str | None = None
     capture_output_dir: str
     capture_manifest: str
@@ -146,8 +148,10 @@ class TrainAdapterDatasetManifest(BaseModel):
     model_id: str
     task_kind: Literal["candidate_json_sft"]
     source_replay_dataset: str
+    source_aux_candidate_eval_datasets: list[str] = Field(default_factory=list)
     capture_manifest: str
     liquid_grounding_dataset: str
+    source_internal_candidate_eval_dataset: str
     candidate_eval_dataset: str
     splits_manifest: str
     image_root: str

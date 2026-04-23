@@ -155,7 +155,8 @@ Current state:
 - current practical trainer-side pool:
   - `25` internal `train_01` rows
   - `128` public auxiliary rows
-  - `153` total trainer-side rows without mutating Blackline gold eval
+  - `153` total raw trainer-side rows without mutating Blackline gold eval
+  - `151` current LEAP-exportable train records after the merged export pass
 
 ## Train 01 opening contract
 
@@ -171,6 +172,8 @@ Current state:
   - current auxiliary lane can already reach `128` train-only rows with:
     - checked-in `xBD` + `SpaceNet 8` seeds
     - widened `KOlegaBB/damage_assessment_ukraine` slices
+  - current aux-backed HF train config:
+    - `training/configs/lfm25_vl_sft_train_hf_aux_v4.yaml`
 - use the same exact-site pair shape for:
   - prompted eval
   - benchmark

@@ -59,7 +59,8 @@ Purpose:
 - current auxiliary pool, after materialization:
   - `128` train rows
 - current practical trainer-side pool:
-  - `25` internal + `128` auxiliary = `153`
+  - raw row math: `25` internal + `128` auxiliary = `153`
+  - current LEAP-exportable train records: `151`
 - materialize them through:
   - `python3 training/scripts/materialize_aux_train_slice.py`
 - rule:
