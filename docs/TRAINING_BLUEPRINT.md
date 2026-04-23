@@ -154,9 +154,9 @@ Current state:
 - `training/scripts/submit_train_backend_hf_job.py` is the remote-first path for actual trainer execution
 - current practical trainer-side pool:
   - `25` internal `train_01` rows
-  - `128` public auxiliary rows
-  - `153` total raw trainer-side rows without mutating Blackline gold eval
-  - `151` current LEAP-exportable train records after the merged export pass
+  - `248` public auxiliary rows
+  - `273` total raw trainer-side rows without mutating Blackline gold eval
+  - `271` current LEAP-exportable train records after the merged export pass
 
 ## Train 01 opening contract
 
@@ -169,11 +169,11 @@ Current state:
 - external slices may still widen training in a separate auxiliary lane:
   - materialize them with `training/scripts/materialize_aux_train_slice.py`
   - keep them out of frozen Blackline eval reporting
-  - current auxiliary lane can already reach `128` train-only rows with:
+  - current auxiliary lane can already reach `248` train-only rows with:
     - checked-in `xBD` + `SpaceNet 8` seeds
     - widened `KOlegaBB/damage_assessment_ukraine` slices
   - current aux-backed HF train config:
-    - `training/configs/lfm25_vl_sft_train_hf_aux_v4.yaml`
+    - `training/configs/lfm25_vl_sft_train_hf_aux_v5.yaml`
 - use the same exact-site pair shape for:
   - prompted eval
   - benchmark

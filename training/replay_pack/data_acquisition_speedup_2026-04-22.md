@@ -201,9 +201,9 @@ Do this, in order:
 1. `Bahri` stays exact control after the 2025 exact-site probe; stop treating it like a likely positive reopening
 2. `Al-Ahli` is now the first successful before-conflict hospital-train variant
 3. stop spending more time on `Nasser` unless a clearly better parcel-scale read appears
-4. keep widening auxiliary train first; raw trainer-side pool is now `153`, with `151` current LEAP-exportable train records
+4. keep widening auxiliary train first; raw trainer-side pool is now `273`, with `271` current LEAP-exportable train records
 5. keep `Novus` as the next internal exact-site retry once aux widening stops being the best ROI
-6. after Ukraine, try `WayBob` or `Sen1Floods11` before reopening slower gated sources
+6. after the larger Ukraine pass, try `WayBob` or a bounded `SpaceNet 8` expansion before reopening slower gated sources
 7. use current-source ingest to feed the lead board, not the train file
 
 ## Do I need help from Krzysztof?

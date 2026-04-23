@@ -57,10 +57,10 @@ Purpose:
   - `SpaceNet 8`
   - `KOlegaBB/damage_assessment_ukraine`
 - current auxiliary pool, after materialization:
-  - `128` train rows
+  - `248` train rows
 - current practical trainer-side pool:
-  - raw row math: `25` internal + `128` auxiliary = `153`
-  - current LEAP-exportable train records: `151`
+  - raw row math: `25` internal + `248` auxiliary = `273`
+  - current LEAP-exportable train records: `271`
 - materialize them through:
   - `python3 training/scripts/materialize_aux_train_slice.py`
 - rule:

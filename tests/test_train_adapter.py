@@ -60,6 +60,17 @@ def test_load_train_adapter_config_from_checked_in_hf_aux_yaml() -> None:
     ]
 
 
+def test_load_train_adapter_config_from_checked_in_hf_aux_v5_yaml() -> None:
+    config_path = ROOT / "training" / "configs" / "lfm25_vl_sft_train_hf_aux_v5.yaml"
+
+    config = train_adapter.load_train_adapter_config(config_path)
+
+    assert config.run_name == "lfm25_vl_sft_train_hf_aux_v5"
+    assert config.dataset.aux_candidate_eval_datasets == [
+        "training/eval_runs/aux-train-inputs/aux_public_seed_v5/blackline_candidate_eval.jsonl"
+    ]
+
+
 def test_build_train_adapter_plan_resolves_aux_candidate_eval_paths(tmp_path: Path) -> None:
     aux_path = (
         ROOT

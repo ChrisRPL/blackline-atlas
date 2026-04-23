@@ -5,6 +5,7 @@ import csv
 import json
 import sys
 from collections import Counter
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 from huggingface_hub import hf_hub_download
@@ -86,6 +87,12 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         default=1,
         help="Target rows per damage class per location across all selected folds.",
     )
+    parser.add_argument(
+        "--workers",
+        type=int,
+        default=8,
+        help="Parallel record build workers. Default: 8",
+    )
     parser.add_argument("--output-dir", type=Path, default=DEFAULT_OUTPUT_DIR)
     return parser.parse_args(argv)
 
@@ -98,6 +105,7 @@ def main(argv: list[str] | None = None) -> int:
         location_roots=tuple(args.location_roots or tuple(LOCATION_METADATA)),
         folds=tuple(args.folds or (0,)),
         max_per_damage=args.max_per_damage,
+        workers=args.workers,
     )
     print(f"wrote {dataset_path}")
     print(f"wrote {summary_path}")
@@ -111,6 +119,7 @@ def materialize_ukraine_damage_aux_slice(
     location_roots: tuple[str, ...] = tuple(LOCATION_METADATA),
     folds: tuple[int, ...] = (0,),
     max_per_damage: int = 1,
+    workers: int = 8,
     summary_name: str = DEFAULT_SUMMARY_NAME,
 ) -> tuple[Path, Path]:
     records = []
@@ -131,15 +140,17 @@ def materialize_ukraine_damage_aux_slice(
                 "selected_folds": sorted({int(row["source_fold"]) for row in selected}),
             }
         )
-        for row in selected:
-            records.append(
-                _build_record(
-                    repo_id=repo_id,
-                    location_root=location_root,
-                    fold=int(row["source_fold"]),
-                    row=row,
-                )
+        build_items = [
+            (
+                repo_id,
+                location_root,
+                int(row["source_fold"]),
+                row,
             )
+            for row in selected
+        ]
+        with ThreadPoolExecutor(max_workers=max(1, workers)) as executor:
+            records.extend(executor.map(_build_record_from_item, build_items))
 
     dataset_path = write_external_candidate_eval_slice(records=records, output_dir=output_dir)
     summary_path = output_dir / summary_name
@@ -283,6 +294,18 @@ def _build_record(
             damage=damage, bbox=_bbox_from_mask(Path(mask_path))
         ),
         annotation_source=None,
+    )
+
+
+def _build_record_from_item(
+    item: tuple[str, str, int, dict[str, str]],
+):
+    repo_id, location_root, fold, row = item
+    return _build_record(
+        repo_id=repo_id,
+        location_root=location_root,
+        fold=fold,
+        row=row,
     )
 
 
