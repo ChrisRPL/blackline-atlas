@@ -192,56 +192,91 @@ def build_public_slice_manifest_entry(
 
 
 def build_public_benchmark_dataset_card(*, slices: list[BenchmarkSliceConfig]) -> str:
-    slice_lines = [
-        (
-            f"- `{slice_config.slice_id}`: {slice_config.title}"
-            + (f" ({slice_config.source_label})" if slice_config.source_label else "")
+    slice_lines = []
+    for slice_config in slices:
+        source_dir = resolve_slice_source_dir(slice_config)
+        row_count = sum(
+            1
+            for line in (source_dir / "blackline_candidate_eval.jsonl")
+            .read_text(encoding="utf-8")
+            .splitlines()
+            if line.strip()
         )
-        for slice_config in slices
-    ]
+        slice_lines.append(
+            (
+                f"- `{slice_config.slice_id}`: {slice_config.title}"
+                + (f" ({slice_config.source_label})" if slice_config.source_label else "")
+                + f", `{row_count}` rows"
+            )
+        )
     return "\n".join(
         [
             "---",
-            "pretty_name: Blackline Atlas Public Benchmark Seeds",
+            "pretty_name: Blackline Atlas Civilian Disruption Benchmark Seeds",
+            "language:",
+            "- en",
             "license: other",
             "task_categories:",
             "- image-to-text",
+            "task_ids:",
+            "- visual-question-answering",
             "tags:",
             "- benchmark",
             "- remote-sensing",
             "- satellite-imagery",
-            "- civilian-lifelines",
+            "- structured-outputs",
+            "- humanitarian",
+            "- disaster-response",
+            "- civilian-infrastructure",
+            "- damage-assessment",
             "- blackline-atlas",
             "size_categories:",
             "- n<1K",
             "---",
             "",
-            "# Blackline Atlas Public Benchmark Seeds",
+            "# Blackline Atlas Civilian Disruption Benchmark Seeds",
             "",
-            "Tiny public benchmark seeds for civilian disruption triage.",
+            "Small public benchmark slices for structured civilian disruption triage.",
             "",
-            "What is here:",
+            "Purpose:",
+            "- compare prompt baselines and small VLMs on the same runnable public slices",
+            "- regression-check structured JSON behavior before and after Blackline adaptation",
+            "- provide a public-facing benchmark artifact without exposing the internal gold set",
+            "",
+            "Included slices:",
             *slice_lines,
             "",
-            "This repo is benchmark-only.",
-            (
-                "It is not the internal training corpus, not the frozen gold set, "
-                "and not a surveillance feed."
-            ),
+            "What this repo is:",
+            "- public benchmark-only seed material",
+            "- canonical `blackline_candidate_eval.jsonl` rows plus copied image pairs",
+            "- external transfer checks for disaster and flood disruption",
+            "",
+            "What this repo is not:",
+            "- not the internal Blackline training corpus",
+            "- not the frozen Blackline gold eval set",
+            "- not a live conflict feed or operational monitoring service",
             "",
             "Layout:",
             "- `<slice_id>/blackline_candidate_eval.jsonl`: canonical runnable benchmark rows",
             "- `<slice_id>/images/...`: image pairs used by the slice",
             "- `<slice_id>/source_labels/...`: public provenance files when available",
             "",
-            "Limitations:",
-            "- tiny seed slices",
-            "- auxiliary external transfer checks",
-            "- not a replacement for the full internal Blackline eval program",
+            "Intended use:",
+            "- benchmark and demo material",
+            "- cross-model comparison on a shared public slice basket",
+            "- public reproducibility for a narrow part of the evaluation stack",
             "",
+            "Limitations:",
+            "- intentionally small seed slices",
+            "- external-only coverage, not full civilian lifeline taxonomy coverage",
+            "- mixed-source public artifacts; source terms apply per slice",
+            "- not a replacement for the full internal Blackline evaluation program",
+            "",
+            "Licensing and provenance:",
+            "- each slice keeps its original public provenance files when available",
             (
-                "Source terms follow the original datasets and published artifacts "
-                "referenced per slice."
+                "- source terms and restrictions follow the original datasets "
+                "and published artifacts referenced per slice"
             ),
             "",
         ]

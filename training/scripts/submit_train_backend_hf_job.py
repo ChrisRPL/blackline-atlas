@@ -292,7 +292,7 @@ def build_bundle_dataset_card(*, repo_id: str) -> str:
     return "\n".join(
         [
             "---",
-            "pretty_name: Blackline Atlas Training Bundles",
+            "pretty_name: Blackline Atlas Internal HF Job Train Bundles",
             "language:",
             "- en",
             "license: other",
@@ -302,24 +302,39 @@ def build_bundle_dataset_card(*, repo_id: str) -> str:
             "- remote-sensing",
             "- satellite-imagery",
             "- internal-transfer",
+            "- hf-jobs",
+            "- remote-training",
+            "- train-bundle",
+            "- structured-outputs",
             "- blackline-atlas",
             "---",
             "",
             f"# {repo_id}",
             "",
-            "Internal transfer store for Blackline Atlas HF Jobs train bundles.",
+            "Internal transfer store for Blackline Atlas Hugging Face Jobs training bundles.",
             "",
-            "This repo is not the public benchmark dataset.",
-            (
-                "It holds self-contained `.tar.gz` handoff bundles used to launch "
-                "remote training jobs."
-            ),
+            "Purpose:",
+            "- durable handoff store for self-contained training bundles",
+            "- reproducible input artifact for remote HF Jobs runs",
+            "- lightweight run manifests that record what was uploaded",
+            "",
+            "What this repo is not:",
+            "- not a public benchmark dataset",
+            "- not a finished model registry",
+            "- not proof that a remote training job completed successfully",
             "",
             "Layout:",
             "- `bundles/<run_name>.tar.gz`: immutable train bundle archive",
             "- `runs/<run_name>.json`: lightweight run manifest with counts and paths",
             "",
-            "Public-facing evaluation data and benchmark slices live elsewhere in the project.",
+            "Operational note:",
+            "- bundle upload means the handoff artifact exists",
+            (
+                "- job success still has to be checked separately from HF Jobs "
+                "logs and adapter publish state"
+            ),
+            "",
+            "Public-facing benchmark data lives in a separate dataset repo.",
             "",
         ]
     )

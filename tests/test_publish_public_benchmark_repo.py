@@ -72,3 +72,8 @@ def test_materialize_public_benchmark_repo_copies_only_canonical_public_files(
     assert (spacenet_dir / "images").exists()
     assert not (spacenet_dir / "spacenet8_seed.jsonl").exists()
     assert not (spacenet_dir / "README.md").exists()
+
+    readme = (output_dir / "README.md").read_text(encoding="utf-8")
+    assert "Blackline Atlas Civilian Disruption Benchmark Seeds" in readme
+    assert "What this repo is not:" in readme
+    assert "`internal_public_seed_v0`: Blackline internal public seed" in readme

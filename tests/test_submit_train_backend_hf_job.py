@@ -56,9 +56,10 @@ def test_build_bundle_dataset_card_is_honest_transfer_repo_copy() -> None:
     )
 
     assert "# ChrisRPL/blackline-atlas-training-bundles" in payload
-    assert "not the public benchmark dataset" in payload
+    assert "not a public benchmark dataset" in payload
     assert "bundles/<run_name>.tar.gz" in payload
     assert "runs/<run_name>.json" in payload
+    assert "job success still has to be checked separately" in payload
 
 
 def test_build_bundle_run_manifest_tracks_core_run_fields() -> None:
