@@ -38,6 +38,35 @@ Purpose:
   - `Roshen Yahotyn Logistics Center`
   - `Arbaat Dam`
 
+## 2026-04-23 live SimSat recheck
+
+- `Roshen Yahotyn Logistics Center`
+  - exact non-gold pre still not honest enough
+  - `2025-11-14T08:56:33Z` came back with `32.921478` cloud
+  - `2026-03-14T08:56:26Z` stayed the best clean current at `1.198145` cloud
+  - result: keep blocked
+- `Mondelez Trostianets Confectionery Factory`
+  - clean extra pre exists:
+    - `2021-10-01T08:56:15Z` with `0.001587` cloud
+  - extra current side is still too compromised for a new train promotion:
+    - `2022-04-04T08:56:17Z` with `32.389462` cloud
+    - `2022-05-19T08:56:15Z` with `25.729567` cloud
+  - result: no new non-gold row this pass
+- `Okhmatdyt Children's Hospital`
+  - near-event pre side remains weather-blocked:
+    - `2024-04-14T09:16:24Z` with `98.655981` cloud
+    - `2024-05-14T09:16:22Z` with `88.792944` cloud
+    - `2024-05-29T09:16:25Z` with `93.978631` cloud
+  - later current side is still readable:
+    - `2024-08-14T09:06:28Z` with `8.936304` cloud
+    - `2024-09-28T09:06:27Z` with `6.686892` cloud
+  - result: existing `2024-05-01 -> 2024-09-06` train row remains the best honest variant
+- `Port Sudan Aid Hub`
+  - family depth is already sufficient at `3` train variants
+  - new probe confirmed one more readable current:
+    - `2025-06-24T08:14:53Z` with `9.246881` cloud
+  - result: do not widen further unless a materially different failure mode appears
+
 ## Rule first
 
 - do not mutate `training/replay_pack/non_demo_eval.jsonl`
@@ -191,14 +220,15 @@ Rule:
 ## Immediate next work
 
 1. keep widening under-depth internal positive families
-2. keep `Roshen` blocked until a genuinely non-gold clean pair exists
-3. use `Arbaat` as the water backup lane only if a non-gold pre-event pair appears
-4. keep `Khan Younis` and `Okhmatdyt` strict on leakage
-5. materialize the first auxiliary-train slice from checked-in `xBD` and `SpaceNet 8` public seeds
-6. merge auxiliary gain only in trainer-side runs, never in the frozen Blackline scorecard
-7. treat `Nasser` as soft-stopped after the long-range recheck; do not spend more internal time there without a clearly better parcel read
-8. widen auxiliary train aggressively with public Ukraine building-damage rows before spending more bounded time on soft internal candidates
-9. keep `Novus Logistics Center` as the next internal exact-site retry once aux widening stops being the highest-ROI move
-10. next public-source scouts, after Ukraine:
+2. keep `Roshen` blocked until a genuinely non-gold clean pre appears
+3. keep `Mondelez` warm, but only promote a new row if the current side is cleaner than the `2022-04-04` and `2022-05-19` reads
+4. use `Arbaat` as the water backup lane only if a non-gold pre-event pair appears
+5. keep `Khan Younis` and `Okhmatdyt` strict on leakage and weather
+6. materialize the first auxiliary-train slice from checked-in `xBD` and `SpaceNet 8` public seeds
+7. merge auxiliary gain only in trainer-side runs, never in the frozen Blackline scorecard
+8. treat `Nasser` as soft-stopped after the long-range recheck; do not spend more internal time there without a clearly better parcel read
+9. widen auxiliary train aggressively with public Ukraine building-damage rows before spending more bounded time on soft internal candidates
+10. keep `Novus Logistics Center` as the next internal exact-site retry once aux widening stops being the highest-ROI move
+11. next public-source scouts, after Ukraine:
   - `WayBob/Disaster_Recognition_RemoteSense_EN_CN_JA` for xBD-derived widening
   - `Sen1Floods11` for flood-heavy auxiliary transfer rows
