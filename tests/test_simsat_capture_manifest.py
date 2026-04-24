@@ -128,6 +128,64 @@ def test_write_simsat_capture_manifest_survives_timeout(tmp_path: Path, monkeypa
     assert record["baseline"]["response_metadata"]["image_available"] is True
 
 
+def test_capture_frame_reuses_cached_pair_when_refetch_is_unavailable(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    cached_metadata = {
+        "image_available": True,
+        "source": "sentinel-2b",
+        "spectral_bands": ["red", "green", "blue"],
+        "footprint": [33.35, 46.76, 33.39, 46.79],
+        "size_km": 3.0,
+        "cloud_cover": 5.47,
+        "datetime": "2023-10-31T08:57:19Z",
+    }
+    (tmp_path / "baseline.png").write_bytes(b"cached-png")
+    (tmp_path / "baseline-metadata.json").write_text(
+        json.dumps(cached_metadata),
+        encoding="utf-8",
+    )
+
+    def fake_urlopen(url: str, timeout: float):
+        _ = (url, timeout)
+        return _FakeResponse(
+            body=b"",
+            metadata={
+                "image_available": False,
+                "source": None,
+                "spectral_bands": ["red", "green", "blue"],
+                "footprint": [],
+                "size_km": 3.0,
+                "cloud_cover": None,
+                "datetime": None,
+            },
+        )
+
+    monkeypatch.setattr(capture_simsat_manifest, "urlopen", fake_urlopen)
+
+    frame = capture_simsat_manifest._capture_frame(
+        endpoint="https://simsat.test/data/image/sentinel",
+        output_dir=tmp_path,
+        variant="baseline",
+        frame_id="base_demo_01",
+        lon=33.371477,
+        lat=46.776336,
+        requested_timestamp="2022-07-30T08:47:30Z",
+        spectral_bands=("red", "green", "blue"),
+        size_km=3.0,
+        window_seconds=864000.0,
+        timeout_seconds=20.0,
+    )
+
+    assert frame.image_path == str(tmp_path / "baseline.png")
+    assert frame.response_metadata.image_available is True
+    assert frame.response_metadata.datetime == "2023-10-31T08:57:19Z"
+    persisted = json.loads((tmp_path / "baseline-metadata.json").read_text(encoding="utf-8"))
+    assert persisted["image_available"] is True
+    assert persisted["datetime"] == "2023-10-31T08:57:19Z"
+
+
 def test_capture_main_requires_historical_endpoint(tmp_path: Path, monkeypatch) -> None:
     monkeypatch.chdir(tmp_path)
     monkeypatch.delenv("SIMSAT_BASELINE_ENDPOINT", raising=False)

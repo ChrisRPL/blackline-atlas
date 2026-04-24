@@ -277,6 +277,12 @@ def _capture_frame(
     timeout_seconds: float,
 ) -> SimSatCaptureFrame:
     output_dir.mkdir(parents=True, exist_ok=True)
+    metadata_path = output_dir / f"{variant}-metadata.json"
+    image_file = output_dir / f"{variant}.png"
+    cached_metadata = _load_cached_capture_metadata(
+        metadata_path=metadata_path,
+        image_path=image_file,
+    )
     request_url = _build_request_url(
         endpoint=endpoint,
         lon=lon,
@@ -309,14 +315,16 @@ def _capture_frame(
         )
         body = b""
 
-    metadata_path = output_dir / f"{variant}-metadata.json"
-    metadata_path.write_text(metadata.model_dump_json(indent=2), encoding="utf-8")
-
-    image_path = None
     if metadata.image_available and body:
-        image_file = output_dir / f"{variant}.png"
+        metadata_path.write_text(metadata.model_dump_json(indent=2), encoding="utf-8")
         image_file.write_bytes(body)
         image_path = str(image_file)
+    elif cached_metadata is not None:
+        metadata = cached_metadata
+        image_path = str(image_file)
+    else:
+        metadata_path.write_text(metadata.model_dump_json(indent=2), encoding="utf-8")
+        image_path = None
 
     return SimSatCaptureFrame(
         frame_id=frame_id,
@@ -326,6 +334,19 @@ def _capture_frame(
         metadata_path=str(metadata_path),
         response_metadata=metadata,
     )
+
+
+def _load_cached_capture_metadata(
+    *,
+    metadata_path: Path,
+    image_path: Path,
+) -> SimSatSentinelMetadata | None:
+    if not metadata_path.exists() or not image_path.exists():
+        return None
+    try:
+        return SimSatSentinelMetadata.model_validate_json(metadata_path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
 
 
 def _build_request_url(
