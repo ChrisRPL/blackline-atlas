@@ -138,5 +138,10 @@
     "latitude": 50.528965,
     "longitude": 30.849714,
     "size_km": 0.8
+  },
+  "arbaat_dam_breach_train_20240617_20241015": {
+    "latitude": 19.833554,
+    "longitude": 36.941204,
+    "size_km": 5.0
   }
 }

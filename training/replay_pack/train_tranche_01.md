@@ -8,14 +8,15 @@ Purpose:
 
 ## Current status
 
-- promoted train rows: `28`
+- promoted train rows: `29`
 - current mix:
-  - positives: `19`
+  - positives: `20`
   - controls: `9`
 - promoted dataset:
   - [train_01.jsonl](/Users/krzysztof/blackline-atlas/training/replay_pack/train_01.jsonl)
 - first active families with real rows:
   - `Al-Ahli Arab Hospital`
+  - `Arbaat Dam`
   - `Baltimore Bridge`
   - `Beirut Grain Silos`
   - `European Gaza Hospital`
@@ -37,7 +38,6 @@ Purpose:
   - `Mondelez Trostianets Confectionery Factory`
 - still blocked / not yet promotable:
   - `Roshen Yahotyn Logistics Center`
-  - `Arbaat Dam`
 
 ## 2026-04-23 live SimSat recheck
 
@@ -86,6 +86,13 @@ Purpose:
     - `2025-05-21T08:31:47Z` with `0.244382` cloud
   - the May frame already shows broad campus scarring versus the intact `2021-04-30T08:31:29Z` baseline
   - result: promoted as a second internal train variant
+- `Arbaat Dam`
+  - bounded pre-event sweep finally found the missing non-gold baseline:
+    - `2024-06-20T08:00:00Z` -> `2024-06-17T08:14:47Z` with `0` cloud
+  - later clean current also cleared the train bar:
+    - `2024-10-20T08:00:00Z` -> `2024-10-15T08:14:42Z` with `2.463562` cloud
+  - the October frame still shows the drained-reservoir / breach morphology versus the intact June 2024 baseline
+  - result: promoted as the first internal water-family train variant
 - `Al-Ahli Arab Hospital`
   - `2025-05-11T08:31:44Z` is clean, but too close to the existing May row to add a new failure mode
   - result: keep single-row family depth for now
@@ -111,8 +118,8 @@ Purpose:
 - current auxiliary pool, after materialization:
   - `248` train rows
 - current practical trainer-side pool:
-  - raw row math: `28` internal + `248` auxiliary = `276`
-  - current LEAP-exportable train records: pending local re-export
+  - raw row math: `29` internal + `248` auxiliary = `277`
+  - current LEAP-exportable train records: `277`
 - materialize them through:
   - `python3 training/scripts/materialize_aux_train_slice.py`
 - rule:
@@ -245,7 +252,7 @@ Rule:
 1. keep widening under-depth internal positive families
 2. keep `Roshen` blocked until a genuinely non-gold clean pre appears
 3. keep `Mondelez` warm, but only promote a new row if the current side is cleaner than the `2022-04-04` and `2022-05-19` reads
-4. use `Arbaat` as the water backup lane only if a non-gold pre-event pair appears
+4. keep `Arbaat` warm only if a second non-gold current adds a new honest failure mode
 5. keep `Khan Younis` and `Okhmatdyt` strict on leakage and weather
 6. materialize the first auxiliary-train slice from checked-in `xBD` and `SpaceNet 8` public seeds
 7. merge auxiliary gain only in trainer-side runs, never in the frozen Blackline scorecard

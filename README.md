@@ -238,7 +238,7 @@ Current rule:
 - local macOS stays prep/bundle/orchestration only; actual `leap-finetune` training is remote-first because the trainer requires CUDA
 - start train acquisition in a separate tranche, not by mutating gold rows
 - first promoted train rows now live in [training/replay_pack/train_01.jsonl](training/replay_pack/train_01.jsonl)
-- current Train 01 count: `28`
+- current Train 01 count: `29`
 - auxiliary-train widening now has a separate materializer:
   - `python3 training/scripts/materialize_aux_train_slice.py`
 - current checked-in public seed gain: `8` auxiliary train rows from `xBD` + `SpaceNet 8`
@@ -246,8 +246,8 @@ Current rule:
   - `python3 training/scripts/materialize_ukraine_damage_aux_slice.py`
 - current widened auxiliary pool on disk:
   - `248` train rows from `xBD + SpaceNet 8 + KOlegaBB/damage_assessment_ukraine`
-  - raw trainer-side pool math: `28` internal + `248` auxiliary = `276`
-  - current LEAP-exportable train pool: pending local corpus refresh after the latest internal row
+  - raw trainer-side pool math: `29` internal + `248` auxiliary = `277`
+  - current LEAP-exportable train pool: `277`
   - keep this lane out of frozen Blackline scorecards
 
 Working doc:

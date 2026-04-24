@@ -34,7 +34,7 @@
       ],
       "target_train_variants": 2,
       "preferred_time_direction": "non_gold_pre_required",
-      "blocked_reason": "current candidate set lacks a clean non-gold pre-event baseline"
+      "blocked_reason": null
     }
   ]
 }
