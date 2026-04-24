@@ -8,9 +8,9 @@ Purpose:
 
 ## Current status
 
-- promoted train rows: `25`
+- promoted train rows: `26`
 - current mix:
-  - positives: `16`
+  - positives: `17`
   - controls: `9`
 - promoted dataset:
   - [train_01.jsonl](/Users/krzysztof/blackline-atlas/training/replay_pack/train_01.jsonl)
@@ -66,6 +66,20 @@ Purpose:
   - new probe confirmed one more readable current:
     - `2025-06-24T08:14:53Z` with `9.246881` cloud
   - result: do not widen further unless a materially different failure mode appears
+- `Novus Logistics Center`
+  - one last bounded late-April pass did not rescue the site:
+    - `2026-04-10` -> `2026-04-09T09:16:20Z` with `99.702668` cloud
+    - `2026-04-20` -> `2026-04-19T09:16:23Z` with `56.211323` cloud
+    - `2026-04-24` -> `2026-04-21T09:16:41Z` with `97.702181` cloud
+  - result: keep on hold; no honest row
+- `European Gaza Hospital`
+  - second clean non-gold current is now promotable:
+    - `2025-05-21T08:31:47Z` with `0.244382` cloud
+  - the May frame already shows broad campus scarring versus the intact `2021-04-30T08:31:29Z` baseline
+  - result: promoted as a second internal train variant
+- `Al-Ahli Arab Hospital`
+  - `2025-05-11T08:31:44Z` is clean, but too close to the existing May row to add a new failure mode
+  - result: keep single-row family depth for now
 
 ## Rule first
 
@@ -88,8 +102,8 @@ Purpose:
 - current auxiliary pool, after materialization:
   - `248` train rows
 - current practical trainer-side pool:
-  - raw row math: `25` internal + `248` auxiliary = `273`
-  - current LEAP-exportable train records: `271`
+  - raw row math: `26` internal + `248` auxiliary = `274`
+  - current LEAP-exportable train records: `272`
 - materialize them through:
   - `python3 training/scripts/materialize_aux_train_slice.py`
 - rule:
