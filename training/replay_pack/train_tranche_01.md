@@ -8,15 +8,16 @@ Purpose:
 
 ## Current status
 
-- promoted train rows: `29`
+- promoted train rows: `30`
 - current mix:
-  - positives: `20`
+  - positives: `21`
   - controls: `9`
 - promoted dataset:
   - [train_01.jsonl](/Users/krzysztof/blackline-atlas/training/replay_pack/train_01.jsonl)
 - first active families with real rows:
   - `Al-Ahli Arab Hospital`
   - `Arbaat Dam`
+  - `Mansour Dam`
   - `Baltimore Bridge`
   - `Beirut Grain Silos`
   - `European Gaza Hospital`
@@ -93,6 +94,13 @@ Purpose:
     - `2024-10-20T08:00:00Z` -> `2024-10-15T08:14:42Z` with `2.463562` cloud
   - the October frame still shows the drained-reservoir / breach morphology versus the intact June 2024 baseline
   - result: promoted as the first internal water-family train variant
+- `Mansour Dam`
+  - one earlier non-gold baseline cleared the leakage bar:
+    - `2023-08-20T09:21:00Z` -> `2023-08-18T09:21:27Z` with `3.153944` cloud
+  - one later non-gold current stayed readable:
+    - `2023-11-15T09:21:00Z` -> `2023-11-11T09:21:21Z` with `16.155596` cloud
+  - the mid-November frame still shows the same blown-out breach and widened flood-corridor morphology versus the intact late-August baseline
+  - result: promoted as a second internal water-family train variant
 - `Al-Ahli Arab Hospital`
   - `2025-05-11T08:31:44Z` is clean, but too close to the existing May row to add a new failure mode
   - result: keep single-row family depth for now
@@ -118,8 +126,8 @@ Purpose:
 - current auxiliary pool, after materialization:
   - `248` train rows
 - current practical trainer-side pool:
-  - raw row math: `29` internal + `248` auxiliary = `277`
-  - current LEAP-exportable train records: `277`
+  - raw row math: `30` internal + `248` auxiliary = `278`
+  - current LEAP-exportable train records: `278`
 - materialize them through:
   - `python3 training/scripts/materialize_aux_train_slice.py`
 - rule:
@@ -252,7 +260,7 @@ Rule:
 1. keep widening under-depth internal positive families
 2. keep `Roshen` blocked until a genuinely non-gold clean pre appears
 3. keep `Mondelez` warm, but only promote a new row if the current side is cleaner than the `2022-04-04` and `2022-05-19` reads
-4. keep `Arbaat` warm only if a second non-gold current adds a new honest failure mode
+4. keep `Arbaat` and `Mansour` warm only if another non-gold current adds a new honest failure mode
 5. keep `Khan Younis` and `Okhmatdyt` strict on leakage and weather
 6. materialize the first auxiliary-train slice from checked-in `xBD` and `SpaceNet 8` public seeds
 7. merge auxiliary gain only in trainer-side runs, never in the frozen Blackline scorecard

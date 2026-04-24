@@ -143,5 +143,10 @@
     "latitude": 19.833554,
     "longitude": 36.941204,
     "size_km": 5.0
+  },
+  "mansour_dam_breach_train_20230818_20231111": {
+    "latitude": 32.65937,
+    "longitude": 22.57708,
+    "size_km": 5.0
   }
 }

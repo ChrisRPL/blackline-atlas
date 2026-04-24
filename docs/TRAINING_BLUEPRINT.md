@@ -153,10 +153,10 @@ Current state:
 - `training/scripts/run_train_backend.py` now turns that prep seam into a real LEAP backend handoff plus a portable bundle
 - `training/scripts/submit_train_backend_hf_job.py` is the remote-first path for actual trainer execution
 - current practical trainer-side pool:
-  - `29` internal `train_01` rows
+  - `30` internal `train_01` rows
   - `248` public auxiliary rows
-  - `277` total raw trainer-side rows without mutating Blackline gold eval
-  - current LEAP-exportable train count: `277`
+  - `278` total raw trainer-side rows without mutating Blackline gold eval
+  - current LEAP-exportable train count: `278`
 
 ## Train 01 opening contract
 

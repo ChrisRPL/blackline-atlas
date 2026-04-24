@@ -35,6 +35,18 @@
       "target_train_variants": 2,
       "preferred_time_direction": "non_gold_pre_required",
       "blocked_reason": null
+    },
+    {
+      "family_id": "mansour",
+      "asset_id": "mansour_dam_01",
+      "gold_case_id": "mansour_dam_collapse",
+      "excluded_frame_ids": [
+        "base_mansour_dam_01_20230902",
+        "cur_mansour_dam_01_20231101"
+      ],
+      "target_train_variants": 2,
+      "preferred_time_direction": "non_gold_pre_later_current",
+      "blocked_reason": null
     }
   ]
 }
