@@ -8,9 +8,9 @@ Purpose:
 
 ## Current status
 
-- promoted train rows: `26`
+- promoted train rows: `27`
 - current mix:
-  - positives: `17`
+  - positives: `18`
   - controls: `9`
 - promoted dataset:
   - [train_01.jsonl](/Users/krzysztof/blackline-atlas/training/replay_pack/train_01.jsonl)
@@ -48,10 +48,12 @@ Purpose:
 - `Mondelez Trostianets Confectionery Factory`
   - clean extra pre exists:
     - `2021-10-01T08:56:15Z` with `0.001587` cloud
-  - extra current side is still too compromised for a new train promotion:
+  - most of the extra current side stayed too compromised:
     - `2022-04-04T08:56:17Z` with `32.389462` cloud
     - `2022-05-19T08:56:15Z` with `25.729567` cloud
-  - result: no new non-gold row this pass
+  - one later clean current cleared the bar:
+    - `2022-08-24T08:46:19Z` with `0` cloud
+  - result: promoted as a second internal train variant
 - `Okhmatdyt Children's Hospital`
   - near-event pre side remains weather-blocked:
     - `2024-04-14T09:16:24Z` with `98.655981` cloud
@@ -102,8 +104,8 @@ Purpose:
 - current auxiliary pool, after materialization:
   - `248` train rows
 - current practical trainer-side pool:
-  - raw row math: `26` internal + `248` auxiliary = `274`
-  - current LEAP-exportable train records: `272`
+  - raw row math: `27` internal + `248` auxiliary = `275`
+  - current LEAP-exportable train records: pending local re-export
 - materialize them through:
   - `python3 training/scripts/materialize_aux_train_slice.py`
 - rule:
