@@ -242,6 +242,28 @@ def test_load_candidate_eval_cases_resolves_paths_against_dataset_root(tmp_path:
     )
 
 
+def test_build_liquid_conversation_keeps_prompt_text_then_current_then_baseline(
+    tmp_path: Path,
+) -> None:
+    dataset_path = _write_eval_case_dataset(
+        tmp_path=tmp_path,
+        case_id="bridge_case",
+        current_rel="images/bridge_case/current.png",
+        baseline_rel="images/bridge_case/baseline.png",
+    )
+    case = run_lfm25_vl_prompted_eval.load_candidate_eval_cases(dataset_path)[0]
+
+    conversation = run_lfm25_vl_prompted_eval.build_liquid_conversation(
+        case,
+        current_image="current-image",
+        baseline_image="baseline-image",
+    )
+
+    assert conversation[1]["content"][0] == {"type": "text", "text": case.prompt["user"]}
+    assert conversation[1]["content"][1] == {"type": "image", "image": "current-image"}
+    assert conversation[1]["content"][2] == {"type": "image", "image": "baseline-image"}
+
+
 def test_http_candidate_text_runner_uses_frozen_prompt_and_images(tmp_path: Path) -> None:
     image_root = tmp_path / "images" / "bridge_case"
     image_root.mkdir(parents=True)

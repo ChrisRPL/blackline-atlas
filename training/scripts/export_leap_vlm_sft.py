@@ -13,6 +13,7 @@ from app.schemas.training_corpus import (  # noqa: E402
     BlacklineCandidateEvalRecord,
     LeapVLMSFTRecord,
 )
+from app.services.vlm_conversation import build_candidate_user_content  # noqa: E402
 
 DEFAULT_INPUT_DATASET = (
     ROOT / "training" / "corpus" / "lfm25-vl-v1" / "blackline_candidate_eval.jsonl"
@@ -21,10 +22,6 @@ DEFAULT_OUTPUT_DIR = ROOT / "training" / "corpus" / "lfm25-vl-v1" / "leap_vlm_sf
 DEFAULT_TRAIN_NAME = "train.jsonl"
 DEFAULT_EVAL_NAME = "eval.jsonl"
 DEFAULT_SUMMARY_NAME = "summary.json"
-PAIR_ORDER_NOTE = (
-    "Baseline image is first. Current image is second. "
-    "Compare the two images and return one JSON object only."
-)
 
 
 def build_leap_vlm_sft_records(
@@ -140,7 +137,6 @@ def _build_leap_record(
     if absolute_image_paths:
         baseline_path = str((dataset_root / row.baseline_image_path).resolve())
         current_path = str((dataset_root / row.current_image_path).resolve())
-    user_text = f"{PAIR_ORDER_NOTE}\n\n{row.prompt['user']}"
     target_split = "train" if row.split == "train" else "eval"
     return LeapVLMSFTRecord(
         record_id=f"{row.case_id}__candidate_sft",
@@ -155,11 +151,11 @@ def _build_leap_record(
             },
             {
                 "role": "user",
-                "content": [
-                    {"type": "text", "text": user_text},
-                    {"type": "image", "image": baseline_path},
-                    {"type": "image", "image": current_path},
-                ],
+                "content": build_candidate_user_content(
+                    prompt_text=row.prompt["user"],
+                    current_image=current_path,
+                    baseline_image=baseline_path,
+                ),
             },
             {
                 "role": "assistant",

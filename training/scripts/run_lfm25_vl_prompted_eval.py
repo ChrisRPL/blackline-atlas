@@ -20,6 +20,7 @@ from app.schemas.training_corpus import BlacklineCandidateEvalRecord  # noqa: E4
 from app.services.alert_pipeline import StructuredAlertPipeline  # noqa: E402
 from app.services.model_gateway import ModelGateway, ModelGatewayTelemetry  # noqa: E402
 from app.services.model_provider import resolve_http_candidate_provider  # noqa: E402
+from app.services.vlm_conversation import build_candidate_user_content  # noqa: E402
 from training.scripts.eval_structured_outputs import evaluate_dataset  # noqa: E402
 
 DEFAULT_MODEL_ID = "LiquidAI/LFM2.5-VL-450M"
@@ -131,13 +132,11 @@ def build_liquid_conversation(
         },
         {
             "role": "user",
-            "content": [
-                {"type": "text", "text": "Current frame"},
-                {"type": "image", "image": current_image},
-                {"type": "text", "text": "Baseline frame"},
-                {"type": "image", "image": baseline_image},
-                {"type": "text", "text": case.prompt["user"]},
-            ],
+            "content": build_candidate_user_content(
+                prompt_text=case.prompt["user"],
+                current_image=current_image,
+                baseline_image=baseline_image,
+            ),
         },
     ]
 
