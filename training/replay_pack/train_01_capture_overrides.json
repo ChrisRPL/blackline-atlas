@@ -133,5 +133,10 @@
     "latitude": 50.485456,
     "longitude": 34.943761,
     "size_km": 0.8
+  },
+  "silpo_kvitneve_train_20210914_20220407": {
+    "latitude": 50.528965,
+    "longitude": 30.849714,
+    "size_km": 0.8
   }
 }

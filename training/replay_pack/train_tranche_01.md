@@ -8,9 +8,9 @@ Purpose:
 
 ## Current status
 
-- promoted train rows: `27`
+- promoted train rows: `28`
 - current mix:
-  - positives: `18`
+  - positives: `19`
   - controls: `9`
 - promoted dataset:
   - [train_01.jsonl](/Users/krzysztof/blackline-atlas/training/replay_pack/train_01.jsonl)
@@ -24,6 +24,7 @@ Purpose:
   - `Khan Younis Training Centre`
   - `Port Sudan Aid Hub`
   - `Ras Abu Jarjur`
+  - `Silpo Kvitneve Distribution Center`
   - `Doha West`
   - `Bahri Water Station`
   - `Kramatorsk Filtration Station`
@@ -54,6 +55,12 @@ Purpose:
   - one later clean current cleared the bar:
     - `2022-08-24T08:46:19Z` with `0` cloud
   - result: promoted as a second internal train variant
+- `Silpo Kvitneve Distribution Center`
+  - one non-gold train pair cleared the bar:
+    - baseline `2021-09-14T09:06:21Z` with `7.622002` cloud
+    - current `2022-04-07T09:06:26Z` with `22.338516` cloud
+  - the April frame still shows a defendable warehouse-scale scar versus the intact September 2021 baseline
+  - result: promoted as a second internal food-distribution train variant
 - `Okhmatdyt Children's Hospital`
   - near-event pre side remains weather-blocked:
     - `2024-04-14T09:16:24Z` with `98.655981` cloud
@@ -104,7 +111,7 @@ Purpose:
 - current auxiliary pool, after materialization:
   - `248` train rows
 - current practical trainer-side pool:
-  - raw row math: `27` internal + `248` auxiliary = `275`
+  - raw row math: `28` internal + `248` auxiliary = `276`
   - current LEAP-exportable train records: pending local re-export
 - materialize them through:
   - `python3 training/scripts/materialize_aux_train_slice.py`
