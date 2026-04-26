@@ -12,7 +12,10 @@ Purpose:
 
 - `hero_eval.jsonl`: `2`
 - `non_demo_eval.jsonl`: `22`
-- overall annotated rows: `24`
+- `train_01.jsonl`: `33`
+- current auxiliary train rows: `2,417`
+- current LEAP-exportable train pool: `2,450`
+- overall internal annotated rows: `57`
 - non-demo positives: `12`
   - `food`: `4`
   - `aid`: `3`
@@ -26,14 +29,15 @@ Purpose:
   - `holdout_geo`: `11`
   - `holdout_stress`: `10`
   - `dev`: `1`
-  - `train`: `0`
+  - `train`: `33`
 
 Implication:
 
 - VLM eval lane is real
 - first gold eval set is complete
-- VLM train lane does not exist yet
-- adapter tuning is still premature
+- VLM train lane exists but is still small internally
+- public auxiliary data now gives the next adapter run enough scale to test the fixed exporter
+- production-quality tuning still needs more internal rows and a stronger `defer` lane
 
 ### Agent / planner truth
 
@@ -56,7 +60,7 @@ Implication:
 
 ## What the VLM still needs
 
-First gold-set target stays:
+Gold-set target stays frozen:
 
 - total: `22`
 - core rows: `12`
@@ -72,15 +76,74 @@ Current gap against that target:
 - missing positives: `0`
 - missing controls / stress: `0`
 
+Current train pool:
+
+- internal train: `33`
+- auxiliary train: `2,417`
+- total trainer rows: `2,450`
+- action mix:
+  - `discard`: `569`
+  - `defer`: `1,165`
+  - `downlink_now`: `716`
+
+Required dataset targets for a strong VLM adapter:
+
+- internal gold eval:
+  - current: `22`
+  - minimum useful: `50`
+  - strong target: `100`
+  - chosen target for a strong adapter claim: `100`
+  - remaining to collect: `78`
+  - required shape: roughly balanced positives / controls, at least `15-20` `defer` or ambiguity cases
+- internal train:
+  - current: `33`
+  - minimum useful: `150`
+  - strong target: `400`
+  - chosen target for the main Blackline adapter: `400`
+  - remaining to collect: `367`
+  - preferred shape: `45% downlink_now`, `35% discard`, `20% defer`
+  - exact target mix: `180 downlink_now`, `140 discard`, `80 defer`
+  - family target: at least `40` exact civilian facility families, with `3-6` rows per main family
+- public auxiliary train:
+  - current: `2,417`
+  - minimum useful: `1,000`
+  - strong target: `3,000-5,000`
+  - chosen target for transfer robustness: `4,000`
+  - remaining to collect: `1,583`
+  - use: transfer and robustness only, lower trust than internal rows
+- public auxiliary eval:
+  - current usable public eval: `1,163` held-out source rows from `satellite-disruption-triage-aux-v1-3`
+  - target: `300-500`
+  - chosen target for transfer diagnostics: `400`
+  - remaining to collect: `0`
+  - use: transfer diagnostics only, never headline Blackline metric
+
+Exact target for the next strong VLM training set:
+
+- `400` internal exact-site train rows
+- `4,000` public auxiliary train rows
+- `4,400` total train rows before synthetic augmentation
+- `100` internal gold eval rows
+- `400` public transfer eval rows
+
+Current VLM gap:
+
+- internal train gap: `367`
+- public auxiliary train gap: `1,583`
+- internal gold eval gap: `78`
+- public transfer eval gap: `0`
+- total train-row gap to the strong target: `1,950`
+
 Most important next pieces:
 
-1. freeze the finished `22`-row gold eval set
-2. materialize the first local capture manifest and train-prep corpus from that frozen set
-3. start the first real train tranche after the gold eval set is no longer tiny
+1. evaluate `lfm25_vl_sft_train_hf_aux_v7` on frozen Blackline gold
+2. accept the adapter only if it beats the base model without increasing false positives
+3. keep finding internal `defer` and hard-negative rows
+4. ask `ml-intern` to scale public auxiliary train toward `4,000+` rows only if adapter eval shows useful transfer
 
 ## What the agent model still needs
 
-Do not build a fine-tune dataset yet.
+Do not fine-tune the planner yet.
 
 Reason:
 
@@ -90,7 +153,9 @@ Reason:
 
 What is needed now instead:
 
-- expand `agent_command_eval.jsonl` from `30` rows to roughly `60-120`
+- expand `agent_command_eval.jsonl` from `30` rows to roughly `150`
+- exact planner eval target: `150`
+- remaining planner eval rows to add: `120`
 - keep the current `AgentCommandEvalCase` schema
 - score routing correctness, not prose quality
 
@@ -110,6 +175,13 @@ Required eval buckets:
 
 If planner fine-tuning is ever revisited later:
 
+- minimum SFT rows: `500`
+- strong SFT target: `1,500-3,000`
+- chosen SFT target: `2,000`
+- current SFT rows: `0`
+- remaining SFT rows to create: `2,000`
+- eval target before training claim: `300`
+- remaining eval rows before a planner training claim: `270`
 - training row should be:
   - watchlist context
   - selected asset context
@@ -118,6 +190,36 @@ If planner fine-tuning is ever revisited later:
 - not image pairs
 - not alert candidates
 - not final natural-language answers
+
+## Lead-registry extraction data targets
+
+The lead registry should stay deterministic first.
+
+Fine-tune a text extractor only if source-normalization throughput becomes the bottleneck.
+
+If that happens, target:
+
+- lead extraction eval:
+  - minimum: `200` source snippets
+  - strong target: `500`
+  - chosen target: `500`
+  - current reviewed snippets: `0`
+  - remaining snippets: `500`
+- lead extraction SFT:
+  - minimum: `1,000` reviewed snippets
+  - strong target: `3,000`
+  - chosen target: `3,000`
+  - current reviewed snippets: `0`
+  - remaining snippets: `3,000`
+- required labels:
+  - source URL / publisher / date
+  - location string
+  - latitude / longitude if derivable
+  - candidate category
+  - confidence / reject reason
+  - civilian-only safety classification
+
+This data is text-only and must not be mixed with VLM image-pair training.
 
 ## Next data order
 

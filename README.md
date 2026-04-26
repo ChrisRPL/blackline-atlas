@@ -238,16 +238,25 @@ Current rule:
 - local macOS stays prep/bundle/orchestration only; actual `leap-finetune` training is remote-first because the trainer requires CUDA
 - start train acquisition in a separate tranche, not by mutating gold rows
 - first promoted train rows now live in [training/replay_pack/train_01.jsonl](training/replay_pack/train_01.jsonl)
-- current Train 01 count: `30`
+- current Train 01 count: `33`
 - auxiliary-train widening now has a separate materializer:
   - `python3 training/scripts/materialize_aux_train_slice.py`
 - current checked-in public seed gain: `8` auxiliary train rows from `xBD` + `SpaceNet 8`
 - public Ukraine building-damage source is now supported through:
   - `python3 training/scripts/materialize_ukraine_damage_aux_slice.py`
+- conflict-focused ML-intern artifacts are validated and materialized through:
+  - `python3 training/scripts/materialize_conflict_disruption_aux_slice.py --source-root /path/to/artifact`
+- adapter acceptance is gated with:
+  - `python3 training/scripts/check_adapter_acceptance.py --base-summary /path/to/base/summary.json --adapter-summary /path/to/adapter/summary.json`
 - current widened auxiliary pool on disk:
-  - `248` train rows from `xBD + SpaceNet 8 + KOlegaBB/damage_assessment_ukraine`
-  - raw trainer-side pool math: `30` internal + `248` auxiliary = `278`
-  - current LEAP-exportable train pool: `278`
+  - `2,417` train rows from `aux_public_seed_v5 + satellite-disruption-triage-aux-v1-3`
+  - raw trainer-side pool math: `33` internal + `2,417` auxiliary = `2,450`
+  - current LEAP-exportable train pool: `2,450`
+  - current trainer action mix: `569 discard`, `1,165 defer`, `716 downlink_now`
+  - latest completed adapter: `ChrisRPL/blackline-atlas-lfm25-vl-sft-train-hf-aux-v7-adapter`
+  - strong VLM data target: `400` internal train + `4,000` auxiliary train + `100` internal gold eval + `400` public transfer eval
+  - remaining VLM gap: `367` internal train + `1,583` auxiliary train + `78` internal gold eval
+  - public transfer eval target is covered by the `1,163` held-out v1.3 source rows, but it is not a canonical Blackline metric
   - keep this lane out of frozen Blackline scorecards
 
 Working doc:

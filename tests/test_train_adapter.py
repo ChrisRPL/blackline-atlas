@@ -71,6 +71,36 @@ def test_load_train_adapter_config_from_checked_in_hf_aux_v5_yaml() -> None:
     ]
 
 
+def test_load_train_adapter_config_from_checked_in_hf_aux_v6_yaml() -> None:
+    config_path = ROOT / "training" / "configs" / "lfm25_vl_sft_train_hf_aux_v6.yaml"
+
+    config = train_adapter.load_train_adapter_config(config_path)
+
+    assert config.run_name == "lfm25_vl_sft_train_hf_aux_v6"
+    assert config.dataset.aux_candidate_eval_datasets == [
+        "training/eval_runs/aux-train-inputs/aux_public_seed_v5/blackline_candidate_eval.jsonl",
+        (
+            "training/eval_runs/aux-train-inputs/satellite_disruption_aux_v1_1/"
+            "blackline_candidate_eval.jsonl"
+        ),
+    ]
+
+
+def test_load_train_adapter_config_from_checked_in_hf_aux_v7_yaml() -> None:
+    config_path = ROOT / "training" / "configs" / "lfm25_vl_sft_train_hf_aux_v7.yaml"
+
+    config = train_adapter.load_train_adapter_config(config_path)
+
+    assert config.run_name == "lfm25_vl_sft_train_hf_aux_v7"
+    assert config.dataset.aux_candidate_eval_datasets == [
+        "training/eval_runs/aux-train-inputs/aux_public_seed_v5/blackline_candidate_eval.jsonl",
+        (
+            "training/eval_runs/aux-train-inputs/satellite_disruption_aux_v1_3/"
+            "blackline_candidate_eval.jsonl"
+        ),
+    ]
+
+
 def test_build_train_adapter_plan_resolves_aux_candidate_eval_paths(tmp_path: Path) -> None:
     aux_path = (
         ROOT
@@ -110,8 +140,7 @@ runtime:
 hf_job:
   flavor: "l4x1"
   timeout: "4h"
-""".strip()
-        + "\n",
+""".strip() + "\n",
         encoding="utf-8",
     )
 
@@ -153,8 +182,7 @@ runtime:
 hf_job:
   flavor: "l4x1"
   timeout: "4h"
-""".strip()
-        + "\n",
+""".strip() + "\n",
         encoding="utf-8",
     )
     capture_dir = tmp_path / "capture"
@@ -257,8 +285,7 @@ runtime:
 hf_job:
   flavor: "l4x1"
   timeout: "4h"
-""".strip()
-        + "\n",
+""".strip() + "\n",
         encoding="utf-8",
     )
 

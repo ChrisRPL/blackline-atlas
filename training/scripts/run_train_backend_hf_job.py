@@ -222,6 +222,37 @@ def sanitize_leap_repo_for_hf_jobs(*, repo_dir: Path) -> None:
         after="",
         log_token="vlm_deepspeed_removed=1",
     )
+    patch_text_file(
+        path=repo_dir / "src" / "leap_finetune" / "utils" / "checkpoint_callback.py",
+        before="from ray import train\n",
+        after="from ray import train\nfrom ray.train import Checkpoint\n",
+        log_token="ray_checkpoint_import_added=1",
+    )
+    patch_text_file(
+        path=repo_dir / "src" / "leap_finetune" / "utils" / "checkpoint_callback.py",
+        before="    ) -> None:\n        if train.get_context().get_world_rank() == 0:\n",
+        after=(
+            "    ) -> None:\n"
+            "        checkpoint_path = None\n"
+            "        if train.get_context().get_world_rank() == 0:\n"
+        ),
+        log_token="ray_checkpoint_path_init_added=1",
+    )
+    patch_text_file(
+        path=repo_dir / "src" / "leap_finetune" / "utils" / "checkpoint_callback.py",
+        before=(
+            "        # Report metrics only — HF Trainer already saved checkpoint to output_dir.\n"
+            "        # Passing checkpoint=None avoids Ray duplicating files into ray_logs/.\n"
+            "        train.report(metrics=report_metrics, checkpoint=None)\n"
+        ),
+        after=(
+            "        checkpoint = None\n"
+            "        if checkpoint_path and pathlib.Path(checkpoint_path).exists():\n"
+            "            checkpoint = Checkpoint.from_directory(checkpoint_path)\n"
+            "        train.report(metrics=report_metrics, checkpoint=checkpoint)\n"
+        ),
+        log_token="ray_checkpoint_reporting_enabled=1",
+    )
 
 
 def patch_text_file(*, path: Path, before: str, after: str, log_token: str) -> None:
@@ -321,21 +352,28 @@ def find_latest_checkpoint_dir(output_dir: Path) -> Path:
     if not output_dir.exists():
         raise FileNotFoundError(f"training output dir missing or empty: {output_dir}")
     checkpoint_dirs = sorted(
-        [path for path in output_dir.rglob("checkpoint-*") if path.is_dir()],
+        [path for path in output_dir.rglob("checkpoint*") if path.is_dir()],
         key=lambda path: (checkpoint_sort_key(path), path.stat().st_mtime),
         reverse=True,
     )
     if checkpoint_dirs:
         return checkpoint_dirs[0]
+    # Fallback: any directory containing adapter_config.json
+    adapter_dirs = sorted(
+        [path.parent for path in output_dir.rglob("adapter_config.json") if path.parent.is_dir()],
+        key=lambda path: path.stat().st_mtime,
+        reverse=True,
+    )
+    if adapter_dirs:
+        return adapter_dirs[0]
     raise FileNotFoundError(f"no checkpoint directories found under {output_dir}")
 
 
 def checkpoint_sort_key(path: Path) -> int:
-    suffix = path.name.split("-")[-1]
-    try:
-        return int(suffix)
-    except ValueError:
+    match = re.search(r"(\d+)$", path.name)
+    if not match:
         return -1
+    return int(match.group(1))
 
 
 def build_adapter_model_card(

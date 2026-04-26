@@ -8,9 +8,9 @@ Purpose:
 
 ## Current status
 
-- promoted train rows: `30`
+- promoted train rows: `33`
 - current mix:
-  - positives: `21`
+  - positives: `24`
   - controls: `9`
 - promoted dataset:
   - [train_01.jsonl](/Users/krzysztof/blackline-atlas/training/replay_pack/train_01.jsonl)
@@ -105,6 +105,30 @@ Purpose:
   - `2025-05-11T08:31:44Z` is clean, but too close to the existing May row to add a new failure mode
   - result: keep single-row family depth for now
 
+## 2026-04-25 batch SimSat expansion
+
+- `Baltimore Bridge`
+  - clean extra baseline:
+    - `2023-10-12T16:02:21Z` with `0.003334` cloud
+  - paired with the existing non-gold current:
+    - `2024-06-28T16:02:26Z` with `9.882668` cloud
+  - result: promoted as a second mobility train variant
+- `Silpo Kvitneve Distribution Center`
+  - clean extra baseline and current:
+    - `2021-11-11T09:16:24Z` with `2.014927` cloud
+    - `2022-05-05T09:16:17Z` with `1.15424` cloud
+  - the May frame still shows a defendable campus-scale food-distribution scar
+  - result: promoted as a third food-distribution train variant
+- `Beirut Grain Silos`
+  - clean extra baseline and current:
+    - `2020-06-09T08:30:47Z` with `0.365165` cloud
+    - `2020-09-17T08:30:46Z` with `0.042206` cloud
+  - the September frame preserves a clear silo/handling-apron disruption versus the intact June baseline
+  - result: promoted as a second food-security train variant
+- current bottleneck:
+  - train still has no `defer` rows
+  - next data work should add calibrated ambiguity / weak-signal rows, not only more high-confidence positives
+
 ## Rule first
 
 - do not mutate `training/replay_pack/non_demo_eval.jsonl`
@@ -124,10 +148,14 @@ Purpose:
   - `SpaceNet 8`
   - `KOlegaBB/damage_assessment_ukraine`
 - current auxiliary pool, after materialization:
-  - `248` train rows
+  - `2,417` train rows
 - current practical trainer-side pool:
-  - raw row math: `30` internal + `248` auxiliary = `278`
-  - current LEAP-exportable train records: `278`
+  - raw row math: `33` internal + `2,417` auxiliary = `2,450`
+  - current LEAP-exportable train records: `2,450`
+  - action mix after the `satellite-disruption-triage-aux-v1-3` auxiliary import:
+    - `discard`: `569`
+    - `defer`: `1,165`
+    - `downlink_now`: `716`
 - materialize them through:
   - `python3 training/scripts/materialize_aux_train_slice.py`
 - rule:

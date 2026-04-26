@@ -44,21 +44,22 @@ Current remote path:
 
 ```bash
 python3 training/scripts/submit_train_backend_hf_job.py \
-  --config training/configs/lfm25_vl_sft_train_hf_aux_v5.yaml
+  --config training/configs/lfm25_vl_sft_train_hf_aux_v7.yaml
 ```
 
 Submit for real:
 
 ```bash
 python3 training/scripts/submit_train_backend_hf_job.py \
-  --config training/configs/lfm25_vl_sft_train_hf_aux_v5.yaml \
+  --config training/configs/lfm25_vl_sft_train_hf_aux_v7.yaml \
   --submit
 ```
 
-Recommended first remote config:
+Recent remote configs:
 
-- `training/configs/lfm25_vl_sft_train_hf_aux_v4.yaml`
-- `training/configs/lfm25_vl_sft_train_hf_aux_v5.yaml`
+- `training/configs/lfm25_vl_sft_train_hf_aux_v6.yaml`: corrected serializer path with v1.1 auxiliary data
+- `training/configs/lfm25_vl_sft_train_hf_aux_v7.yaml`: current conflict-focused v1.3 run
+- latest completed adapter: `ChrisRPL/blackline-atlas-lfm25-vl-sft-train-hf-aux-v7-adapter`
 
 What the submitter does:
 
@@ -91,6 +92,7 @@ Guidance:
 
 - run eval before training
 - keep one known-good baseline
+- reject adapters with `training/scripts/check_adapter_acceptance.py` unless they beat base on frozen gold
 - prefer short smoke loops first
 - do not make training the critical path
 - keep benchmark compare as a separate explicit step

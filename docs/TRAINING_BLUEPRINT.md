@@ -143,6 +143,8 @@ Keep separate eval tracks:
 - first non-demo pack: `training/replay_pack/non_demo_eval.jsonl`
 - prompted baseline runner: `training/scripts/run_lfm25_vl_prompted_eval.py`
 - Ukraine auxiliary-train materializer: `training/scripts/materialize_ukraine_damage_aux_slice.py`
+- conflict auxiliary materializer/validator: `training/scripts/materialize_conflict_disruption_aux_slice.py`
+- adapter acceptance gate: `training/scripts/check_adapter_acceptance.py`
 
 Current state:
 
@@ -153,10 +155,24 @@ Current state:
 - `training/scripts/run_train_backend.py` now turns that prep seam into a real LEAP backend handoff plus a portable bundle
 - `training/scripts/submit_train_backend_hf_job.py` is the remote-first path for actual trainer execution
 - current practical trainer-side pool:
-  - `30` internal `train_01` rows
-  - `248` public auxiliary rows
-  - `278` total raw trainer-side rows without mutating Blackline gold eval
-  - current LEAP-exportable train count: `278`
+  - `33` internal `train_01` rows
+  - `2,417` public auxiliary rows
+  - `2,450` total raw trainer-side rows without mutating Blackline gold eval
+  - current LEAP-exportable train count: `2,450`
+  - current train action mix:
+    - `discard`: `569`
+    - `defer`: `1,165`
+    - `downlink_now`: `716`
+  - strong VLM target:
+    - `400` internal exact-site train rows
+    - `4,000` public auxiliary train rows
+    - `100` internal gold eval rows
+    - `400` public transfer eval rows
+  - remaining VLM data gap:
+    - `367` internal train rows
+    - `1,583` public auxiliary train rows
+    - `78` internal gold eval rows
+    - public transfer eval target is covered by the `1,163` held-out v1.3 source rows, but it is not a canonical Blackline metric
 
 ## Train 01 opening contract
 
@@ -173,7 +189,9 @@ Current state:
     - checked-in `xBD` + `SpaceNet 8` seeds
     - widened `KOlegaBB/damage_assessment_ukraine` slices
   - current aux-backed HF train config:
-    - `training/configs/lfm25_vl_sft_train_hf_aux_v5.yaml`
+    - `training/configs/lfm25_vl_sft_train_hf_aux_v7.yaml`
+  - latest completed adapter:
+    - `ChrisRPL/blackline-atlas-lfm25-vl-sft-train-hf-aux-v7-adapter`
 - use the same exact-site pair shape for:
   - prompted eval
   - benchmark
@@ -201,6 +219,12 @@ Checkpoint eval rule:
 - when an adapter checkpoint lands, keep the base model fixed and score it with:
   - `python3 training/scripts/run_lfm25_vl_prompted_eval.py --model-id LiquidAI/LFM2.5-VL-450M --adapter-ref <adapter_dir_or_hub_repo>`
 - do not overload `--model-id` to mean both base and adapter
+- reject the adapter unless `check_adapter_acceptance.py` shows:
+  - same frozen gold dataset as base
+  - action-match count strictly better than base
+  - `downlink_now` recall strictly better than base
+  - false positives not worse than base
+  - schema validity not worse than base
 
 Use the trainer only after:
 

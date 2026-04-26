@@ -206,6 +206,8 @@ support/
 blackline-docs/
 vendor/huggingface-skills/
 vendor/leap-finetune/
+work/
+session_logs/
 AGENTS.md
 docs/local/
 wiki/local/
@@ -215,8 +217,10 @@ wiki/local/
 
 # Generated benchmark / eval artifacts
 training/eval_runs/
+training/corpus/
 training/internal_benchmarks/local/
 training/external_benchmarks/local/
+uv.lock
 training/replay_pack/local/
 
 # Marimo

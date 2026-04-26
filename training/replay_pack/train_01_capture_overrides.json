@@ -1,4 +1,104 @@
 {
+  "al_ahli_arab_hospital_train_20210430_20250521": {
+    "latitude": 31.504889,
+    "longitude": 34.461639,
+    "size_km": 0.5
+  },
+  "arbaat_dam_breach_train_20240617_20241015": {
+    "latitude": 19.833554,
+    "longitude": 36.941204,
+    "size_km": 5.0
+  },
+  "bahri_water_station_train_20240913_20250511": {
+    "latitude": 15.6169,
+    "longitude": 32.5347,
+    "size_km": 5.0
+  },
+  "baltimore_bridge_train_20231012_20240628": {
+    "latitude": 39.218,
+    "longitude": -76.531,
+    "size_km": 2.0
+  },
+  "baltimore_bridge_train_20231106_20240628": {
+    "latitude": 39.218,
+    "longitude": -76.531,
+    "size_km": 2.0
+  },
+  "beirut_port_train_20200609_20200917": {
+    "latitude": 33.901,
+    "longitude": 35.52,
+    "size_km": 1.0
+  },
+  "beirut_port_train_20200624_20200907": {
+    "latitude": 33.901,
+    "longitude": 35.52,
+    "size_km": 1.0
+  },
+  "doha_west_train_20251031_20251230": {
+    "latitude": 29.368333,
+    "longitude": 47.788333,
+    "size_km": 5.0
+  },
+  "european_gaza_hospital_train_20210430_20250521": {
+    "latitude": 31.30363,
+    "longitude": 34.31985,
+    "size_km": 0.8
+  },
+  "european_gaza_hospital_train_20210430_20250608": {
+    "latitude": 31.30363,
+    "longitude": 34.31985,
+    "size_km": 0.8
+  },
+  "gedaref_grain_silos_train_20231011_20241015": {
+    "latitude": 14.026667,
+    "longitude": 35.365,
+    "size_km": 1.0
+  },
+  "kakhovka_dam_breach_train_20210715_20240228": {
+    "latitude": 46.776336,
+    "longitude": 33.371477,
+    "size_km": 5.0
+  },
+  "kakhovka_dam_breach_train_20220730_20230730": {
+    "latitude": 46.776336,
+    "longitude": 33.371477,
+    "size_km": 3.0
+  },
+  "kakhovka_dam_breach_train_20220730_20231031": {
+    "latitude": 46.776336,
+    "longitude": 33.371477,
+    "size_km": 3.0
+  },
+  "khan_younis_training_centre_train_20231231_20240330": {
+    "latitude": 31.364167,
+    "longitude": 34.295556,
+    "size_km": 0.5
+  },
+  "kramatorsk_filtration_train_20230809_20240714": {
+    "latitude": 48.731001,
+    "longitude": 37.601078,
+    "size_km": 5.0
+  },
+  "manbij_grain_silos_train_20241013_20250312": {
+    "latitude": 36.507778,
+    "longitude": 37.961389,
+    "size_km": 0.8
+  },
+  "mansour_dam_breach_train_20230818_20231111": {
+    "latitude": 32.65937,
+    "longitude": 22.57708,
+    "size_km": 5.0
+  },
+  "mondelez_trostianets_factory_train_20210715_20220715": {
+    "latitude": 50.485456,
+    "longitude": 34.943761,
+    "size_km": 0.8
+  },
+  "mondelez_trostianets_factory_train_20211001_20220824": {
+    "latitude": 50.485456,
+    "longitude": 34.943761,
+    "size_km": 0.8
+  },
   "morandi_bridge_collapse_train_20180601_20180929": {
     "latitude": 44.425568,
     "longitude": 8.890246,
@@ -14,17 +114,22 @@
     "longitude": 8.890246,
     "size_km": 2.0
   },
-  "kakhovka_dam_breach_train_20220730_20230730": {
-    "latitude": 46.776336,
-    "longitude": 33.371477,
-    "size_km": 3.0
+  "okhmatdyt_hospital_train_20240501_20240906": {
+    "latitude": 50.451172,
+    "longitude": 30.479935,
+    "size_km": 0.5
   },
-  "kakhovka_dam_breach_train_20220730_20231031": {
-    "latitude": 46.776336,
-    "longitude": 33.371477,
-    "size_km": 3.0
+  "port_sudan_aid_hub_train_20250128_20250707": {
+    "latitude": 19.5937,
+    "longitude": 37.236699,
+    "size_km": 5.0
   },
   "port_sudan_aid_hub_train_20250309_20250528": {
+    "latitude": 19.5937,
+    "longitude": 37.236699,
+    "size_km": 5.0
+  },
+  "port_sudan_aid_hub_train_20250324_20250612": {
     "latitude": 19.5937,
     "longitude": 37.236699,
     "size_km": 5.0
@@ -34,119 +139,29 @@
     "longitude": 50.621944,
     "size_km": 5.0
   },
-  "bahri_water_station_train_20240913_20250511": {
-    "latitude": 15.6169,
-    "longitude": 32.5347,
-    "size_km": 5.0
+  "silpo_kvitneve_train_20210914_20220407": {
+    "latitude": 50.528965,
+    "longitude": 30.849714,
+    "size_km": 0.8
   },
-  "unhcr_baghdad_train_20240609_20241014": {
-    "latitude": 33.34150243963263,
-    "longitude": 44.36504131109288,
-    "size_km": 5.0
-  },
-  "doha_west_train_20251031_20251230": {
-    "latitude": 29.368333,
-    "longitude": 47.788333,
-    "size_km": 5.0
-  },
-  "kramatorsk_filtration_train_20230809_20240714": {
-    "latitude": 48.731001,
-    "longitude": 37.601078,
-    "size_km": 5.0
+  "silpo_kvitneve_train_20211111_20220505": {
+    "latitude": 50.528965,
+    "longitude": 30.849714,
+    "size_km": 0.8
   },
   "trostianets_hospital_train_20200610_20200911": {
     "latitude": 50.474539,
     "longitude": 34.922882,
     "size_km": 0.5
   },
-  "okhmatdyt_hospital_train_20240501_20240906": {
-    "latitude": 50.451172,
-    "longitude": 30.479935,
-    "size_km": 0.5
-  },
-  "baltimore_bridge_train_20231106_20240628": {
-    "latitude": 39.218,
-    "longitude": -76.531,
-    "size_km": 2.0
-  },
-  "khan_younis_training_centre_train_20231231_20240330": {
-    "latitude": 31.364167,
-    "longitude": 34.295556,
-    "size_km": 0.5
-  },
-  "beirut_port_train_20200624_20200907": {
-    "latitude": 33.901,
-    "longitude": 35.52,
-    "size_km": 1.0
-  },
-  "port_sudan_aid_hub_train_20250324_20250612": {
-    "latitude": 19.5937,
-    "longitude": 37.236699,
+  "unhcr_baghdad_train_20240609_20241014": {
+    "latitude": 33.34150243963263,
+    "longitude": 44.36504131109288,
     "size_km": 5.0
-  },
-  "gedaref_grain_silos_train_20231011_20241015": {
-    "latitude": 14.026667,
-    "longitude": 35.365,
-    "size_km": 1.0
-  },
-  "manbij_grain_silos_train_20241013_20250312": {
-    "latitude": 36.507778,
-    "longitude": 37.961389,
-    "size_km": 0.8
   },
   "vasyshcheve_atb_train_20260313_20260323": {
     "latitude": 49.849286,
     "longitude": 36.326572,
     "size_km": 1.0
-  },
-  "port_sudan_aid_hub_train_20250128_20250707": {
-    "latitude": 19.5937,
-    "longitude": 37.236699,
-    "size_km": 5.0
-  },
-  "kakhovka_dam_breach_train_20210715_20240228": {
-    "latitude": 46.776336,
-    "longitude": 33.371477,
-    "size_km": 5.0
-  },
-  "al_ahli_arab_hospital_train_20210430_20250521": {
-    "latitude": 31.504889,
-    "longitude": 34.461639,
-    "size_km": 0.5
-  },
-  "european_gaza_hospital_train_20210430_20250608": {
-    "latitude": 31.30363,
-    "longitude": 34.31985,
-    "size_km": 0.8
-  },
-  "european_gaza_hospital_train_20210430_20250521": {
-    "latitude": 31.30363,
-    "longitude": 34.31985,
-    "size_km": 0.8
-  },
-  "mondelez_trostianets_factory_train_20210715_20220715": {
-    "latitude": 50.485456,
-    "longitude": 34.943761,
-    "size_km": 0.8
-  },
-  "mondelez_trostianets_factory_train_20211001_20220824": {
-    "latitude": 50.485456,
-    "longitude": 34.943761,
-    "size_km": 0.8
-  },
-  "silpo_kvitneve_train_20210914_20220407": {
-    "latitude": 50.528965,
-    "longitude": 30.849714,
-    "size_km": 0.8
-  },
-  "arbaat_dam_breach_train_20240617_20241015": {
-    "latitude": 19.833554,
-    "longitude": 36.941204,
-    "size_km": 5.0
-  },
-  "mansour_dam_breach_train_20230818_20231111": {
-    "latitude": 32.65937,
-    "longitude": 22.57708,
-    "size_km": 5.0
   }
 }
