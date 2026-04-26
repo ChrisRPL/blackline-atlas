@@ -145,6 +145,7 @@ Open:
 
 Useful API surfaces:
 
+- `GET /model/status`
 - `GET /assets`
 - `GET /leads`
 - `POST /agent/query`
@@ -244,11 +245,11 @@ black --check app tests training
 pytest -q
 ```
 
-Recent gate status before this README update:
+Recent local gate:
 
 - `ruff check app tests training`: pass
 - `black --check app tests training`: pass
-- `pytest -q`: 275 passed
+- `pytest -q`: 276 passed
 
 ## Key Docs
 

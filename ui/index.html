@@ -26,6 +26,7 @@
         <div class="topchips">
           <span class="chip neutral" id="health-chip">connecting</span>
           <span class="chip neutral" id="mode-chip">replay-safe</span>
+          <span class="chip neutral" id="model-chip">gate pending</span>
           <span class="chip degraded" id="planner-chip" hidden>planner fallback</span>
           <span class="chip neutral" id="alert-chip">0 alerts</span>
         </div>
@@ -117,6 +118,13 @@
               <span id="site-type">-</span>
               <span id="site-coords">-</span>
             </p>
+
+            <article class="drawer-card model-gate-card">
+              <p class="drawer-label">Model Gate</p>
+              <h2 id="model-gate-decision">Gate pending</h2>
+              <p class="drawer-summary" id="model-gate-summary">Loading adapter acceptance state.</p>
+              <p class="tray-inline" id="model-gate-stats">-</p>
+            </article>
 
             <div class="tray-grid">
               <article class="drawer-card">

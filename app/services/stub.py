@@ -31,6 +31,7 @@ from app.schemas.health import (
 )
 from app.schemas.lead import Lead
 from app.schemas.metrics import Metrics
+from app.schemas.model_status import ModelEvalScore, ModelStatus
 from app.schemas.replay import ReplayStartRequest, ReplayState
 from app.services.agent_planner import (
     AgentPlannerDecision,
@@ -177,6 +178,38 @@ class StubAtlasService:
                 agent_provider=self.settings.agent_provider,
             ),
             debug=self._health_debug(),
+        )
+
+    def get_model_status(self) -> ModelStatus:
+        return ModelStatus(
+            base_model="LiquidAI/LFM2.5-VL-450M",
+            candidate_adapter="ChrisRPL/blackline-atlas-lfm25-vl-sft-train-hf-aux-v7-adapter",
+            training_dataset="ChrisRPL/satellite-disruption-triage-aux-v1-3",
+            frozen_gold_cases=22,
+            decision="replay_safe_adapter_rejected",
+            recommended_runtime="deterministic_replay",
+            summary=(
+                "The aux_v7 adapter improved schema validity but failed promotion because "
+                "action match dropped and false positives increased on frozen gold."
+            ),
+            base_eval=ModelEvalScore(
+                action_match=8,
+                schema_valid=12,
+                downlink_recall=0,
+                downlink_total=12,
+                false_positives=0,
+            ),
+            adapter_eval=ModelEvalScore(
+                action_match=5,
+                schema_valid=20,
+                downlink_recall=5,
+                downlink_total=12,
+                false_positives=4,
+            ),
+            acceptance_failures=[
+                "adapter action_match count must strictly beat base",
+                "adapter false positives must not exceed base",
+            ],
         )
 
     def list_assets(self) -> list[Asset]:

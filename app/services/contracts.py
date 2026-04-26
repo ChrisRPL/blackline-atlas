@@ -9,11 +9,14 @@ from app.schemas.frame import FrameEnvelope
 from app.schemas.health import HealthResponse
 from app.schemas.lead import Lead
 from app.schemas.metrics import Metrics
+from app.schemas.model_status import ModelStatus
 from app.schemas.replay import ReplayStartRequest, ReplayState
 
 
 class AtlasService(Protocol):
     def get_health(self) -> HealthResponse: ...
+
+    def get_model_status(self) -> ModelStatus: ...
 
     def list_assets(self) -> list[Asset]: ...
 

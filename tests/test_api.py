@@ -126,6 +126,29 @@ def test_health_endpoint() -> None:
     assert payload["agent_backend"]["detail"] == "lfm2.5-1.2b-instruct (fixture planner)"
 
 
+def test_model_status_endpoint_exposes_adapter_gate() -> None:
+    response = client.get("/model/status")
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["base_model"] == "LiquidAI/LFM2.5-VL-450M"
+    assert (
+        payload["candidate_adapter"]
+        == "ChrisRPL/blackline-atlas-lfm25-vl-sft-train-hf-aux-v7-adapter"
+    )
+    assert payload["decision"] == "replay_safe_adapter_rejected"
+    assert payload["recommended_runtime"] == "deterministic_replay"
+    assert payload["frozen_gold_cases"] == 22
+    assert payload["base_eval"]["action_match"] == 8
+    assert payload["adapter_eval"]["action_match"] == 5
+    assert payload["adapter_eval"]["schema_valid"] == 20
+    assert payload["adapter_eval"]["false_positives"] == 4
+    assert payload["acceptance_failures"] == [
+        "adapter action_match count must strictly beat base",
+        "adapter false positives must not exceed base",
+    ]
+
+
 def test_ui_shell_is_served_same_origin() -> None:
     response = client.get("/ui")
     static_response = client.get("/ui-static/shell.js")
@@ -135,6 +158,7 @@ def test_ui_shell_is_served_same_origin() -> None:
     assert "text/html" in response.headers["content-type"]
     assert "Blackline Atlas" in response.text
     assert "/health" in static_response.text
+    assert "/model/status" in static_response.text
     assert "/replay/status" in static_response.text
     assert "/assets" in static_response.text
 

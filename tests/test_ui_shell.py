@@ -24,10 +24,13 @@ def test_ui_shell_serves_same_origin_dashboard() -> None:
     assert "/frames/baseline" in static_response.text
     assert "/alerts" in static_response.text
     assert "/metrics" in static_response.text
+    assert "/model/status" in static_response.text
     assert "/agent/query" in static_response.text
     assert "selected_lead_id" in static_response.text
     assert 'id="chat-form"' in response.text
     assert 'id="map-stage"' in response.text
+    assert 'id="model-chip"' in response.text
+    assert 'id="model-gate-decision"' in response.text
     assert 'id="lead-popover"' in response.text
     assert 'id="lead-popover-inspect"' in response.text
     assert 'id="site-name"' in response.text
@@ -36,3 +39,4 @@ def test_ui_shell_serves_same_origin_dashboard() -> None:
     assert 'id="planner-chip"' in response.text
     assert "planner fallback" in response.text
     assert "renderPlannerChip" in static_response.text
+    assert "renderModelGate" in static_response.text

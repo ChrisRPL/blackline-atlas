@@ -11,6 +11,7 @@ from app.schemas.frame import FrameEnvelope
 from app.schemas.health import HealthResponse
 from app.schemas.lead import Lead
 from app.schemas.metrics import Metrics
+from app.schemas.model_status import ModelStatus
 from app.schemas.replay import ReplayStartRequest, ReplayState
 from app.services.contracts import AtlasService
 
@@ -24,6 +25,11 @@ def get_service(request: Request) -> AtlasService:
 @router.get("/health", response_model=HealthResponse)
 def health(service: Annotated[AtlasService, Depends(get_service)]) -> HealthResponse:
     return service.get_health()
+
+
+@router.get("/model/status", response_model=ModelStatus)
+def model_status(service: Annotated[AtlasService, Depends(get_service)]) -> ModelStatus:
+    return service.get_model_status()
 
 
 @router.get("/assets", response_model=list[Asset])

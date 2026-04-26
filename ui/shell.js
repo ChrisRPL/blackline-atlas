@@ -1,5 +1,6 @@
 const urls = {
   health: new URL("/health", window.location.origin),
+  modelStatus: new URL("/model/status", window.location.origin),
   assets: new URL("/assets", window.location.origin),
   leads: new URL("/leads", window.location.origin),
   alerts: new URL("/alerts", window.location.origin),
@@ -12,6 +13,7 @@ const urls = {
 
 const state = {
   health: null,
+  modelStatus: null,
   assets: [],
   leads: [],
   liveAlerts: [],
@@ -34,6 +36,7 @@ const state = {
 const dom = {
   healthChip: document.querySelector("#health-chip"),
   modeChip: document.querySelector("#mode-chip"),
+  modelChip: document.querySelector("#model-chip"),
   alertChip: document.querySelector("#alert-chip"),
   plannerChip: document.querySelector("#planner-chip"),
   mapStage: document.querySelector("#map-stage"),
@@ -56,6 +59,9 @@ const dom = {
   siteRegion: document.querySelector("#site-region"),
   siteType: document.querySelector("#site-type"),
   siteCoords: document.querySelector("#site-coords"),
+  modelGateDecision: document.querySelector("#model-gate-decision"),
+  modelGateSummary: document.querySelector("#model-gate-summary"),
+  modelGateStats: document.querySelector("#model-gate-stats"),
   currentTitle: document.querySelector("#current-title"),
   currentNote: document.querySelector("#current-note"),
   currentStatus: document.querySelector("#current-status"),
@@ -335,6 +341,37 @@ function renderPlannerChip() {
   }
 
   dom.plannerChip.hidden = !state.plannerFallbackActive;
+}
+
+function renderModelGate() {
+  if (!dom.modelChip || !dom.modelGateDecision || !dom.modelGateSummary || !dom.modelGateStats) {
+    return;
+  }
+
+  const status = state.modelStatus;
+  if (!status) {
+    dom.modelChip.textContent = "gate pending";
+    dom.modelChip.className = "chip neutral";
+    dom.modelGateDecision.textContent = "Gate pending";
+    dom.modelGateSummary.textContent = "Loading adapter acceptance state.";
+    dom.modelGateStats.textContent = "-";
+    return;
+  }
+
+  const adapterName = status.candidate_adapter.split("/").pop() || "adapter";
+  const adapter = status.adapter_eval;
+  const base = status.base_eval;
+  dom.modelChip.textContent = "adapter gated";
+  dom.modelChip.className = "chip degraded";
+  dom.modelGateDecision.textContent = "Replay-safe mode";
+  dom.modelGateSummary.textContent = status.summary;
+  dom.modelGateStats.textContent = [
+    `${adapterName}`,
+    `base ${base.action_match}/${status.frozen_gold_cases}`,
+    `adapter ${adapter.action_match}/${status.frozen_gold_cases}`,
+    `schema ${adapter.schema_valid}/${status.frozen_gold_cases}`,
+    `fp ${adapter.false_positives}`,
+  ].join(" / ");
 }
 
 function seedTranscript() {
@@ -835,6 +872,17 @@ function handleCommandLocally(rawText) {
     return;
   }
 
+  if (command.includes("model") || command.includes("adapter") || command.includes("gate")) {
+    const status = state.modelStatus;
+    appendMessage(
+      "assistant",
+      status
+        ? `${status.summary} Runtime stays ${humanizeSlug(status.recommended_runtime)}.`
+        : "Model gate status is still loading.",
+    );
+    return;
+  }
+
   if (command.includes("hero")) {
     const hero = state.assets.find((asset) => asset.hero) || selectedAsset();
     if (hero) {
@@ -881,6 +929,7 @@ function renderTopbar() {
   dom.modeChip.className = summary.modeClass;
   dom.alertChip.textContent = `${state.liveAlerts.length} ${state.liveAlerts.length === 1 ? "alert" : "alerts"}`;
   dom.alertChip.className = state.liveAlerts.length ? "chip degraded" : "chip neutral";
+  renderModelGate();
   renderPlannerChip();
 }
 
@@ -1126,6 +1175,7 @@ function renderHealthFallback() {
   dom.healthChip.className = "chip degraded";
   dom.modeChip.textContent = "health missing";
   dom.modeChip.className = "chip neutral";
+  renderModelGate();
   renderPlannerChip();
   setChannelNote("Backend health degraded. Local command fallback active.");
 }
@@ -1197,6 +1247,7 @@ async function boot() {
 
   const [
     healthResult,
+    modelStatusResult,
     assetsResult,
     leadsResult,
     alertsResult,
@@ -1206,6 +1257,7 @@ async function boot() {
     metricsResult,
   ] = await Promise.allSettled([
     loadJson(urls.health),
+    loadJson(urls.modelStatus),
     loadJson(urls.assets),
     loadJson(urls.leads),
     loadJson(urls.alerts),
@@ -1217,6 +1269,9 @@ async function boot() {
 
   if (healthResult.status === "fulfilled") {
     state.health = healthResult.value;
+  }
+  if (modelStatusResult.status === "fulfilled") {
+    state.modelStatus = modelStatusResult.value;
   }
   if (assetsResult.status === "fulfilled") {
     state.assets = assetsResult.value;

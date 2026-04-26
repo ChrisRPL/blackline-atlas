@@ -67,6 +67,7 @@
 
 - `GET /health`
 - `GET /health.debug`
+- `GET /model/status`
 - `GET /assets`
 - `GET /leads`
 - `GET /agent/tools`
@@ -84,6 +85,7 @@
 Single page only.
 
 - top rail: mode, trust, replay state, planner fallback state
+- model gate: visible adapter acceptance status and recommended runtime
 - landing state:
   - branded dark 3D globe
   - disruption / conflict lead markers already visible

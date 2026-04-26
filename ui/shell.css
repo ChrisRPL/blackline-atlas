@@ -679,6 +679,22 @@ body::before {
   background: rgba(12, 20, 25, 0.42);
 }
 
+.model-gate-card {
+  border-color: rgba(216, 161, 90, 0.2);
+  background:
+    linear-gradient(180deg, rgba(216, 161, 90, 0.08), rgba(8, 16, 21, 0.44)),
+    rgba(12, 20, 25, 0.42);
+}
+
+.model-gate-card h2 {
+  color: var(--warn);
+}
+
+.model-gate-card .tray-inline {
+  margin-top: 0.36rem;
+  line-height: 1.35;
+}
+
 .signal-card {
   padding: 0.58rem 0.6rem;
   border: 1px solid var(--line);
