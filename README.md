@@ -1,80 +1,136 @@
 # Blackline Atlas
 
-Blackline Atlas is a map-first civilian lifeline disruption triage system built during the Liquid AI x DPhi Space hackathon.
+**Civilian lifeline disruption triage from satellite imagery.**
 
-It compares current satellite imagery against historical baselines for a small, curated watchlist of public civilian lifelines, then emits structured alerts only when macro-scale visible disruption is defensible.
+Blackline Atlas watches a small, curated set of public civilian chokepoints and turns current-versus-baseline satellite imagery into compact, structured alerts. The goal is not to monitor everything. The goal is to surface a few defensible, macro-scale disruptions that matter for humanitarian logistics, food security, water access, and public mobility.
 
-It now also carries a small file-backed lead registry for globe markers, separate from the exact-site watchlist and exact-site VLM review lane.
+Built for the Liquid AI x DPhi Space hackathon.
 
-## What it does
+## Demo In 20 Seconds
 
-- civilian lifeline monitoring, not general surveillance
-- map-first operator workflow with an agent command dock
-- globe lead markers with a compact source popup before full evidence review
-- structured alert generation, not chatty summarization
-- deterministic replay and cached fallback paths
-- Sentinel-first time-aware change checks
+1. Open the operational globe.
+2. See current disruption leads as markers.
+3. Click a marker or ask the agent about an area.
+4. Review the current frame, baseline frame, alert card, confidence, and metrics.
+5. The system emits one of three machine-readable actions: `discard`, `defer`, or `downlink_now`.
 
-## Scope
+The demo path is deterministic and replay-safe. The fine-tuned adapter is evaluated as an optional model component, not a hard dependency for the live presentation.
 
-Blackline Atlas is intentionally narrow.
+## Screenshots
 
-We prioritize:
-- food infrastructure
-- water infrastructure
-- aid nodes
-- a small set of clearly civilian mobility chokepoints
-
-We do not aim to support:
-- tactical targeting
-- strike support
-- military asset ranking
-- tiny-object surveillance
-- route or convoy intelligence
-
-## Current status
-
-Prototype, but real:
-
-- backend product loop works end to end
-- map-first UI and deterministic agent contract are live
-- replay-safe and cached fallback paths are in place
-- first `22`-row internal non-demo gold eval set is frozen
-- fine-tuning is not the critical path yet
-
-Current reality:
-- internal annotated eval set exists and drives the core product
-- external benchmark seeds exist for auxiliary transfer testing
-- prompted baseline and benchmark runners exist
-- a provisional train split exists and is still underweight
-- the biggest bottleneck is now train-row acquisition and freeze discipline, not framework work
-
-## Repo layout
-
-```text
-blackline-atlas/
-├── app/                     backend routes, services, schemas
-├── training/
-│   ├── replay_pack/         internal eval rows, tranche plans, research notes
-│   ├── external_benchmarks/ public benchmark seed slices
-│   ├── internal_benchmarks/ tiny checked-in internal benchmark seeds
-│   └── scripts/             capture, corpus build, eval, benchmark helpers
-├── tests/                   API, runtime, eval, and UI regressions
-├── ui/                      same-origin map-first shell and assets
-└── docs/                    stable product and training docs
-```
-
-## Screens
-
-Map-first shell:
+### Operational Shell
 
 ![Blackline Atlas app](ui/assets/blackline-atlas-app.png)
 
-Real analyzed case, Port Sudan Aid Hub before/after:
+### Evidence Pair
 
 ![Port Sudan Aid Hub comparison](ui/assets/blackline-portsudan-comparison.png)
 
-## Quick start
+## What It Does
+
+- Maintains a lead registry for current conflict and disruption locations.
+- Uses a globe/map-first workflow instead of a dashboard-first workflow.
+- Retrieves or replays current and historical satellite frames for selected sites.
+- Compares paired imagery against a strict civilian-disruption schema.
+- Produces structured alerts that are safe for downstream automation.
+- Keeps cached replay and deterministic fallback paths for demo reliability.
+
+## Civilian Scope
+
+Blackline Atlas is intentionally narrow.
+
+In scope:
+
+- Food infrastructure, grain storage, markets, and distribution centers.
+- Water infrastructure, dams, filtration, desalination, and pumping sites.
+- Aid hubs, shelters, hospitals, and medical/relief logistics nodes.
+- Clearly civilian ports, bridges, and mobility chokepoints.
+
+Out of scope:
+
+- Tactical targeting.
+- Strike support.
+- Military asset ranking.
+- Troop, convoy, weapon, or base analysis.
+- Tiny-object surveillance.
+- Route-open or convoy-flow intelligence.
+
+## Current Status
+
+| Area | Status |
+|---|---|
+| Backend | FastAPI app, typed schemas, deterministic service layer |
+| UI | Same-origin operational shell with globe/map-first interaction |
+| Lead registry | File-backed seed registry for current disruption markers |
+| Replay | Stable cached fallback path for demo reliability |
+| Gold eval | 22 frozen non-demo Blackline cases |
+| Internal train | 33 exact-site train rows |
+| Auxiliary train | 2,417 public auxiliary rows |
+| Current train pool | 2,450 LEAP-exportable rows |
+| Latest adapter | `ChrisRPL/blackline-atlas-lfm25-vl-sft-train-hf-aux-v7-adapter` |
+| Adapter promotion | Rejected for demo-critical use until calibration improves |
+
+The latest adapter is useful research evidence: it improved JSON/schema reliability on the frozen gold set, but it over-fired on controls and failed the acceptance gate. The demo should therefore use deterministic replay and cached/prompted behavior unless a later adapter beats the base model on the frozen gold set.
+
+## Model And Dataset Work
+
+Primary VLM target:
+
+- Base model: [`LiquidAI/LFM2.5-VL-450M`](https://huggingface.co/LiquidAI/LFM2.5-VL-450M)
+- Adapter: [`ChrisRPL/blackline-atlas-lfm25-vl-sft-train-hf-aux-v7-adapter`](https://huggingface.co/ChrisRPL/blackline-atlas-lfm25-vl-sft-train-hf-aux-v7-adapter)
+- Main auxiliary dataset: [`ChrisRPL/satellite-disruption-triage-aux-v1-3`](https://huggingface.co/datasets/ChrisRPL/satellite-disruption-triage-aux-v1-3)
+
+Latest local gold-eval result:
+
+| Model | Action Match | Schema Valid | Downlink Recall | False Positives | Decision |
+|---|---:|---:|---:|---:|---|
+| Prompted base | 8 / 22 | 12 / 22 | 0 / 12 | 0 | Baseline only |
+| `aux_v7` adapter | 5 / 22 | 20 / 22 | 5 / 12 | 4 | Reject for demo-critical use |
+
+Why this matters:
+
+- The adapter learned formatting and became much more schema-stable.
+- It also became too eager to emit `defer` or `downlink_now`.
+- We keep the model work honest by requiring improvement on frozen Blackline cases, not only training loss.
+
+## Architecture
+
+```text
+lead registry
+  -> globe markers
+  -> selected site / chat intent
+  -> current Sentinel frame
+  -> historical Sentinel baseline
+  -> frame filters
+  -> VLM / replay-safe candidate generation
+  -> strict JSON repair and validation
+  -> alert card + evidence tray + metrics
+```
+
+Key principles:
+
+- Globe first, chat second, evidence third.
+- Leads are not alerts until reviewed.
+- Outputs are structured, not free-form prose.
+- Frozen gold eval is separate from train data.
+- Adapter promotion requires objective acceptance, not vibes.
+
+## Repo Layout
+
+```text
+blackline-atlas/
+├── app/                     FastAPI routes, services, schemas
+├── docs/                    product and training docs
+├── training/
+│   ├── replay_pack/         frozen eval rows, train rows, strategy notes
+│   ├── external_benchmarks/ public benchmark seed slices
+│   ├── internal_benchmarks/ checked-in internal benchmark seeds
+│   └── scripts/             capture, corpus, eval, HF Jobs helpers
+├── tests/                   API, runtime, eval, and UI regressions
+└── ui/                      same-origin operational shell and screenshots
+```
+
+## Quick Start
 
 ```bash
 cp .env.example .env
@@ -82,22 +138,27 @@ python3 -m pip install -e ".[dev]"
 make dev
 ```
 
-Then open:
+Open:
+
 - API docs: `http://127.0.0.1:8000/docs`
 - UI shell: `http://127.0.0.1:8000/ui`
 
 Useful API surfaces:
+
 - `GET /assets`
 - `GET /leads`
 - `POST /agent/query`
+- `GET /alerts`
+- `GET /metrics`
 
-## Local data lane
+## SimSat Data Lane
 
 Primary local data source:
-- SimSat historical Sentinel: `http://localhost:9005/data/image/sentinel`
-- SimSat current Sentinel: `http://localhost:9005/data/current/image/sentinel`
 
-Bring-up:
+- Historical Sentinel: `http://localhost:9005/data/image/sentinel`
+- Current Sentinel: `http://localhost:9005/data/current/image/sentinel`
+
+Bring up SimSat:
 
 ```bash
 git clone https://github.com/DPhi-Space/SimSat.git ~/Projects/oss/SimSat
@@ -107,7 +168,7 @@ docker compose up -d
 curl http://localhost:9005/
 ```
 
-Freeze one capture pack:
+Freeze the 22-case non-demo gold pack:
 
 ```bash
 python3 training/scripts/capture_simsat_manifest.py \
@@ -117,169 +178,91 @@ python3 training/scripts/capture_simsat_manifest.py \
   --output-dir /tmp/non_demo_simsat_capture
 ```
 
-Probe candidate Train 01 positive windows before promoting a new row:
-
-```bash
-python3 training/scripts/probe_train_family_windows.py \
-  --historical-endpoint http://localhost:9005/data/image/sentinel \
-  --family roshen \
-  --family mondelez \
-  --family arbaat \
-  --family okhmatdyt \
-  --family baltimore \
-  --family port_sudan
-```
-
-Build and score the prompted baseline corpus:
+Build the VLM eval corpus:
 
 ```bash
 python3 training/scripts/build_lfm25_vl_corpus.py \
   --capture-manifest /tmp/non_demo_simsat_capture/simsat_capture_manifest.json \
   --replay-dataset training/replay_pack/non_demo_eval.jsonl \
   --output-dir /tmp/non_demo_corpus
-
-python3 training/scripts/export_leap_vlm_sft.py \
-  --candidate-eval-dataset /tmp/non_demo_corpus/blackline_candidate_eval.jsonl \
-  --output-dir /tmp/non_demo_leap
-
-python3 training/scripts/run_lfm25_vl_prompted_eval.py \
-  --dataset /tmp/non_demo_corpus/blackline_candidate_eval.jsonl \
-  --output-dir /tmp/non_demo_eval_run
 ```
 
-Score a trained adapter checkpoint on the same held-out slice:
+## Adapter Acceptance Gate
+
+Run base model eval:
 
 ```bash
 python3 training/scripts/run_lfm25_vl_prompted_eval.py \
   --dataset /tmp/non_demo_corpus/blackline_candidate_eval.jsonl \
-  --output-dir /tmp/non_demo_eval_run_adapter \
-  --model-id LiquidAI/LFM2.5-VL-450M \
-  --adapter-ref /path/to/adapter-or-hub-repo
+  --output-dir /tmp/non_demo_eval_base_full
 ```
 
-Prepare the config-first train/eval artifacts:
+Run adapter eval:
 
 ```bash
-python3 training/scripts/train_adapter.py \
-  --config training/configs/lfm25_vl_sft_smoke.yaml \
-  --print-plan
+python3 training/scripts/run_lfm25_vl_prompted_eval.py \
+  --dataset /tmp/non_demo_corpus/blackline_candidate_eval.jsonl \
+  --output-dir /tmp/non_demo_eval_adapter_full \
+  --adapter-ref ChrisRPL/blackline-atlas-lfm25-vl-sft-train-hf-aux-v7-adapter
 ```
 
-Materialize a real LEAP train backend handoff plus a self-contained bundle:
+Apply the promotion policy:
 
 ```bash
-python3 training/scripts/run_train_backend.py \
-  --config training/configs/lfm25_vl_sft_smoke.yaml
+python3 training/scripts/check_adapter_acceptance.py \
+  --base-summary /tmp/non_demo_eval_base_full/summary.json \
+  --adapter-summary /tmp/non_demo_eval_adapter_full/summary.json
 ```
 
-Print the remote HF Jobs plan without spending cloud time:
+Promotion requires:
+
+- Same frozen case count and expected-action mix.
+- Schema validity not worse than base.
+- Action-match count strictly better than base.
+- `downlink_now` recall strictly better than base.
+- False positives not worse than base.
+
+## Training Path
+
+Current conflict-focused training config:
 
 ```bash
 python3 training/scripts/submit_train_backend_hf_job.py \
-  --config training/configs/lfm25_vl_sft_train_hf.yaml
+  --config training/configs/lfm25_vl_sft_train_hf_aux_v7.yaml \
+  --submit
 ```
 
-Refresh the local lead registry seed:
+The remote training path uses Hugging Face Jobs and a LEAP-compatible SFT bundle. Local macOS is used for data prep, corpus export, smoke checks, and orchestration. Actual LEAP training runs remotely because the training backend requires CUDA.
+
+## Verification
+
+Full local gate:
 
 ```bash
-python3 training/scripts/refresh_lead_registry.py \
-  --source-path app/services/lead_sources.seed.json \
-  --output-path app/services/lead_registry.seed.json
+ruff check app tests training
+black --check app tests training
+pytest -q
 ```
 
-Notes:
-- `app/services/lead_sources.seed.json` is the curated source-of-truth for globe leads
-- `app/services/lead_registry.seed.json` is the refreshed runtime registry used by `/leads`
+Recent gate status before this README update:
 
-## Benchmarking
+- `ruff check app tests training`: pass
+- `black --check app tests training`: pass
+- `pytest -q`: 275 passed
 
-Ready benchmark slices:
-- internal public research seed:
-  - `training/internal_benchmarks/blackline_public_seed`
-- external public seeds:
-  - `training/external_benchmarks/xbd_public_seed`
-  - `training/external_benchmarks/spacenet8_public_seed`
+## Key Docs
 
-Run the first cohort:
+- [Product blueprint](docs/BLUEPRINT.md)
+- [Technical specs](docs/SPECS.md)
+- [Training blueprint](docs/TRAINING_BLUEPRINT.md)
+- [HF Jobs plan](docs/HF_JOBS.md)
+- [Model data strategy](training/replay_pack/model_data_strategy_2026-04-19.md)
+- [Current bottleneck plan](training/replay_pack/bottleneck_plan_2026-04-25.md)
 
-```bash
-python3 training/scripts/run_model_benchmark.py \
-  --manifest training/replay_pack/model_benchmark_manifest.json \
-  --slice-id internal_public_seed_v0 \
-  --slice-id xbd_public_seed_v0 \
-  --slice-id spacenet8_public_seed_v0
-```
+## What Still Needs Work
 
-Important:
-- external slices are auxiliary research slices
-- they do not replace the internal Blackline gold set
-- the full internal non-demo benchmark still needs frozen SimSat bytes or a capture manifest
-
-Publish the clean public benchmark seed repo:
-
-```bash
-python3 training/scripts/publish_public_benchmark_repo.py \
-  --public \
-  --publish
-```
-
-## Train-prep
-
-Current rule:
-
-- keep the `22`-row non-demo gold eval set frozen
-- export LEAP-compatible VLM SFT from the same frozen corpus shape
-- keep trainer-facing image paths relative and carry `image_root` in the export summary / dataset manifest
-- use `training/scripts/train_adapter.py` as the config-first prep seam
-- use `training/scripts/run_train_backend.py` to generate the real LEAP handoff plus a portable train bundle
-- use `training/scripts/submit_train_backend_hf_job.py` for remote GPU submission
-- the HF bundle repo is an internal transfer store, not the public benchmark dataset
-- that repo should stay readable: root card + `bundles/<run_name>.tar.gz` + `runs/<run_name>.json`
-- local macOS stays prep/bundle/orchestration only; actual `leap-finetune` training is remote-first because the trainer requires CUDA
-- start train acquisition in a separate tranche, not by mutating gold rows
-- first promoted train rows now live in [training/replay_pack/train_01.jsonl](training/replay_pack/train_01.jsonl)
-- current Train 01 count: `33`
-- auxiliary-train widening now has a separate materializer:
-  - `python3 training/scripts/materialize_aux_train_slice.py`
-- current checked-in public seed gain: `8` auxiliary train rows from `xBD` + `SpaceNet 8`
-- public Ukraine building-damage source is now supported through:
-  - `python3 training/scripts/materialize_ukraine_damage_aux_slice.py`
-- conflict-focused ML-intern artifacts are validated and materialized through:
-  - `python3 training/scripts/materialize_conflict_disruption_aux_slice.py --source-root /path/to/artifact`
-- adapter acceptance is gated with:
-  - `python3 training/scripts/check_adapter_acceptance.py --base-summary /path/to/base/summary.json --adapter-summary /path/to/adapter/summary.json`
-- current widened auxiliary pool on disk:
-  - `2,417` train rows from `aux_public_seed_v5 + satellite-disruption-triage-aux-v1-3`
-  - raw trainer-side pool math: `33` internal + `2,417` auxiliary = `2,450`
-  - current LEAP-exportable train pool: `2,450`
-  - current trainer action mix: `569 discard`, `1,165 defer`, `716 downlink_now`
-  - latest completed adapter: `ChrisRPL/blackline-atlas-lfm25-vl-sft-train-hf-aux-v7-adapter`
-  - strong VLM data target: `400` internal train + `4,000` auxiliary train + `100` internal gold eval + `400` public transfer eval
-  - remaining VLM gap: `367` internal train + `1,583` auxiliary train + `78` internal gold eval
-  - public transfer eval target is covered by the `1,163` held-out v1.3 source rows, but it is not a canonical Blackline metric
-  - keep this lane out of frozen Blackline scorecards
-
-Working doc:
-
-- [training/replay_pack/train_tranche_01.md](training/replay_pack/train_tranche_01.md)
-
-For heavier runs, prefer Hugging Face Jobs. See [docs/HF_JOBS.md](docs/HF_JOBS.md).
-
-## Key docs
-
-- [docs/BLUEPRINT.md](docs/BLUEPRINT.md)
-- [docs/SPECS.md](docs/SPECS.md)
-- [docs/TRAINING_BLUEPRINT.md](docs/TRAINING_BLUEPRINT.md)
-- [docs/HF_JOBS.md](docs/HF_JOBS.md)
-
-Most working research notes live under:
-- [training/replay_pack/](training/replay_pack)
-
-## What needs help
-
-Best contributions now:
-- more exact civilian lifeline eval cases
-- more controls and false-positive traps
-- stronger map readability and mobile polish
-- better benchmark slices for transfer testing
-- tooling for freezing and reviewing real Sentinel pairs
+- More exact-site internal train rows, especially calibrated `defer` cases.
+- More frozen internal gold eval rows before making strong model claims.
+- Better action calibration for the adapter so it does not over-fire on controls.
+- Stronger judge-facing demo polish around first-click evidence review.
+- More current conflict/disruption leads in the registry, refreshed safely and explainably.
