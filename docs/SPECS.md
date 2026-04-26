@@ -41,6 +41,30 @@
 
 ## Alert schema
 
+Runtime alerts remain compact, but the VLM prompt and v2 training rows should be evidence-first:
+
+```json
+{
+  "visual_evidence_tags": ["burn_scar", "damaged_port_or_logistics_apron"],
+  "evidence_strength": "strong",
+  "damage_mechanism": "fire_or_burn",
+  "visibility_quality": "clear",
+  "negative_type": "none",
+  "bbox_norm": [0.19, 0.26, 0.73, 0.84],
+  "bbox_quality": "tight",
+  "change_confidence": 0.89,
+  "civilian_infrastructure_type": "grain_port",
+  "event_type": "probable_large_scale_disruption",
+  "severity": "high",
+  "civilian_impact": "shipping_or_aid_disruption",
+  "rationale": "Large terminal burn scar is visible versus baseline.",
+  "triage_action": "downlink_now"
+}
+```
+
+The runtime parser still accepts the legacy compact candidate shape and normalizes
+evidence-first candidates into this alert candidate shape:
+
 ```json
 {
   "alert_id": "blk_00017",

@@ -35,11 +35,47 @@ class CandidatePromptBuilder:
 
 _SYSTEM_PROMPT = """You are Blackline Atlas candidate generation.
 Return one JSON object only.
-Return a candidate, not a full alert.
+Return an evidence-first candidate, not a full alert.
 Do not add markdown, prose, or code fences.
 Never omit required keys.
-Confidence must be a numeric decimal between 0.0 and 1.0.
+change_confidence must be a numeric decimal between 0.0 and 1.0.
 Never use words like low, medium, or high for confidence.
+
+Required JSON keys only, in this order:
+visual_evidence_tags
+evidence_strength
+damage_mechanism
+visibility_quality
+negative_type
+bbox_norm
+bbox_quality
+change_confidence
+civilian_infrastructure_type
+event_type
+severity
+civilian_impact
+rationale
+triage_action
+
+Allowed visual_evidence_tags:
+no_visible_change | low_visibility | sar_speckle_or_modality_artifact |
+seasonal_or_lighting_change | construction_or_non_conflict_change |
+collapsed_building | roof_loss | missing_building_footprint | debris_field |
+burn_scar | blast_or_crater_scarring | damaged_warehouse_block |
+damaged_port_or_logistics_apron | damaged_bridge_or_access_span |
+damaged_water_or_power_facility | damaged_market_or_civilian_cluster |
+large_rubble_field | broad_urban_destruction
+Allowed evidence_strength: none | weak | moderate | strong
+Allowed damage_mechanism:
+none | explosion_or_blast | fire_or_burn | structural_collapse |
+access_obstruction | unknown_conflict_damage | non_conflict_change |
+modality_artifact | low_visibility
+Allowed visibility_quality: clear | usable | low_visibility | obscured | cross_modality
+Allowed negative_type:
+none | unchanged_control | low_visibility | sar_speckle_or_modality_artifact |
+seasonal_or_lighting_change | construction_or_non_conflict_change |
+unrelated_land_change
+Allowed bbox_quality: none | tight | coarse | weak_whole_tile
 
 Allowed event_type:
 probable_large_scale_disruption | probable_surface_change |
@@ -49,18 +85,19 @@ Allowed civilian_impact:
 shipping_or_aid_disruption | logistics_delay | trade_disruption |
 civilian_facility_disruption | public_mobility_disruption |
 water_service_disruption | no_material_impact
-Allowed action: discard | defer | downlink_now
+Allowed triage_action: discard | defer | downlink_now
 
-Required JSON keys only:
-event_type
-severity
-confidence
-bbox
-civilian_impact
-why
-action
+Visual evidence guidance:
+- positive tags must be visible in the image pair, not inferred from the region name
+- no_visible_change means the civilian site looks materially stable versus baseline
+- sar_speckle_or_modality_artifact means apparent change is likely caused by modality,
+  radar speckle, or viewing geometry rather than disruption
+- construction_or_non_conflict_change means visible change is plausible but not
+  conflict disruption
+- weak whole-tile boxes should be marked bbox_quality=weak_whole_tile and downgraded
+  unless broad_urban_destruction genuinely fills the tile
 
-Event guidance:
+Derived event guidance:
 - probable_large_scale_disruption: major structural loss, burn scar,
   collapse, or large facility-footprint damage
 - if an intact civilian facility block in the baseline is visibly blown out,
@@ -82,8 +119,10 @@ Action guidance:
 
 Formatting guidance:
 - if event_type=no_event then civilian_impact must be no_material_impact
-- if event_type=no_event then action must be discard
-- why must always be one short plain sentence"""
+- if event_type=no_event then triage_action must be discard
+- if triage_action=discard then evidence_strength should be none or weak
+- bbox_norm may be null when no defensible visible evidence box exists
+- rationale must always be one short plain sentence"""
 
 
 def _build_user_prompt(
@@ -119,10 +158,11 @@ Baseline frame
 Task
 - compare current frame against baseline
 - focus on macro-scale civilian disruption only
-- bbox must be normalized [x1, y1, x2, y2]
-- confidence must be numeric like 0.84, never a word
+- label visible evidence first, then derive triage_action
+- bbox_norm must be normalized [x1, y1, x2, y2] or null
+- change_confidence must be numeric like 0.84, never a word
 - always return all required keys, even for no_event
-- use action=discard for malformed, weak, or no-event cases
+- use triage_action=discard for malformed, weak, or no-event cases
 - if major civilian infrastructure damage is clearly visible, do not use no_event
 - if a large civilian facility block is visibly lost or burned, prefer
   probable_large_scale_disruption or defer over no_event

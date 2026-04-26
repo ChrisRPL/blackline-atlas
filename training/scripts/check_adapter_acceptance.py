@@ -72,6 +72,13 @@ def check_adapter_acceptance(
         failures.append("base and adapter summaries must use the same frozen gold dataset")
     if adapter_stats["schema_valid"] < base_stats["schema_valid"]:
         failures.append("adapter schema_valid count regressed")
+    if adapter_stats["evidence_case_count"] > 0:
+        if adapter_stats["evidence_case_count"] != base_stats["evidence_case_count"]:
+            failures.append("base and adapter summaries must use the same evidence-labeled cases")
+        if adapter_stats["evidence_schema_valid"] < base_stats["evidence_schema_valid"]:
+            failures.append("adapter evidence_schema_valid count regressed")
+        if adapter_stats["evidence_tags_match"] < base_stats["evidence_tags_match"]:
+            failures.append("adapter evidence_tags_match count regressed")
     if adapter_stats["action_match"] <= base_stats["action_match"]:
         failures.append("adapter action_match count must strictly beat base")
     if adapter_stats["false_positive_count"] > base_stats["false_positive_count"]:
@@ -96,6 +103,8 @@ def check_adapter_acceptance(
             "requires_same_case_count": True,
             "requires_same_expected_actions": True,
             "requires_schema_valid_not_worse": True,
+            "requires_evidence_schema_valid_not_worse": True,
+            "requires_evidence_tags_match_not_worse": True,
             "requires_action_match_strictly_better": True,
             "requires_false_positive_not_worse": True,
             "requires_downlink_recall_strictly_better": not allow_equal_positive_recall,
@@ -123,8 +132,11 @@ def _extract_stats(summary: dict[str, Any]) -> dict[str, Any]:
     expected_positive_count = expected_action_counts.get("downlink_now", 0)
     return {
         "total_cases": int(summary.get("total_cases") or 0),
+        "evidence_case_count": int(summary.get("evidence_case_count") or 0),
         "passed": bool(summary.get("passed")),
         "schema_valid": int(metrics.get("schema_valid") or 0),
+        "evidence_schema_valid": int(metrics.get("evidence_schema_valid") or 0),
+        "evidence_tags_match": int(metrics.get("evidence_tags_match") or 0),
         "action_match": int(metrics.get("action_match") or 0),
         "false_positive_count": int(metrics.get("false_positive_count") or 0),
         "pass_count": int(metrics.get("pass_count") or 0),

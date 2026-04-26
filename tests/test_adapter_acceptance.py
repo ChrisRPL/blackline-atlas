@@ -50,6 +50,29 @@ def test_adapter_acceptance_rejects_all_discard_adapter(tmp_path: Path) -> None:
     assert "adapter predicted zero downlink_now rows on a positive gold set" in result["failures"]
 
 
+def test_adapter_acceptance_rejects_evidence_tag_regression(tmp_path: Path) -> None:
+    base_path = tmp_path / "base.json"
+    adapter_path = tmp_path / "adapter.json"
+    base = _summary(correct_positive_count=1)
+    adapter = _summary(correct_positive_count=2)
+    base["evidence_case_count"] = 4
+    adapter["evidence_case_count"] = 4
+    base["metrics"]["evidence_schema_valid"] = 4
+    adapter["metrics"]["evidence_schema_valid"] = 4
+    base["metrics"]["evidence_tags_match"] = 4
+    adapter["metrics"]["evidence_tags_match"] = 3
+    base_path.write_text(json.dumps(base) + "\n", encoding="utf-8")
+    adapter_path.write_text(json.dumps(adapter) + "\n", encoding="utf-8")
+
+    result = check_adapter_acceptance(
+        base_summary_path=base_path,
+        adapter_summary_path=adapter_path,
+    )
+
+    assert result["accepted"] is False
+    assert "adapter evidence_tags_match count regressed" in result["failures"]
+
+
 def _summary(*, correct_positive_count: int) -> dict[str, object]:
     cases = [
         _case("discard", "discard", action_match=True),

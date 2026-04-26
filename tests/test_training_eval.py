@@ -147,6 +147,55 @@ def test_eval_structured_outputs_flags_core_field_drift(tmp_path: Path) -> None:
     assert "event_type expected" in summary["cases"][0]["errors"][0]
 
 
+def test_eval_structured_outputs_scores_evidence_first_rows(tmp_path: Path) -> None:
+    _, dataset_path = build_dataset.write_replay_pack(tmp_path)
+    rows = [
+        json.loads(line)
+        for line in dataset_path.read_text(encoding="utf-8").splitlines()
+        if line.strip()
+    ]
+    evidence = {
+        "visual_evidence_tags": ["burn_scar", "damaged_port_or_logistics_apron"],
+        "evidence_strength": "strong",
+        "damage_mechanism": "fire_or_burn",
+        "visibility_quality": "clear",
+        "negative_type": "none",
+        "bbox_norm": [0.19, 0.26, 0.73, 0.84],
+        "bbox_quality": "tight",
+        "change_confidence": 0.89,
+        "civilian_infrastructure_type": "grain_port",
+        "event_type": "probable_large_scale_disruption",
+        "severity": "high",
+        "civilian_impact": "shipping_or_aid_disruption",
+        "rationale": "Large terminal burn scar is visible versus baseline.",
+        "triage_action": "downlink_now",
+    }
+    rows[0]["model_output_text"] = json.dumps(evidence)
+    rows[0]["expected_evidence_candidate"] = evidence
+    rows[0]["expected_candidate"] = {
+        "event_type": "probable_large_scale_disruption",
+        "severity": "high",
+        "confidence": 0.89,
+        "bbox": [0.19, 0.26, 0.73, 0.84],
+        "civilian_impact": "shipping_or_aid_disruption",
+        "why": "Large terminal burn scar is visible versus baseline.",
+        "action": "downlink_now",
+    }
+    evidence_dataset = tmp_path / "evidence.jsonl"
+    evidence_dataset.write_text(
+        "".join(json.dumps(row) + "\n" for row in rows[:1]),
+        encoding="utf-8",
+    )
+
+    summary = eval_structured_outputs.evaluate_dataset(evidence_dataset)
+
+    assert summary["passed"] is True
+    assert summary["evidence_case_count"] == 1
+    assert summary["metrics"]["evidence_schema_valid"] == 1
+    assert summary["metrics"]["evidence_tags_match"] == 1
+    assert summary["metrics"]["action_match"] == 1
+
+
 def test_eval_structured_outputs_fails_empty_dataset(tmp_path: Path) -> None:
     dataset_path = tmp_path / "empty.jsonl"
     dataset_path.write_text("", encoding="utf-8")

@@ -73,6 +73,30 @@ def test_structured_alert_pipeline_rejects_invalid_or_discard_outputs() -> None:
     assert discard.alert is None
 
 
+def test_structured_alert_pipeline_accepts_evidence_first_candidate_json() -> None:
+    pipeline = StructuredAlertPipeline(model_version="lfm2.5-vl-450m-prompted")
+
+    candidate = pipeline.parse_candidate(
+        raw_output_text=(
+            '{"visual_evidence_tags":["burn_scar","damaged_port_or_logistics_apron"],'
+            '"evidence_strength":"strong","damage_mechanism":"fire_or_burn",'
+            '"visibility_quality":"clear","negative_type":"none",'
+            '"bbox_norm":[0.19,0.26,0.73,0.84],"bbox_quality":"tight",'
+            '"change_confidence":0.89,"civilian_infrastructure_type":"grain_port",'
+            '"event_type":"probable_large_scale_disruption","severity":"high",'
+            '"civilian_impact":"shipping_or_aid_disruption",'
+            '"rationale":"Large terminal burn scar is visible versus baseline.",'
+            '"triage_action":"downlink_now"}'
+        )
+    )
+
+    assert candidate is not None
+    assert candidate.action == "downlink_now"
+    assert candidate.confidence == 0.89
+    assert candidate.bbox == (0.19, 0.26, 0.73, 0.84)
+    assert candidate.why == "Large terminal burn scar is visible versus baseline."
+
+
 def test_structured_alert_pipeline_repairs_qualitative_confidence_strings() -> None:
     pipeline = StructuredAlertPipeline(model_version="lfm2.5-vl-450m-prompted")
 

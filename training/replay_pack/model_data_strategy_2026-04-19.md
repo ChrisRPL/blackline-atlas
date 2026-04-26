@@ -136,10 +136,36 @@ Current VLM gap:
 
 Most important next pieces:
 
-1. evaluate `lfm25_vl_sft_train_hf_aux_v7` on frozen Blackline gold
-2. accept the adapter only if it beats the base model without increasing false positives
-3. keep finding internal `defer` and hard-negative rows
-4. ask `ml-intern` to scale public auxiliary train toward `4,000+` rows only if adapter eval shows useful transfer
+1. move the VLM lane from policy-first labels to evidence-first labels
+   - evidence tags before `triage_action`
+   - hard negatives explicitly labeled by negative type
+   - modality artifacts marked rather than hidden
+2. keep finding internal `defer` and hard-negative rows
+3. require the next adapter to beat the base model without increasing false positives
+4. ask `ml-intern` to scale public auxiliary train only when rows include evidence primitives,
+   not only `discard | defer | downlink_now`
+
+Evidence-first row target:
+
+- required visual evidence fields:
+  - `visual_evidence_tags`
+  - `evidence_strength`
+  - `damage_mechanism`
+  - `visibility_quality`
+  - `negative_type`
+  - `bbox_norm`
+  - `bbox_quality`
+  - `change_confidence`
+  - `civilian_infrastructure_type`
+  - `rationale`
+  - `triage_action`
+- positive visual tags should be visible in the image pair, not inferred from location
+- hard-negative tags are first-class:
+  - `no_visible_change`
+  - `sar_speckle_or_modality_artifact`
+  - `seasonal_or_lighting_change`
+  - `construction_or_non_conflict_change`
+  - `low_visibility`
 
 ## What the agent model still needs
 

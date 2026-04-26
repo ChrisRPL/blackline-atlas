@@ -26,10 +26,13 @@ def test_candidate_prompt_builder_targets_candidate_json_only() -> None:
         baseline=_baseline_frame(),
     )
 
-    assert "Return a candidate, not a full alert." in prompt.system
+    assert "Return an evidence-first candidate, not a full alert." in prompt.system
     assert "Do not add markdown, prose, or code fences." in prompt.system
     assert "Never omit required keys." in prompt.system
-    assert "Confidence must be a numeric decimal between 0.0 and 1.0." in prompt.system
+    assert "change_confidence must be a numeric decimal between 0.0 and 1.0." in prompt.system
+    assert "visual_evidence_tags" in prompt.system
+    assert "sar_speckle_or_modality_artifact" in prompt.system
+    assert "bbox_quality" in prompt.system
     assert "probable_large_scale_disruption: major structural loss" in prompt.system
     assert "grain silos destroyed" in prompt.system
     assert "if event_type=no_event then civilian_impact must be no_material_impact" in prompt.system
@@ -39,10 +42,11 @@ def test_candidate_prompt_builder_targets_candidate_json_only() -> None:
     assert "frame_id: cur_demo_port_01_20260414" in prompt.user
     assert "frame_id: base_demo_port_01_20250901" in prompt.user
     assert "overlay_ref: fixtures/demo_port_01/overlay-2026-04-14.png" in prompt.user
-    assert "confidence must be numeric like 0.84" in prompt.user
+    assert "label visible evidence first, then derive triage_action" in prompt.user
+    assert "change_confidence must be numeric like 0.84" in prompt.user
     assert "always return all required keys" in prompt.user
     assert "if you choose no_event, use civilian_impact=no_material_impact" in prompt.user
-    assert "action=discard" in prompt.user
+    assert "triage_action=discard" in prompt.user
 
 
 def test_prompted_candidate_model_builds_minimal_multimodal_payload() -> None:

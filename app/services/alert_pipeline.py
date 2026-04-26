@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from pydantic import ValidationError
 
 from app.schemas.alert import Alert, AlertCandidate, AlertSource
+from app.schemas.evidence_candidate import normalize_evidence_first_payload
 
 
 @dataclass(frozen=True)
@@ -126,6 +127,12 @@ def _unwrap_payload(payload: object) -> object:
 
 def _normalize_payload(payload: dict[str, object]) -> dict[str, object]:
     normalized = dict(payload)
+    if "triage_action" in normalized or "bbox_norm" in normalized:
+        try:
+            normalized = normalize_evidence_first_payload(normalized)
+        except ValidationError:
+            return normalized
+
     confidence = normalized.get("confidence")
     if isinstance(confidence, str):
         mapped = _normalize_confidence_string(confidence)

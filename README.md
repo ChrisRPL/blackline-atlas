@@ -92,6 +92,7 @@ Why this matters:
 - The adapter learned formatting and became much more schema-stable.
 - It also became too eager to emit `defer` or `downlink_now`.
 - We keep the model work honest by requiring improvement on frozen Blackline cases, not only training loss.
+- The next dataset lane is evidence-first: visible damage/noise tags before final `triage_action`.
 
 ## Architecture
 

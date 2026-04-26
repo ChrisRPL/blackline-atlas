@@ -67,11 +67,11 @@ Use three separate lanes:
    - job:
      - inspect one selected site or one shortlisted lead
      - compare current vs baseline
-     - emit strict structured alert candidate
+     - emit strict evidence-first structured candidate
    - training need now:
      - yes, eventually
    - eval need:
-     - image-pair -> strict JSON
+     - image-pair -> visual evidence JSON -> triage action
 
 Rule:
 
@@ -99,6 +99,8 @@ In the globe-first product, this narrows further:
 Measure:
 - JSON validity
 - enum correctness
+- evidence-tag validity
+- evidence-tag match on evidence-labeled rows
 - bbox validity
 - action calibration
 - false positives
@@ -114,6 +116,7 @@ Keep separate eval tracks:
   - area/category/site grounding
   - camera / selection intent
 - VLM:
+  - visual evidence tags before policy action
   - action accuracy
   - false positives
   - `defer` calibration
@@ -149,6 +152,13 @@ Keep separate eval tracks:
 Current state:
 
 - the non-demo gold eval pack is now frozen at `22` exact-site rows
+- the old policy-first prompt is replaced by an evidence-first candidate contract
+  - required evidence fields include `visual_evidence_tags`, `evidence_strength`,
+    `damage_mechanism`, `visibility_quality`, `negative_type`, `bbox_norm`,
+    `bbox_quality`, `change_confidence`, `civilian_infrastructure_type`,
+    `rationale`, and `triage_action`
+  - legacy `action`/`confidence` candidate JSON remains accepted by the runtime
+    parser for replay safety
 - next step is local capture freeze plus the first train-prep corpus build
 - LEAP-compatible VLM SFT export now comes from the same frozen candidate corpus, not a parallel ad hoc format
 - `training/scripts/train_adapter.py` is now the config-first prep seam for train/eval artifacts and run metadata
@@ -225,6 +235,7 @@ Checkpoint eval rule:
   - `downlink_now` recall strictly better than base
   - false positives not worse than base
   - schema validity not worse than base
+  - evidence-schema validity and evidence-tag match not worse on v2 evidence-labeled eval
 
 Use the trainer only after:
 
@@ -264,6 +275,8 @@ This means Blackline should keep:
 7. our stricter structured eval outside the trainer:
    - action accuracy
    - schema-valid rate
+   - evidence-schema-valid rate
+   - evidence-tag-match rate
    - bbox-valid rate
    - false-positive rate
    - `defer` calibration

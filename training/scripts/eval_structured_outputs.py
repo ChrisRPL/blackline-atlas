@@ -14,6 +14,12 @@ if str(ROOT) not in sys.path:
 from pydantic import ValidationError  # noqa: E402
 
 from app.schemas.alert import Alert, AlertCandidate  # noqa: E402
+from app.schemas.evidence_candidate import (  # noqa: E402
+    EVIDENCE_FIRST_KEYS,
+    EvidenceFirstCandidate,
+    is_evidence_first_payload,
+    normalize_evidence_first_payload,
+)
 from app.schemas.metrics import Metrics  # noqa: E402
 from training.scripts.build_dataset import (  # noqa: E402
     DEFAULT_DATASET_NAME,
@@ -22,7 +28,7 @@ from training.scripts.build_dataset import (  # noqa: E402
 
 DEFAULT_DATASET_PATH = DEFAULT_OUTPUT_DIR / DEFAULT_DATASET_NAME
 ACTION_KEYS = ("discard", "defer", "downlink_now")
-PREDICTION_FIELDS = set(AlertCandidate.model_fields)
+PREDICTION_FIELDS = set(AlertCandidate.model_fields) | EVIDENCE_FIRST_KEYS
 CORE_MATCH_FIELDS = (
     "event_type",
     "severity",
@@ -52,6 +58,8 @@ def evaluate_dataset(
         "dataset_metrics_valid": sum(result["dataset_metrics_valid"] for result in results),
         "json_valid": sum(result["json_valid"] for result in results),
         "schema_valid": sum(result["schema_valid"] for result in results),
+        "evidence_schema_valid": sum(result["evidence_schema_valid"] for result in results),
+        "evidence_tags_match": sum(result["evidence_tags_match"] for result in results),
         "bbox_valid": sum(result["bbox_valid"] for result in results),
         "core_fields_match": sum(result["core_fields_match"] for result in results),
         "action_match": sum(result["action_match"] for result in results),
@@ -70,12 +78,21 @@ def evaluate_dataset(
             "pass_rate": _safe_rate(metrics["pass_count"], total_cases),
             "json_valid_rate": _safe_rate(metrics["json_valid"], total_cases),
             "schema_valid_rate": _safe_rate(metrics["schema_valid"], total_cases),
+            "evidence_schema_valid_rate": _safe_rate(
+                metrics["evidence_schema_valid"],
+                _evidence_case_count(results),
+            ),
+            "evidence_tags_match_rate": _safe_rate(
+                metrics["evidence_tags_match"],
+                _evidence_case_count(results),
+            ),
             "bbox_valid_rate": _safe_rate(metrics["bbox_valid"], total_cases),
             "core_fields_match_rate": _safe_rate(metrics["core_fields_match"], total_cases),
             "action_match_rate": _safe_rate(metrics["action_match"], total_cases),
         },
         "expected_action_counts": _fill_action_counts(expected_actions),
         "predicted_action_counts": _fill_action_counts(predicted_actions),
+        "evidence_case_count": _evidence_case_count(results),
         "cases": results,
     }
     return summary
@@ -121,6 +138,7 @@ def _evaluate_case(case: dict[str, Any], prediction_entry: dict[str, Any] | None
     errors: list[str] = []
     expected_candidate = case["expected_candidate"]
     expected_action = case["expected_action"]
+    expected_evidence = case.get("expected_evidence_candidate")
     dataset_metrics_valid = True
 
     try:
@@ -136,6 +154,9 @@ def _evaluate_case(case: dict[str, Any], prediction_entry: dict[str, Any] | None
         "dataset_metrics_valid": dataset_metrics_valid,
         "json_valid": False,
         "schema_valid": False,
+        "evidence_required": expected_evidence is not None,
+        "evidence_schema_valid": False,
+        "evidence_tags_match": False,
         "bbox_valid": False,
         "core_fields_match": False,
         "action_match": False,
@@ -154,9 +175,28 @@ def _evaluate_case(case: dict[str, Any], prediction_entry: dict[str, Any] | None
         return result
 
     result["json_valid"] = True
+    normalized_payload = payload
+
+    if is_evidence_first_payload(payload):
+        try:
+            evidence = EvidenceFirstCandidate.model_validate(payload)
+            result["evidence_schema_valid"] = True
+            normalized_payload = normalize_evidence_first_payload(payload)
+            if expected_evidence is not None:
+                evidence_mismatches = _collect_evidence_field_mismatches(
+                    expected_evidence,
+                    evidence.model_dump(mode="json"),
+                )
+                result["evidence_tags_match"] = not evidence_mismatches
+                if evidence_mismatches:
+                    result["errors"].append(
+                        "evidence mismatch: " + ", ".join(evidence_mismatches),
+                    )
+        except ValidationError as exc:
+            result["errors"].append(f"evidence schema validation failed: {exc.errors()[0]['msg']}")
 
     try:
-        candidate = AlertCandidate.model_validate(payload)
+        candidate = AlertCandidate.model_validate(normalized_payload)
     except ValidationError as exc:
         result["errors"].append(f"schema validation failed: {exc.errors()[0]['msg']}")
         return result
@@ -188,6 +228,8 @@ def _evaluate_case(case: dict[str, Any], prediction_entry: dict[str, Any] | None
         result["dataset_metrics_valid"]
         and result["json_valid"]
         and result["schema_valid"]
+        and (not result["evidence_required"] or result["evidence_schema_valid"])
+        and (not result["evidence_required"] or result["evidence_tags_match"])
         and result["bbox_valid"]
         and result["core_fields_match"]
         and result["action_match"]
@@ -220,6 +262,10 @@ def _load_cases(dataset_path: Path) -> list[dict[str, Any]]:
         case["expected_metrics"] = Metrics.model_validate(
             entry["expected_metrics"],
         ).model_dump(mode="json")
+        if "expected_evidence_candidate" in entry:
+            case["expected_evidence_candidate"] = EvidenceFirstCandidate.model_validate(
+                entry["expected_evidence_candidate"],
+            ).model_dump(mode="json")
         cases.append(case)
     return cases
 
@@ -304,8 +350,32 @@ def _collect_core_field_mismatches(
     return mismatches
 
 
+def _collect_evidence_field_mismatches(
+    expected: dict[str, Any],
+    predicted: dict[str, Any],
+) -> list[str]:
+    fields = (
+        "visual_evidence_tags",
+        "evidence_strength",
+        "damage_mechanism",
+        "visibility_quality",
+        "negative_type",
+        "bbox_quality",
+        "triage_action",
+    )
+    mismatches = []
+    for field in fields:
+        if predicted[field] != expected[field]:
+            mismatches.append(f"{field} expected {expected[field]!r} got {predicted[field]!r}")
+    return mismatches
+
+
 def _fill_action_counts(counter: Counter[str]) -> dict[str, int]:
     return {action: counter.get(action, 0) for action in ACTION_KEYS}
+
+
+def _evidence_case_count(results: list[dict[str, Any]]) -> int:
+    return sum(result["evidence_required"] for result in results)
 
 
 def _safe_rate(value: int, total: int) -> float:
