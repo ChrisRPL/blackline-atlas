@@ -68,6 +68,11 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         help="Actually submit the HF job. Without this flag, only print the plan.",
     )
     parser.add_argument(
+        "--upload-only",
+        action="store_true",
+        help="Upload bundle metadata and archive, then stop before submitting an HF job.",
+    )
+    parser.add_argument(
         "--remote-script",
         type=Path,
         default=DEFAULT_REMOTE_SCRIPT,
@@ -123,7 +128,10 @@ def main(argv: list[str] | None = None) -> int:
     )
     job_spec = build_remote_job_spec(config=config)
 
-    if not args.submit:
+    if args.submit and args.upload_only:
+        raise ValueError("--submit and --upload-only are mutually exclusive")
+
+    if not args.submit and not args.upload_only:
         print(f"bundle_repo_id={bundle_repo_id}")
         print(f"bundle_path={path_in_repo}")
         print(f"remote_script={args.remote_script}")
@@ -154,6 +162,23 @@ def main(argv: list[str] | None = None) -> int:
         token=token,
         commit_message=f"Upload Blackline train bundle for {config.run_name}",
     )
+
+    if args.upload_only:
+        _write_bundle_submit_status(
+            bundle_manifest=bundle_manifest,
+            bundle_repo_id=bundle_repo_id,
+            bundle_path=path_in_repo,
+            submit_status="upload_succeeded_not_submitted",
+            submit_error=None,
+        )
+        print("status=upload_succeeded_not_submitted")
+        print(f"bundle_repo_id={bundle_repo_id}")
+        print(f"bundle_path={path_in_repo}")
+        print(f"publish_adapter_repo_id={publish_adapter_repo_id}")
+        print(f"generated_config={plan.generated_config_path}")
+        print(json.dumps(job_spec, indent=2, sort_keys=True))
+        return 0
+
     try:
         job_info = api.run_uv_job(
             script=str(args.remote_script),
