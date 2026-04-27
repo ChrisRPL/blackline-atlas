@@ -209,6 +209,7 @@ vendor/leap-finetune/
 work/
 session_logs/
 satellite-disruption-triage-aux-v2/
+satellite-disruption-triage-aux-v2-1/
 AGENTS.md
 docs/local/
 wiki/local/
