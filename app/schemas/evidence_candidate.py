@@ -30,26 +30,53 @@ EvidenceStrength = Literal["none", "weak", "moderate", "strong"]
 DamageMechanism = Literal[
     "none",
     "explosion_or_blast",
+    "explosion_blast",
     "fire_or_burn",
+    "fire_burning",
     "structural_collapse",
     "access_obstruction",
+    "airstrike_or_artillery",
+    "ground_assault",
+    "earthquake_shaking",
+    "flood_inundation",
     "unknown_conflict_damage",
+    "unknown_conflict",
+    "unclear_human_made",
     "non_conflict_change",
     "modality_artifact",
     "low_visibility",
 ]
-VisibilityQuality = Literal["clear", "usable", "low_visibility", "obscured", "cross_modality"]
+VisibilityQuality = Literal[
+    "excellent",
+    "good",
+    "fair",
+    "poor",
+    "unusable",
+    "clear",
+    "usable",
+    "low_visibility",
+    "obscured",
+    "cross_modality",
+]
 NegativeType = Literal[
     "none",
     "unchanged_control",
+    "unchanged_civilian_site",
+    "near_conflict_no_damage",
     "low_visibility",
+    "low_visibility_cloud",
     "sar_speckle_or_modality_artifact",
+    "sar_speckle_artifact",
     "seasonal_or_lighting_change",
+    "seasonal_lighting_change",
     "construction_or_non_conflict_change",
+    "construction_non_conflict",
+    "modality_mismatch",
     "unrelated_land_change",
 ]
-BBoxQuality = Literal["none", "tight", "coarse", "weak_whole_tile"]
+BBoxQuality = Literal["none", "null", "tight", "coarse", "weak_whole_tile"]
 CivilianInfrastructureType = Literal[
+    "none",
     "grain_port",
     "grain_storage_complex",
     "container_port",
@@ -66,6 +93,15 @@ CivilianInfrastructureType = Literal[
     "market_or_commercial_cluster",
     "power_or_energy_infrastructure",
     "unknown_civilian_infrastructure",
+    "residential_block",
+    "apartment_complex",
+    "port_logistics_apron",
+    "market_bazaar",
+    "warehouse_storage",
+    "water_treatment",
+    "hospital_clinic",
+    "school_university",
+    "bridge_access_span",
 ]
 
 
@@ -79,11 +115,11 @@ class EvidenceFirstCandidate(BaseModel):
     bbox_quality: BBoxQuality
     change_confidence: float = Field(ge=0.0, le=1.0)
     civilian_infrastructure_type: CivilianInfrastructureType
-    event_type: EventType
-    severity: Severity
-    civilian_impact: CivilianImpact
     rationale: str
     triage_action: Action
+    event_type: EventType | None = None
+    severity: Severity | None = None
+    civilian_impact: CivilianImpact | None = None
 
     @field_validator("bbox_norm")
     @classmethod
@@ -104,9 +140,9 @@ class EvidenceFirstCandidate(BaseModel):
     def validate_bbox_policy(self) -> EvidenceFirstCandidate:
         if self.triage_action == "downlink_now" and self.bbox_norm is None:
             raise ValueError("downlink_now requires a defensible bbox_norm")
-        if self.bbox_norm is None and self.bbox_quality != "none":
-            raise ValueError("bbox_quality must be none when bbox_norm is null")
-        if self.bbox_norm is not None and self.bbox_quality == "none":
+        if self.bbox_norm is None and self.bbox_quality not in {"none", "null"}:
+            raise ValueError("bbox_quality must be none or null when bbox_norm is null")
+        if self.bbox_norm is not None and self.bbox_quality in {"none", "null"}:
             raise ValueError("bbox_quality must describe any non-null bbox_norm")
         return self
 
@@ -134,11 +170,55 @@ def normalize_evidence_first_payload(payload: dict[str, object]) -> dict[str, ob
     evidence = EvidenceFirstCandidate.model_validate(payload)
     bbox = evidence.bbox_norm or (0.0, 0.0, 1.0, 1.0)
     return {
-        "event_type": evidence.event_type,
-        "severity": evidence.severity,
+        "event_type": evidence.event_type or _derive_event_type(evidence),
+        "severity": evidence.severity or _derive_severity(evidence),
         "confidence": evidence.change_confidence,
         "bbox": bbox,
-        "civilian_impact": evidence.civilian_impact,
+        "civilian_impact": evidence.civilian_impact or _derive_civilian_impact(evidence),
         "why": evidence.rationale,
         "action": evidence.triage_action,
     }
+
+
+def _derive_event_type(evidence: EvidenceFirstCandidate) -> EventType:
+    if evidence.triage_action == "discard":
+        return "no_event"
+    if (
+        "damaged_bridge_or_access_span" in evidence.visual_evidence_tags
+        or evidence.damage_mechanism == "access_obstruction"
+        or evidence.civilian_infrastructure_type == "bridge_access_span"
+    ):
+        return "probable_access_obstruction"
+    if evidence.triage_action == "defer" or evidence.evidence_strength in {"weak", "moderate"}:
+        return "probable_surface_change"
+    return "probable_large_scale_disruption"
+
+
+def _derive_severity(evidence: EvidenceFirstCandidate) -> Severity:
+    if evidence.triage_action == "discard":
+        return "low"
+    if evidence.triage_action == "defer" or evidence.evidence_strength == "moderate":
+        return "medium"
+    return "high"
+
+
+def _derive_civilian_impact(evidence: EvidenceFirstCandidate) -> CivilianImpact:
+    if evidence.triage_action == "discard":
+        return "no_material_impact"
+    infrastructure = evidence.civilian_infrastructure_type
+    if infrastructure in {"water_infrastructure", "water_treatment"}:
+        return "water_service_disruption"
+    if infrastructure in {"bridge", "bridge_access_span", "road_access_corridor", "rail_yard"}:
+        return "public_mobility_disruption"
+    if infrastructure in {
+        "grain_port",
+        "grain_storage_complex",
+        "container_port",
+        "port_logistics_apron",
+        "logistics_hub",
+        "aid_corridor_node",
+        "aid_warehouse_cluster",
+        "warehouse_storage",
+    }:
+        return "shipping_or_aid_disruption"
+    return "civilian_facility_disruption"

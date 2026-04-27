@@ -97,6 +97,28 @@ def test_structured_alert_pipeline_accepts_evidence_first_candidate_json() -> No
     assert candidate.why == "Large terminal burn scar is visible versus baseline."
 
 
+def test_structured_alert_pipeline_derives_alert_fields_from_v2_evidence_only_json() -> None:
+    pipeline = StructuredAlertPipeline(model_version="lfm2.5-vl-450m-prompted")
+
+    candidate = pipeline.parse_candidate(
+        raw_output_text=(
+            '{"visual_evidence_tags":["debris_field"],'
+            '"evidence_strength":"strong","damage_mechanism":"airstrike_or_artillery",'
+            '"visibility_quality":"excellent","negative_type":"none",'
+            '"bbox_norm":[0.25,0.49,0.54,0.59],"bbox_quality":"tight",'
+            '"change_confidence":0.914,"civilian_infrastructure_type":"apartment_complex",'
+            '"rationale":"Visible debris field affects a civilian apartment complex.",'
+            '"triage_action":"downlink_now"}'
+        )
+    )
+
+    assert candidate is not None
+    assert candidate.event_type == "probable_large_scale_disruption"
+    assert candidate.severity == "high"
+    assert candidate.civilian_impact == "civilian_facility_disruption"
+    assert candidate.action == "downlink_now"
+
+
 def test_structured_alert_pipeline_repairs_qualitative_confidence_strings() -> None:
     pipeline = StructuredAlertPipeline(model_version="lfm2.5-vl-450m-prompted")
 

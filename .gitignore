@@ -208,6 +208,7 @@ vendor/huggingface-skills/
 vendor/leap-finetune/
 work/
 session_logs/
+satellite-disruption-triage-aux-v2/
 AGENTS.md
 docs/local/
 wiki/local/

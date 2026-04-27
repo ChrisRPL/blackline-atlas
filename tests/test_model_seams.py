@@ -33,9 +33,9 @@ def test_candidate_prompt_builder_targets_candidate_json_only() -> None:
     assert "visual_evidence_tags" in prompt.system
     assert "sar_speckle_or_modality_artifact" in prompt.system
     assert "bbox_quality" in prompt.system
-    assert "probable_large_scale_disruption: major structural loss" in prompt.system
-    assert "grain silos destroyed" in prompt.system
-    assert "if event_type=no_event then civilian_impact must be no_material_impact" in prompt.system
+    assert "airstrike_or_artillery" in prompt.system
+    assert "residential_block" in prompt.system
+    assert "triage_action" in prompt.system
     assert "alert_id" not in prompt.system
     assert "source" not in prompt.system
     assert "asset_id: demo_port_01" in prompt.user
@@ -45,7 +45,7 @@ def test_candidate_prompt_builder_targets_candidate_json_only() -> None:
     assert "label visible evidence first, then derive triage_action" in prompt.user
     assert "change_confidence must be numeric like 0.84" in prompt.user
     assert "always return all required keys" in prompt.user
-    assert "if you choose no_event, use civilian_impact=no_material_impact" in prompt.user
+    assert "do not use no_visible_change" in prompt.user
     assert "triage_action=discard" in prompt.user
 
 
@@ -117,7 +117,7 @@ def test_prompted_candidate_model_exposes_prompt_build_step() -> None:
         baseline=_baseline_frame(),
     )
 
-    assert "probable_access_obstruction" in prompt.system
+    assert "damaged_bridge_or_access_span" in prompt.system
     assert prompt.render().startswith("You are Blackline Atlas candidate generation.")
 
 

@@ -47,23 +47,21 @@ Runtime alerts remain compact, but the VLM prompt and v2 training rows should be
 {
   "visual_evidence_tags": ["burn_scar", "damaged_port_or_logistics_apron"],
   "evidence_strength": "strong",
-  "damage_mechanism": "fire_or_burn",
-  "visibility_quality": "clear",
+  "damage_mechanism": "fire_burning",
+  "visibility_quality": "good",
   "negative_type": "none",
   "bbox_norm": [0.19, 0.26, 0.73, 0.84],
   "bbox_quality": "tight",
   "change_confidence": 0.89,
-  "civilian_infrastructure_type": "grain_port",
-  "event_type": "probable_large_scale_disruption",
-  "severity": "high",
-  "civilian_impact": "shipping_or_aid_disruption",
+  "civilian_infrastructure_type": "port_logistics_apron",
   "rationale": "Large terminal burn scar is visible versus baseline.",
   "triage_action": "downlink_now"
 }
 ```
 
 The runtime parser still accepts the legacy compact candidate shape and normalizes
-evidence-first candidates into this alert candidate shape:
+evidence-first candidates into this alert candidate shape by deriving
+`event_type`, `severity`, and `civilian_impact` from the evidence fields:
 
 ```json
 {
