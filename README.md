@@ -79,6 +79,7 @@ Primary VLM target:
 - Base model: [`LiquidAI/LFM2.5-VL-450M`](https://huggingface.co/LiquidAI/LFM2.5-VL-450M)
 - Adapter: [`ChrisRPL/blackline-atlas-lfm25-vl-sft-train-hf-aux-v8-adapter`](https://huggingface.co/ChrisRPL/blackline-atlas-lfm25-vl-sft-train-hf-aux-v8-adapter)
 - Main auxiliary dataset: [`ChrisRPL/satellite-disruption-triage-aux-v2-1`](https://huggingface.co/datasets/ChrisRPL/satellite-disruption-triage-aux-v2-1)
+- Calibration/gold repair dataset: [`ChrisRPL/satellite-disruption-triage-aux-v2-2`](https://huggingface.co/datasets/ChrisRPL/satellite-disruption-triage-aux-v2-2)
 
 Latest training result:
 
@@ -100,7 +101,7 @@ Why this matters:
 - The product smoke still misses positive disruption examples, so it is not demo-critical.
 - v8 improves structured-output survival on the small smoke, but still predicts zero `downlink_now` rows on the positive subset.
 - We keep the model work honest by requiring improvement on frozen Blackline cases, not only training loss.
-- The next dataset lane is evidence-first: visible damage/noise tags before final `triage_action`.
+- The next dataset lane is v2.2 calibration: 144 real explosion rows with balanced held-out eval and evidence-first labels before final `triage_action`.
 
 ## Architecture
 
