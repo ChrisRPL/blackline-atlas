@@ -119,6 +119,27 @@ def test_structured_alert_pipeline_derives_alert_fields_from_v2_evidence_only_js
     assert candidate.action == "downlink_now"
 
 
+def test_structured_alert_pipeline_accepts_common_evidence_aliases() -> None:
+    pipeline = StructuredAlertPipeline(model_version="lfm2.5-vl-450m-prompted")
+
+    candidate = pipeline.parse_candidate(
+        raw_output_text=(
+            '{"visual_evidence_tags":["no_visible_change"],'
+            '"evidence_strength":"weak","damage_mechanism":"construction_non_conflict",'
+            '"visibility_quality":"weak","negative_type":"construction_non_conflict",'
+            '"bbox_norm":null,"bbox_quality":"weak_whole_tile",'
+            '"change_confidence":0.31,"civilian_infrastructure_type":"none",'
+            '"rationale":"Visible change looks non-conflict and weak.",'
+            '"triage_action":"discard"}'
+        )
+    )
+
+    assert candidate is not None
+    assert candidate.action == "discard"
+    assert candidate.event_type == "no_event"
+    assert candidate.bbox == (0.0, 0.0, 1.0, 1.0)
+
+
 def test_structured_alert_pipeline_repairs_qualitative_confidence_strings() -> None:
     pipeline = StructuredAlertPipeline(model_version="lfm2.5-vl-450m-prompted")
 

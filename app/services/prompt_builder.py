@@ -65,8 +65,9 @@ large_rubble_field | broad_urban_destruction
 Allowed evidence_strength: none | weak | moderate | strong
 Allowed damage_mechanism:
 none | explosion_blast | airstrike_or_artillery | ground_assault |
-fire_burning | flood_inundation | earthquake_shaking | unknown_conflict |
-unclear_human_made
+fire_burning | structural_collapse | access_obstruction | flood_inundation |
+earthquake_shaking | unknown_conflict | unclear_human_made |
+non_conflict_change | modality_artifact | low_visibility
 Allowed visibility_quality: excellent | good | fair | poor | unusable
 Allowed negative_type:
 none | unchanged_civilian_site | near_conflict_no_damage |

@@ -264,6 +264,28 @@ def test_build_liquid_conversation_keeps_prompt_text_then_current_then_baseline(
     assert conversation[1]["content"][2] == {"type": "image", "image": "baseline-image"}
 
 
+def test_load_candidate_eval_cases_can_rebuild_runtime_evidence_prompt(tmp_path: Path) -> None:
+    dataset_path = _write_eval_case_dataset(
+        tmp_path=tmp_path,
+        case_id="bridge_case",
+        current_rel="images/bridge_case/current.png",
+        baseline_rel="images/bridge_case/baseline.png",
+    )
+
+    case = run_lfm25_vl_prompted_eval.load_candidate_eval_cases(
+        dataset_path,
+        prompt_mode="runtime_evidence",
+    )[0]
+
+    assert case.prompt["system"].startswith("You are Blackline Atlas candidate generation.")
+    assert "Return an evidence-first candidate, not a full alert." in case.prompt["system"]
+    assert "visual_evidence_tags" in case.prompt["system"]
+    assert "Frozen system prompt" not in case.prompt["system"]
+    assert "label visible evidence first, then derive triage_action" in case.prompt["user"]
+    assert case.current_image_path in case.prompt["user"]
+    assert case.baseline_image_path in case.prompt["user"]
+
+
 def test_http_candidate_text_runner_uses_frozen_prompt_and_images(tmp_path: Path) -> None:
     image_root = tmp_path / "images" / "bridge_case"
     image_root.mkdir(parents=True)
@@ -362,10 +384,19 @@ def test_http_candidate_text_runner_does_not_fallback_to_expected_output(tmp_pat
 
 def test_parse_args_accepts_adapter_ref() -> None:
     args = run_lfm25_vl_prompted_eval.parse_args(
-        ["--adapter-ref", "ChrisRPL/blackline-atlas-adapter"]
+        [
+            "--adapter-ref",
+            "ChrisRPL/blackline-atlas-adapter",
+            "--prompt-mode",
+            "runtime_evidence",
+            "--max-new-tokens",
+            "512",
+        ]
     )
 
     assert args.adapter_ref == "ChrisRPL/blackline-atlas-adapter"
+    assert args.prompt_mode == "runtime_evidence"
+    assert args.max_new_tokens == 512
 
 
 def test_load_transformers_runner_wraps_base_model_with_peft_adapter(monkeypatch) -> None:

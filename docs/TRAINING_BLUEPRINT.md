@@ -208,8 +208,9 @@ Current state:
     - HF Job `69efd6e8d2c8bd8662bd13bf`
     - diagnostic eval loss `2.7993 -> 1.2974`
   - latest product smoke:
-    - base `1 / 5` action match, `5 / 5` schema valid, `0 / 3` downlink recall
-    - aux_v8 `1 / 5` action match, `5 / 5` schema valid, `0 / 3` downlink recall
+    - runtime evidence-first prompt plus alias-normalizing parser
+    - base `0 / 5` action match, `1 / 5` schema valid, `0 / 3` downlink recall
+    - aux_v8 `1 / 5` action match, `2 / 5` schema valid, `0 / 3` downlink recall
     - decision remains deterministic replay until frozen gold eval is beaten
 - use the same exact-site pair shape for:
   - prompted eval

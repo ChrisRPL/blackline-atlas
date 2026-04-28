@@ -187,7 +187,7 @@ class StubAtlasService:
             training_dataset="ChrisRPL/satellite-disruption-triage-aux-v2-1",
             frozen_gold_cases=22,
             reported_eval_cases=5,
-            reported_eval_scope="local_smoke_public_seed",
+            reported_eval_scope="runtime_evidence_public_seed_and_xbd_seed",
             decision="replay_safe_adapter_rejected",
             recommended_runtime="deterministic_replay",
             summary=(
@@ -196,21 +196,20 @@ class StubAtlasService:
                 "as the demo runtime until the adapter beats base on frozen gold."
             ),
             base_eval=ModelEvalScore(
-                action_match=1,
-                schema_valid=5,
+                action_match=0,
+                schema_valid=1,
                 downlink_recall=0,
                 downlink_total=3,
                 false_positives=0,
             ),
             adapter_eval=ModelEvalScore(
                 action_match=1,
-                schema_valid=5,
+                schema_valid=2,
                 downlink_recall=0,
                 downlink_total=3,
                 false_positives=0,
             ),
             acceptance_failures=[
-                "adapter action_match count must strictly beat base",
                 "adapter downlink_now recall must strictly beat base",
                 "adapter predicted zero downlink_now rows on a positive smoke set",
                 "full 22-case frozen gold eval still required before promotion",

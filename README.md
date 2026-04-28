@@ -87,18 +87,18 @@ Latest training result:
 - Diagnostic eval loss: `2.7993 -> 1.2974`
 - Published adapter size: `8.95 MB`
 
-Latest local product smoke result after safe-discard JSON repair:
+Latest local product smoke result with the runtime evidence-first prompt and alias-normalizing parser:
 
 | Model | Action Match | Schema Valid | Downlink Recall | False Positives | Decision |
 |---|---:|---:|---:|---:|---|
-| Prompted base | 1 / 5 | 5 / 5 | 0 / 3 | 0 | Baseline only |
-| `aux_v8` adapter | 1 / 5 | 5 / 5 | 0 / 3 | 0 | Reject for demo-critical use |
+| Prompted base | 0 / 5 | 1 / 5 | 0 / 3 | 0 | Baseline only |
+| `aux_v8` adapter | 1 / 5 | 2 / 5 | 0 / 3 | 0 | Reject for demo-critical use |
 
 Why this matters:
 
 - The adapter trains and publishes correctly, so the HF/LEAP path is working.
 - The product smoke still misses positive disruption examples, so it is not demo-critical.
-- Both base and v8 predicted zero `downlink_now` rows on the positive smoke subset.
+- v8 improves structured-output survival on the small smoke, but still predicts zero `downlink_now` rows on the positive subset.
 - We keep the model work honest by requiring improvement on frozen Blackline cases, not only training loss.
 - The next dataset lane is evidence-first: visible damage/noise tags before final `triage_action`.
 
@@ -258,7 +258,7 @@ Recent local gate:
 
 - `ruff check app tests training`: pass
 - `black --check app tests training`: pass
-- `pytest -q`: 276 passed
+- `pytest -q`: 284 passed
 
 ## Key Docs
 
@@ -273,6 +273,6 @@ Recent local gate:
 
 - More exact-site internal train rows, especially calibrated `defer` cases.
 - More frozen internal gold eval rows before making strong model claims.
-- Better action calibration for the adapter so it does not over-fire on controls.
+- Better action calibration for the adapter so it does not under-call positive disruption cases.
 - Stronger judge-facing demo polish around first-click evidence review.
 - More current conflict/disruption leads in the registry, refreshed safely and explainably.

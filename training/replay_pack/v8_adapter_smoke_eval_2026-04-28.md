@@ -22,12 +22,19 @@ Training job:
 
 ## Result
 
-After safe-discard JSON repair:
+After switching the smoke to the runtime evidence-first prompt and adding narrow
+alias normalization for common model outputs:
 
 | Model | Cases | Action Match | Schema Valid | Downlink Recall | False Positives |
 | --- | ---: | ---: | ---: | ---: | ---: |
-| Base `LiquidAI/LFM2.5-VL-450M` | 5 | 1 | 5 | 0 / 3 | 0 |
-| v8 adapter | 5 | 1 | 5 | 0 / 3 | 0 |
+| Base `LiquidAI/LFM2.5-VL-450M` | 5 | 0 | 1 | 0 / 3 | 0 |
+| v8 adapter | 5 | 1 | 2 | 0 / 3 | 0 |
+
+Acceptance check on the 4-case xBD smoke:
+
+- `training/eval_runs/runtime-evidence-v8-xbd-seed/acceptance.json`
+- rejected because downlink recall is still `0 / 2`
+- rejected because v8 predicts zero `downlink_now` rows on a positive gold set
 
 ## Decision
 
@@ -36,7 +43,8 @@ Do not promote v8 to demo-critical runtime.
 Reason:
 
 - v8 trains and publishes correctly.
-- v8 does not beat the base model on product smoke.
+- v8 improves structured-output survival slightly on this tiny smoke.
+- v8 still does not solve the product-critical behavior.
 - both base and v8 miss positive disruption examples in this smoke.
 - v8 predicts zero `downlink_now` rows on a positive smoke set.
 - full frozen 22-case gold eval is still required before any adapter promotion claim.

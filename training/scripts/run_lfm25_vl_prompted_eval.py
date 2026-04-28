@@ -5,12 +5,13 @@ import json
 import os
 import sys
 from pathlib import Path
-from typing import Any, Protocol
+from typing import Any, Literal, Protocol
 
 ROOT = Path(__file__).resolve().parents[2]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
+from app.schemas.frame import FrameEnvelope, FrameRecord  # noqa: E402
 from app.schemas.model_payload import (  # noqa: E402
     CandidateImageInput,
     CandidateRequestPayload,
@@ -20,6 +21,7 @@ from app.schemas.training_corpus import BlacklineCandidateEvalRecord  # noqa: E4
 from app.services.alert_pipeline import StructuredAlertPipeline  # noqa: E402
 from app.services.model_gateway import ModelGateway, ModelGatewayTelemetry  # noqa: E402
 from app.services.model_provider import resolve_http_candidate_provider  # noqa: E402
+from app.services.prompt_builder import CandidatePrompt, CandidatePromptBuilder  # noqa: E402
 from app.services.vlm_conversation import build_candidate_user_content  # noqa: E402
 from training.scripts.eval_structured_outputs import evaluate_dataset  # noqa: E402
 
@@ -30,6 +32,8 @@ DEFAULT_DATASET_PATH = (
 DEFAULT_OUTPUT_DIR = ROOT / "training" / "eval_runs" / "lfm25-vl-prompted"
 DEFAULT_PREDICTIONS_NAME = "predictions.jsonl"
 DEFAULT_SUMMARY_NAME = "summary.json"
+DEFAULT_MAX_NEW_TOKENS = 384
+PromptMode = Literal["dataset", "runtime_evidence"]
 
 
 class CandidateTextGenerator(Protocol):
@@ -42,7 +46,7 @@ class TransformersLfm25Runner:
         *,
         model_id: str,
         adapter_ref: str | None = None,
-        max_new_tokens: int = 196,
+        max_new_tokens: int = DEFAULT_MAX_NEW_TOKENS,
     ) -> None:
         self.model_id = model_id
         self.adapter_ref = adapter_ref
@@ -168,28 +172,46 @@ def build_frozen_candidate_payload(
     )
 
 
-def load_candidate_eval_cases(dataset_path: Path) -> list[BlacklineCandidateEvalRecord]:
+def load_candidate_eval_cases(
+    dataset_path: Path,
+    *,
+    prompt_mode: PromptMode = "dataset",
+) -> list[BlacklineCandidateEvalRecord]:
     cases = []
     dataset_root = dataset_path.parent.resolve()
     for line in dataset_path.read_text(encoding="utf-8").splitlines():
         if not line.strip():
             continue
         case = BlacklineCandidateEvalRecord.model_validate(json.loads(line))
-        cases.append(
-            case.model_copy(
-                update={
-                    "current_image_path": _resolve_image_path(
-                        case.current_image_path,
-                        dataset_root,
-                    ),
-                    "baseline_image_path": _resolve_image_path(
-                        case.baseline_image_path,
-                        dataset_root,
-                    ),
-                }
-            )
+        resolved = case.model_copy(
+            update={
+                "current_image_path": _resolve_image_path(
+                    case.current_image_path,
+                    dataset_root,
+                ),
+                "baseline_image_path": _resolve_image_path(
+                    case.baseline_image_path,
+                    dataset_root,
+                ),
+            }
         )
+        if prompt_mode == "runtime_evidence":
+            prompt = build_runtime_evidence_prompt(resolved)
+            resolved = resolved.model_copy(
+                update={"prompt": {"system": prompt.system, "user": prompt.user}},
+            )
+        cases.append(resolved)
     return cases
+
+
+def build_runtime_evidence_prompt(case: BlacklineCandidateEvalRecord) -> CandidatePrompt:
+    current = _frame_envelope_from_case(case, side="current")
+    baseline = _frame_envelope_from_case(case, side="baseline")
+    return CandidatePromptBuilder().build(
+        asset=case.asset,
+        current=current,
+        baseline=baseline,
+    )
 
 
 def write_prompted_predictions(
@@ -198,9 +220,10 @@ def write_prompted_predictions(
     output_path: Path,
     generator: CandidateTextGenerator,
     model_id: str,
+    prompt_mode: PromptMode = "dataset",
     limit: int | None = None,
 ) -> tuple[Path, tuple[str, ...]]:
-    cases = load_candidate_eval_cases(dataset_path)
+    cases = load_candidate_eval_cases(dataset_path, prompt_mode=prompt_mode)
     if limit is not None:
         cases = cases[:limit]
     case_ids = tuple(case.case_id for case in cases)
@@ -230,6 +253,8 @@ def run_prompted_eval(
     model_id: str = DEFAULT_MODEL_ID,
     adapter_ref: str | None = None,
     limit: int | None = None,
+    prompt_mode: PromptMode = "dataset",
+    max_new_tokens: int = DEFAULT_MAX_NEW_TOKENS,
     predictions_name: str = DEFAULT_PREDICTIONS_NAME,
     summary_name: str = DEFAULT_SUMMARY_NAME,
     generator: CandidateTextGenerator | None = None,
@@ -241,12 +266,14 @@ def run_prompted_eval(
     generator = generator or TransformersLfm25Runner(
         model_id=model_id,
         adapter_ref=adapter_ref,
+        max_new_tokens=max_new_tokens,
     )
     predictions_path, case_ids = write_prompted_predictions(
         dataset_path=dataset_path,
         output_path=predictions_path,
         generator=generator,
         model_id=model_id,
+        prompt_mode=prompt_mode,
         limit=limit,
     )
     eval_dataset_path = _write_dataset_subset(
@@ -291,6 +318,24 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         default=None,
         help="Optional case limit for smoke runs.",
     )
+    parser.add_argument(
+        "--prompt-mode",
+        choices=("dataset", "runtime_evidence"),
+        default="dataset",
+        help=(
+            "Prompt source. 'dataset' reuses saved prompts; 'runtime_evidence' "
+            "rebuilds prompts with the current evidence-first runtime prompt builder."
+        ),
+    )
+    parser.add_argument(
+        "--max-new-tokens",
+        type=int,
+        default=DEFAULT_MAX_NEW_TOKENS,
+        help=(
+            "Maximum tokens to generate. Evidence-first JSON needs more headroom than "
+            f"legacy alert JSON. Default: {DEFAULT_MAX_NEW_TOKENS}"
+        ),
+    )
     return parser.parse_args(argv)
 
 
@@ -302,6 +347,8 @@ def main(argv: list[str] | None = None) -> int:
         model_id=args.model_id,
         adapter_ref=args.adapter_ref,
         limit=args.limit,
+        prompt_mode=args.prompt_mode,
+        max_new_tokens=args.max_new_tokens,
     )
     print(f"wrote {predictions_path}")
     print(f"wrote {summary_path}")
@@ -334,6 +381,34 @@ def _write_dataset_subset(
         encoding="utf-8",
     )
     return output_path
+
+
+def _frame_envelope_from_case(
+    case: BlacklineCandidateEvalRecord,
+    *,
+    side: Literal["current", "baseline"],
+) -> FrameEnvelope:
+    source = case.simsat.current if side == "current" else case.simsat.baseline
+    image_ref = case.current_image_path if side == "current" else case.baseline_image_path
+    frame_id = (
+        case.expected_alert.source.current_frame_id
+        if side == "current"
+        else case.expected_alert.source.baseline_frame_id
+    )
+    captured_at = source.datetime or source.requested_timestamp
+    return FrameEnvelope(
+        frame=FrameRecord(
+            frame_id=frame_id,
+            asset_id=case.asset.asset_id,
+            captured_at=captured_at,
+            image_ref=image_ref,
+            cloud_cover=source.cloud_cover,
+            source="candidate_eval",
+        ),
+        baseline_frame_id=(
+            case.expected_alert.source.baseline_frame_id if side == "current" else None
+        ),
+    )
 
 
 def _load_transformers_runner(

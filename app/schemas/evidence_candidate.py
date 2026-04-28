@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Literal
+from typing import Any, Literal
 
 from pydantic import BaseModel, Field, field_validator, model_validator
 
@@ -121,6 +121,40 @@ class EvidenceFirstCandidate(BaseModel):
     severity: Severity | None = None
     civilian_impact: CivilianImpact | None = None
 
+    @field_validator("damage_mechanism", mode="before")
+    @classmethod
+    def normalize_damage_mechanism(cls, value: object) -> object:
+        if not isinstance(value, str):
+            return value
+        return _DAMAGE_MECHANISM_ALIASES.get(value, value)
+
+    @field_validator("visibility_quality", mode="before")
+    @classmethod
+    def normalize_visibility_quality(cls, value: object) -> object:
+        if not isinstance(value, str):
+            return value
+        return _VISIBILITY_QUALITY_ALIASES.get(value, value)
+
+    @field_validator("bbox_quality", mode="before")
+    @classmethod
+    def normalize_bbox_quality(cls, value: object) -> object:
+        if value is None:
+            return "null"
+        return value
+
+    @model_validator(mode="before")
+    @classmethod
+    def normalize_bbox_quality_for_null_bbox(cls, data: Any) -> Any:
+        if not isinstance(data, dict):
+            return data
+        normalized = dict(data)
+        if (
+            normalized.get("bbox_norm") is None
+            and normalized.get("bbox_quality") == "weak_whole_tile"
+        ):
+            normalized["bbox_quality"] = "null"
+        return normalized
+
     @field_validator("bbox_norm")
     @classmethod
     def validate_bbox_norm(
@@ -159,6 +193,24 @@ EVIDENCE_FIRST_KEYS = {
     "civilian_infrastructure_type",
     "rationale",
     "triage_action",
+}
+
+_DAMAGE_MECHANISM_ALIASES = {
+    "blast_or_crater_scarring": "explosion_blast",
+    "collapsed_building": "structural_collapse",
+    "construction_non_conflict": "non_conflict_change",
+    "construction_or_non_conflict_change": "non_conflict_change",
+    "sar_speckle_artifact": "modality_artifact",
+    "sar_speckle_or_modality_artifact": "modality_artifact",
+    "seasonal_lighting_change": "non_conflict_change",
+    "seasonal_or_lighting_change": "non_conflict_change",
+    "modality_mismatch": "modality_artifact",
+}
+
+_VISIBILITY_QUALITY_ALIASES = {
+    "weak": "poor",
+    "limited": "poor",
+    "unclear": "poor",
 }
 
 

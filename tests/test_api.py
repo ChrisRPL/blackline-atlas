@@ -141,16 +141,16 @@ def test_model_status_endpoint_exposes_adapter_gate() -> None:
     assert payload["recommended_runtime"] == "deterministic_replay"
     assert payload["frozen_gold_cases"] == 22
     assert payload["reported_eval_cases"] == 5
-    assert payload["reported_eval_scope"] == "local_smoke_public_seed"
-    assert payload["base_eval"]["action_match"] == 1
+    assert payload["reported_eval_scope"] == "runtime_evidence_public_seed_and_xbd_seed"
+    assert payload["base_eval"]["action_match"] == 0
+    assert payload["base_eval"]["schema_valid"] == 1
     assert payload["adapter_eval"]["action_match"] == 1
-    assert payload["adapter_eval"]["schema_valid"] == 5
+    assert payload["adapter_eval"]["schema_valid"] == 2
     assert payload["adapter_eval"]["false_positives"] == 0
     assert payload["latest_training_job"] == "69efd6e8d2c8bd8662bd13bf"
     assert payload["training_eval_loss_start"] == 2.7993
     assert payload["training_eval_loss_final"] == 1.2974
     assert payload["acceptance_failures"] == [
-        "adapter action_match count must strictly beat base",
         "adapter downlink_now recall must strictly beat base",
         "adapter predicted zero downlink_now rows on a positive smoke set",
         "full 22-case frozen gold eval still required before promotion",
