@@ -19,6 +19,8 @@ DEFAULT_SOURCE_ROOT = ROOT / "work" / "dataset_v21" / "satellite-disruption-tria
 DEFAULT_OUTPUT_DIR = ROOT / "training" / "corpus" / "lfm25-vl-train-01-aux-v8"
 DEFAULT_RUN_NAME = "lfm25_vl_sft_train_hf_aux_v8"
 DEFAULT_REPLAY_DATASET = ROOT / "training" / "replay_pack" / "train_01.jsonl"
+DEFAULT_SOURCE_DATASET_ID = "ChrisRPL/satellite-disruption-triage-aux-v2-1"
+DEFAULT_VERSION_LABEL = "satellite-disruption-triage-aux-v2.1"
 EVIDENCE_KEYS = (
     "visual_evidence_tags",
     "evidence_strength",
@@ -37,7 +39,7 @@ EVIDENCE_KEYS = (
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description=(
-            "Export satellite-disruption-triage-aux-v2.1 evidence-first rows into "
+            "Export satellite-disruption-triage evidence-first rows into "
             "LEAP-compatible VLM SFT files plus a Blackline dataset manifest."
         )
     )
@@ -45,6 +47,22 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--output-dir", type=Path, default=DEFAULT_OUTPUT_DIR)
     parser.add_argument("--run-name", default=DEFAULT_RUN_NAME)
     parser.add_argument("--replay-dataset", type=Path, default=DEFAULT_REPLAY_DATASET)
+    parser.add_argument("--train-file", default="train_flat.jsonl")
+    parser.add_argument("--eval-file", default="eval_flat.jsonl")
+    parser.add_argument("--calibration-file", default="eval_calibration_flat.jsonl")
+    parser.add_argument("--source-dataset-id", default=DEFAULT_SOURCE_DATASET_ID)
+    parser.add_argument("--version-label", default=DEFAULT_VERSION_LABEL)
+    parser.add_argument(
+        "--max-eval-cases",
+        type=int,
+        default=24,
+        help="Max eval cases recorded in the dataset manifest.",
+    )
+    parser.add_argument(
+        "--save-full-predictions",
+        action="store_true",
+        help="Record that downstream eval should retain full predictions.",
+    )
     return parser.parse_args(argv)
 
 
@@ -57,11 +75,12 @@ def main(argv: list[str] | None = None) -> int:
     leap_dir.mkdir(parents=True, exist_ok=True)
     support_dir.mkdir(parents=True, exist_ok=True)
 
-    train_rows = _load_and_validate_rows(source_root=source_root, filename="train_flat.jsonl")
-    eval_rows = _load_and_validate_rows(source_root=source_root, filename="eval_flat.jsonl")
+    train_rows = _load_and_validate_rows(source_root=source_root, filename=args.train_file)
+    eval_rows = _load_and_validate_rows(source_root=source_root, filename=args.eval_file)
     calibration_rows = _load_and_validate_rows(
         source_root=source_root,
-        filename="eval_calibration_flat.jsonl",
+        filename=args.calibration_file,
+        required=False,
     )
 
     train_records = [_build_record(row=row, source_split="train") for row in train_rows]
@@ -91,7 +110,10 @@ def main(argv: list[str] | None = None) -> int:
         json.dumps(
             {
                 "version": "evidence-vlm-sft-v1",
-                "policy": "v2.1 event-held-out train/eval; calibration retained separately",
+                "policy": (
+                    f"{args.version_label} event-held-out train/eval; "
+                    "calibration retained separately"
+                ),
                 "split_counts": {"train": len(train_rows), "dev": len(eval_rows)},
                 "cases": [],
             },
@@ -104,6 +126,11 @@ def main(argv: list[str] | None = None) -> int:
 
     summary = _build_summary(
         source_root=source_root,
+        source_dataset_id=args.source_dataset_id,
+        version_label=args.version_label,
+        train_file=args.train_file,
+        eval_file=args.eval_file,
+        calibration_file=args.calibration_file,
         train_rows=train_rows,
         eval_rows=eval_rows,
         calibration_rows=calibration_rows,
@@ -115,16 +142,16 @@ def main(argv: list[str] | None = None) -> int:
         run_name=args.run_name,
         purpose=(
             "Evidence-first diagnostic SFT for civilian conflict-disruption triage "
-            "using satellite-disruption-triage-aux-v2.1."
+            f"using {args.version_label}."
         ),
         model_id="LiquidAI/LFM2.5-VL-450M",
         task_kind="candidate_json_sft",
         source_replay_dataset=str(args.replay_dataset.resolve()),
-        source_aux_candidate_eval_datasets=[str(source_root)],
+        source_aux_candidate_eval_datasets=[args.source_dataset_id, str(source_root)],
         capture_manifest=str(source_root / "metadata.json"),
         liquid_grounding_dataset=str(empty_grounding_path),
         source_internal_candidate_eval_dataset=str(empty_candidate_eval_path),
-        candidate_eval_dataset=str(source_root / "train_flat.jsonl"),
+        candidate_eval_dataset=str(source_root / args.train_file),
         splits_manifest=str(splits_path),
         image_root=str(source_root),
         leap_train_dataset=str(train_path),
@@ -138,8 +165,8 @@ def main(argv: list[str] | None = None) -> int:
         },
         eval_mode="smoke",
         benchmark_on_start=True,
-        max_eval_cases=24,
-        save_full_predictions=False,
+        max_eval_cases=args.max_eval_cases,
+        save_full_predictions=args.save_full_predictions,
         execution_environment="hf_jobs",
         output_dir="/outputs/blackline-train",
         hf_flavor="l4x1",
@@ -157,10 +184,17 @@ def main(argv: list[str] | None = None) -> int:
     return 0
 
 
-def _load_and_validate_rows(*, source_root: Path, filename: str) -> list[dict[str, Any]]:
+def _load_and_validate_rows(
+    *,
+    source_root: Path,
+    filename: str,
+    required: bool = True,
+) -> list[dict[str, Any]]:
     path = source_root / filename
     if not path.exists():
-        raise FileNotFoundError(f"missing v2.1 split: {path}")
+        if required:
+            raise FileNotFoundError(f"missing evidence split: {path}")
+        return []
     rows = [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines()]
     for row in rows:
         EvidenceFirstCandidate.model_validate(row)
@@ -176,7 +210,7 @@ def _build_record(*, row: dict[str, Any], source_split: str) -> LeapVLMSFTRecord
     return LeapVLMSFTRecord(
         record_id=f"{row['row_id']}__evidence_sft",
         case_id=str(row["row_id"]),
-        asset_id=f"satdis_v2_1_{row['row_id']}",
+        asset_id=f"satdis_{row['row_id']}",
         source_split=source_split,
         target_split=target_split,
         messages=[
@@ -236,15 +270,26 @@ def _assistant_json(row: dict[str, Any]) -> str:
 def _build_summary(
     *,
     source_root: Path,
+    source_dataset_id: str,
+    version_label: str,
+    train_file: str,
+    eval_file: str,
+    calibration_file: str,
     train_rows: list[dict[str, Any]],
     eval_rows: list[dict[str, Any]],
     calibration_rows: list[dict[str, Any]],
 ) -> dict[str, Any]:
     all_rows = train_rows + eval_rows
     return {
-        "version": "satellite-disruption-triage-aux-v2.1-evidence-vlm-sft",
+        "version": f"{version_label}-evidence-vlm-sft",
+        "source_dataset_id": source_dataset_id,
         "source_dataset": str(source_root),
         "image_root": str(source_root),
+        "source_files": {
+            "train": train_file,
+            "eval": eval_file,
+            "calibration": calibration_file,
+        },
         "total_records": len(all_rows),
         "train_records": len(train_rows),
         "eval_records": len(eval_rows),
@@ -259,8 +304,8 @@ def _build_summary(
         "modality_counts": dict(Counter(str(row["modality"]) for row in all_rows)),
         "event_counts": dict(Counter(str(row["source_event"]) for row in all_rows)),
         "export_note": (
-            "Evidence-first v2.1 rows are exported directly to LEAP VLM SFT. "
-            "Calibration rows are retained separately and are not mixed into train.jsonl."
+            f"Evidence-first {version_label} rows are exported directly to LEAP VLM SFT. "
+            "Calibration/eval-gold rows are retained separately and are not mixed into train.jsonl."
         ),
     }
 

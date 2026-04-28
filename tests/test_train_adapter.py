@@ -101,6 +101,26 @@ def test_load_train_adapter_config_from_checked_in_hf_aux_v7_yaml() -> None:
     ]
 
 
+def test_load_train_adapter_config_from_checked_in_hf_aux_v9_yaml() -> None:
+    config_path = ROOT / "training" / "configs" / "lfm25_vl_sft_train_hf_aux_v9.yaml"
+
+    config = train_adapter.load_train_adapter_config(config_path)
+
+    assert config.run_name == "lfm25_vl_sft_train_hf_aux_v9"
+    assert config.runtime.execution_environment == "hf_jobs"
+    assert config.eval.max_eval_cases == 51
+    assert config.eval.save_full_predictions is True
+    assert config.dataset.leap_output_dir == "training/corpus/lfm25-vl-train-01-aux-v9/leap_vlm_sft"
+    assert (
+        config.hf_job.publish_adapter_repo_id
+        == "ChrisRPL/blackline-atlas-lfm25-vl-sft-train-hf-aux-v9-adapter"
+    )
+    assert config.trainer is not None
+    assert "v2.2 eval_gold_sft is the promotion gate" in config.trainer.authoritative_eval_note
+    assert config.trainer.training_config.num_train_epochs == 2
+    assert config.trainer.training_config.learning_rate == 1.0e-5
+
+
 def test_build_train_adapter_plan_resolves_aux_candidate_eval_paths(tmp_path: Path) -> None:
     aux_path = (
         ROOT
