@@ -195,6 +195,8 @@ def _evaluate_case(case: dict[str, Any], prediction_entry: dict[str, Any] | None
         except ValidationError as exc:
             result["errors"].append(f"evidence schema validation failed: {exc.errors()[0]['msg']}")
 
+    _repair_safe_discard_payload(normalized_payload)
+
     try:
         candidate = AlertCandidate.model_validate(normalized_payload)
     except ValidationError as exc:
@@ -311,17 +313,11 @@ def _extract_prediction_payload(entry: dict[str, Any]) -> tuple[dict[str, Any] |
         raw_output = entry["raw_output"]
         if not isinstance(raw_output, str):
             return None, "raw_output must be a JSON string"
-        try:
-            payload = json.loads(raw_output)
-        except json.JSONDecodeError as exc:
-            return None, f"json parse failed: {exc.msg}"
-        if not isinstance(payload, dict):
-            return None, "raw_output must decode to an object"
-        return payload, None
+        return _extract_raw_output_payload(raw_output)
 
     for key in ("output", "prediction", "predicted_alert", "alert", "candidate"):
         if key in entry:
-            payload = entry[key]
+            payload = _unwrap_prediction_payload(entry[key])
             if isinstance(payload, dict):
                 return payload, None
             return None, f"{key} must be an object"
@@ -330,6 +326,69 @@ def _extract_prediction_payload(entry: dict[str, Any]) -> tuple[dict[str, Any] |
     if inferred:
         return inferred, None
     return None, "prediction missing output payload"
+
+
+def _extract_raw_output_payload(raw_output: str) -> tuple[dict[str, Any] | None, str | None]:
+    parse_errors: list[str] = []
+    for blob in _prediction_json_blobs(raw_output):
+        try:
+            payload = _unwrap_prediction_payload(json.loads(blob))
+        except json.JSONDecodeError as exc:
+            parse_errors.append(exc.msg)
+            continue
+        if isinstance(payload, dict):
+            return payload, None
+        return None, "raw_output must decode to an object"
+    if parse_errors:
+        return None, f"json parse failed: {parse_errors[0]}"
+    return None, "raw_output must decode to an object"
+
+
+def _prediction_json_blobs(raw_output: str) -> list[str]:
+    text = raw_output.strip()
+    if not text:
+        return []
+
+    blobs = [text]
+    fenced = _strip_json_fence(text)
+    if fenced != text:
+        blobs.append(fenced)
+
+    first_brace = text.find("{")
+    last_brace = text.rfind("}")
+    if first_brace != -1 and last_brace != -1 and first_brace < last_brace:
+        excerpt = text[first_brace : last_brace + 1]
+        if excerpt not in blobs:
+            blobs.append(excerpt)
+    return blobs
+
+
+def _strip_json_fence(text: str) -> str:
+    if not text.startswith("```"):
+        return text
+    lines = text.splitlines()
+    if lines and lines[0].startswith("```"):
+        lines = lines[1:]
+    if lines and lines[-1].startswith("```"):
+        lines = lines[:-1]
+    return "\n".join(lines).strip()
+
+
+def _unwrap_prediction_payload(payload: object) -> object:
+    if isinstance(payload, list) and len(payload) == 1 and isinstance(payload[0], dict):
+        return payload[0]
+    return payload
+
+
+def _repair_safe_discard_payload(payload: dict[str, Any]) -> None:
+    if payload.get("action") != "discard":
+        return
+    payload.setdefault("event_type", "no_event")
+    payload.setdefault("severity", "low")
+    payload.setdefault("confidence", 0.0)
+    payload.setdefault("bbox", [0.0, 0.0, 1.0, 1.0])
+    payload.setdefault("civilian_impact", "no_material_impact")
+    payload.setdefault("why", "Model returned discard with insufficient disruption evidence.")
 
 
 def _bbox_is_valid(bbox: tuple[float, float, float, float]) -> bool:

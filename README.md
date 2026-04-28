@@ -67,30 +67,38 @@ Out of scope:
 | Internal train | 33 exact-site train rows |
 | Auxiliary train | 2,417 public auxiliary rows |
 | Current train pool | 2,450 LEAP-exportable rows |
-| Latest adapter | `ChrisRPL/blackline-atlas-lfm25-vl-sft-train-hf-aux-v7-adapter` |
-| Adapter promotion | Rejected for demo-critical use until calibration improves |
+| Latest adapter | `ChrisRPL/blackline-atlas-lfm25-vl-sft-train-hf-aux-v8-adapter` |
+| Adapter promotion | Not promoted for demo-critical use; deterministic replay remains runtime |
 
-The latest adapter is useful research evidence: it improved JSON/schema reliability on the frozen gold set, but it over-fired on controls and failed the acceptance gate. The demo should therefore use deterministic replay and cached/prompted behavior unless a later adapter beats the base model on the frozen gold set.
+The latest adapter is useful research evidence: the v8 training job completed and eval loss improved, but local product smoke checks still miss positive disruption cases. The demo should therefore use deterministic replay and cached/prompted behavior unless a later adapter beats the base model on the frozen gold set.
 
 ## Model And Dataset Work
 
 Primary VLM target:
 
 - Base model: [`LiquidAI/LFM2.5-VL-450M`](https://huggingface.co/LiquidAI/LFM2.5-VL-450M)
-- Adapter: [`ChrisRPL/blackline-atlas-lfm25-vl-sft-train-hf-aux-v7-adapter`](https://huggingface.co/ChrisRPL/blackline-atlas-lfm25-vl-sft-train-hf-aux-v7-adapter)
-- Main auxiliary dataset: [`ChrisRPL/satellite-disruption-triage-aux-v1-3`](https://huggingface.co/datasets/ChrisRPL/satellite-disruption-triage-aux-v1-3)
+- Adapter: [`ChrisRPL/blackline-atlas-lfm25-vl-sft-train-hf-aux-v8-adapter`](https://huggingface.co/ChrisRPL/blackline-atlas-lfm25-vl-sft-train-hf-aux-v8-adapter)
+- Main auxiliary dataset: [`ChrisRPL/satellite-disruption-triage-aux-v2-1`](https://huggingface.co/datasets/ChrisRPL/satellite-disruption-triage-aux-v2-1)
 
-Latest local gold-eval result:
+Latest training result:
+
+- HF Job: [`69efd6e8d2c8bd8662bd13bf`](https://huggingface.co/jobs/ChrisRPL/69efd6e8d2c8bd8662bd13bf)
+- Steps: `299`
+- Diagnostic eval loss: `2.7993 -> 1.2974`
+- Published adapter size: `8.95 MB`
+
+Latest local product smoke result after safe-discard JSON repair:
 
 | Model | Action Match | Schema Valid | Downlink Recall | False Positives | Decision |
 |---|---:|---:|---:|---:|---|
-| Prompted base | 8 / 22 | 12 / 22 | 0 / 12 | 0 | Baseline only |
-| `aux_v7` adapter | 5 / 22 | 20 / 22 | 5 / 12 | 4 | Reject for demo-critical use |
+| Prompted base | 1 / 5 | 5 / 5 | 0 / 3 | 0 | Baseline only |
+| `aux_v8` adapter | 1 / 5 | 5 / 5 | 0 / 3 | 0 | Reject for demo-critical use |
 
 Why this matters:
 
-- The adapter learned formatting and became much more schema-stable.
-- It also became too eager to emit `defer` or `downlink_now`.
+- The adapter trains and publishes correctly, so the HF/LEAP path is working.
+- The product smoke still misses positive disruption examples, so it is not demo-critical.
+- Both base and v8 predicted zero `downlink_now` rows on the positive smoke subset.
 - We keep the model work honest by requiring improvement on frozen Blackline cases, not only training loss.
 - The next dataset lane is evidence-first: visible damage/noise tags before final `triage_action`.
 
@@ -205,7 +213,7 @@ Run adapter eval:
 python3 training/scripts/run_lfm25_vl_prompted_eval.py \
   --dataset /tmp/non_demo_corpus/blackline_candidate_eval.jsonl \
   --output-dir /tmp/non_demo_eval_adapter_full \
-  --adapter-ref ChrisRPL/blackline-atlas-lfm25-vl-sft-train-hf-aux-v7-adapter
+  --adapter-ref ChrisRPL/blackline-atlas-lfm25-vl-sft-train-hf-aux-v8-adapter
 ```
 
 Apply the promotion policy:
@@ -230,7 +238,7 @@ Current conflict-focused training config:
 
 ```bash
 python3 training/scripts/submit_train_backend_hf_job.py \
-  --config training/configs/lfm25_vl_sft_train_hf_aux_v7.yaml \
+  --config training/configs/lfm25_vl_sft_train_hf_aux_v8.yaml \
   --submit
 ```
 

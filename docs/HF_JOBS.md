@@ -44,22 +44,25 @@ Current remote path:
 
 ```bash
 python3 training/scripts/submit_train_backend_hf_job.py \
-  --config training/configs/lfm25_vl_sft_train_hf_aux_v7.yaml
+  --config training/configs/lfm25_vl_sft_train_hf_aux_v8.yaml
 ```
 
 Submit for real:
 
 ```bash
 python3 training/scripts/submit_train_backend_hf_job.py \
-  --config training/configs/lfm25_vl_sft_train_hf_aux_v7.yaml \
+  --config training/configs/lfm25_vl_sft_train_hf_aux_v8.yaml \
   --submit
 ```
 
 Recent remote configs:
 
 - `training/configs/lfm25_vl_sft_train_hf_aux_v6.yaml`: corrected serializer path with v1.1 auxiliary data
-- `training/configs/lfm25_vl_sft_train_hf_aux_v7.yaml`: current conflict-focused v1.3 run
-- latest completed adapter: `ChrisRPL/blackline-atlas-lfm25-vl-sft-train-hf-aux-v7-adapter`
+- `training/configs/lfm25_vl_sft_train_hf_aux_v7.yaml`: completed conflict-focused v1.3 run
+- `training/configs/lfm25_vl_sft_train_hf_aux_v8.yaml`: current evidence-first v2.1 run
+- latest completed adapter: `ChrisRPL/blackline-atlas-lfm25-vl-sft-train-hf-aux-v8-adapter`
+- latest completed job: `69efd6e8d2c8bd8662bd13bf`
+- latest diagnostic eval loss: `2.7993 -> 1.2974`
 
 What the submitter does:
 

@@ -183,33 +183,41 @@ class StubAtlasService:
     def get_model_status(self) -> ModelStatus:
         return ModelStatus(
             base_model="LiquidAI/LFM2.5-VL-450M",
-            candidate_adapter="ChrisRPL/blackline-atlas-lfm25-vl-sft-train-hf-aux-v7-adapter",
-            training_dataset="ChrisRPL/satellite-disruption-triage-aux-v1-3",
+            candidate_adapter="ChrisRPL/blackline-atlas-lfm25-vl-sft-train-hf-aux-v8-adapter",
+            training_dataset="ChrisRPL/satellite-disruption-triage-aux-v2-1",
             frozen_gold_cases=22,
+            reported_eval_cases=5,
+            reported_eval_scope="local_smoke_public_seed",
             decision="replay_safe_adapter_rejected",
             recommended_runtime="deterministic_replay",
             summary=(
-                "The aux_v7 adapter improved schema validity but failed promotion because "
-                "action match dropped and false positives increased on frozen gold."
+                "The aux_v8 adapter trained and published successfully, but local smoke "
+                "checks still miss positive disruption cases. Keep deterministic replay "
+                "as the demo runtime until the adapter beats base on frozen gold."
             ),
             base_eval=ModelEvalScore(
-                action_match=8,
-                schema_valid=12,
+                action_match=1,
+                schema_valid=5,
                 downlink_recall=0,
-                downlink_total=12,
+                downlink_total=3,
                 false_positives=0,
             ),
             adapter_eval=ModelEvalScore(
-                action_match=5,
-                schema_valid=20,
-                downlink_recall=5,
-                downlink_total=12,
-                false_positives=4,
+                action_match=1,
+                schema_valid=5,
+                downlink_recall=0,
+                downlink_total=3,
+                false_positives=0,
             ),
             acceptance_failures=[
                 "adapter action_match count must strictly beat base",
-                "adapter false positives must not exceed base",
+                "adapter downlink_now recall must strictly beat base",
+                "adapter predicted zero downlink_now rows on a positive smoke set",
+                "full 22-case frozen gold eval still required before promotion",
             ],
+            latest_training_job="69efd6e8d2c8bd8662bd13bf",
+            training_eval_loss_start=2.7993,
+            training_eval_loss_final=1.2974,
         )
 
     def list_assets(self) -> list[Asset]:

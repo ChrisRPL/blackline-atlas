@@ -20,9 +20,14 @@ class ModelStatus(BaseModel):
     candidate_adapter: str
     training_dataset: str
     frozen_gold_cases: int
+    reported_eval_cases: int
+    reported_eval_scope: str
     decision: ModelGateDecision
     recommended_runtime: Literal["deterministic_replay"]
     summary: str
     base_eval: ModelEvalScore
     adapter_eval: ModelEvalScore
     acceptance_failures: list[str]
+    latest_training_job: str | None = None
+    training_eval_loss_start: float | None = None
+    training_eval_loss_final: float | None = None

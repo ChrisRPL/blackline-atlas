@@ -134,18 +134,26 @@ def test_model_status_endpoint_exposes_adapter_gate() -> None:
     assert payload["base_model"] == "LiquidAI/LFM2.5-VL-450M"
     assert (
         payload["candidate_adapter"]
-        == "ChrisRPL/blackline-atlas-lfm25-vl-sft-train-hf-aux-v7-adapter"
+        == "ChrisRPL/blackline-atlas-lfm25-vl-sft-train-hf-aux-v8-adapter"
     )
+    assert payload["training_dataset"] == "ChrisRPL/satellite-disruption-triage-aux-v2-1"
     assert payload["decision"] == "replay_safe_adapter_rejected"
     assert payload["recommended_runtime"] == "deterministic_replay"
     assert payload["frozen_gold_cases"] == 22
-    assert payload["base_eval"]["action_match"] == 8
-    assert payload["adapter_eval"]["action_match"] == 5
-    assert payload["adapter_eval"]["schema_valid"] == 20
-    assert payload["adapter_eval"]["false_positives"] == 4
+    assert payload["reported_eval_cases"] == 5
+    assert payload["reported_eval_scope"] == "local_smoke_public_seed"
+    assert payload["base_eval"]["action_match"] == 1
+    assert payload["adapter_eval"]["action_match"] == 1
+    assert payload["adapter_eval"]["schema_valid"] == 5
+    assert payload["adapter_eval"]["false_positives"] == 0
+    assert payload["latest_training_job"] == "69efd6e8d2c8bd8662bd13bf"
+    assert payload["training_eval_loss_start"] == 2.7993
+    assert payload["training_eval_loss_final"] == 1.2974
     assert payload["acceptance_failures"] == [
         "adapter action_match count must strictly beat base",
-        "adapter false positives must not exceed base",
+        "adapter downlink_now recall must strictly beat base",
+        "adapter predicted zero downlink_now rows on a positive smoke set",
+        "full 22-case frozen gold eval still required before promotion",
     ]
 
 

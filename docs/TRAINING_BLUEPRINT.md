@@ -199,9 +199,18 @@ Current state:
     - checked-in `xBD` + `SpaceNet 8` seeds
     - widened `KOlegaBB/damage_assessment_ukraine` slices
   - current aux-backed HF train config:
-    - `training/configs/lfm25_vl_sft_train_hf_aux_v7.yaml`
+    - `training/configs/lfm25_vl_sft_train_hf_aux_v8.yaml`
   - latest completed adapter:
-    - `ChrisRPL/blackline-atlas-lfm25-vl-sft-train-hf-aux-v7-adapter`
+    - `ChrisRPL/blackline-atlas-lfm25-vl-sft-train-hf-aux-v8-adapter`
+  - latest training dataset:
+    - `ChrisRPL/satellite-disruption-triage-aux-v2-1`
+  - latest training result:
+    - HF Job `69efd6e8d2c8bd8662bd13bf`
+    - diagnostic eval loss `2.7993 -> 1.2974`
+  - latest product smoke:
+    - base `1 / 5` action match, `5 / 5` schema valid, `0 / 3` downlink recall
+    - aux_v8 `1 / 5` action match, `5 / 5` schema valid, `0 / 3` downlink recall
+    - decision remains deterministic replay until frozen gold eval is beaten
 - use the same exact-site pair shape for:
   - prompted eval
   - benchmark

@@ -361,15 +361,18 @@ function renderModelGate() {
   const adapterName = status.candidate_adapter.split("/").pop() || "adapter";
   const adapter = status.adapter_eval;
   const base = status.base_eval;
+  const evalCases = status.reported_eval_cases || status.frozen_gold_cases;
+  const evalScope = (status.reported_eval_scope || "frozen_gold").replaceAll("_", " ");
   dom.modelChip.textContent = "adapter gated";
   dom.modelChip.className = "chip degraded";
   dom.modelGateDecision.textContent = "Replay-safe mode";
   dom.modelGateSummary.textContent = status.summary;
   dom.modelGateStats.textContent = [
     `${adapterName}`,
-    `base ${base.action_match}/${status.frozen_gold_cases}`,
-    `adapter ${adapter.action_match}/${status.frozen_gold_cases}`,
-    `schema ${adapter.schema_valid}/${status.frozen_gold_cases}`,
+    evalScope,
+    `base ${base.action_match}/${evalCases}`,
+    `adapter ${adapter.action_match}/${evalCases}`,
+    `schema ${adapter.schema_valid}/${evalCases}`,
     `fp ${adapter.false_positives}`,
   ].join(" / ");
 }

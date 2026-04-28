@@ -133,3 +133,17 @@ def test_structured_alert_pipeline_repairs_qualitative_confidence_strings() -> N
     assert candidate is not None
     assert candidate.confidence == 0.9
     assert candidate.action == "discard"
+
+
+def test_structured_alert_pipeline_repairs_single_item_discard_arrays() -> None:
+    pipeline = StructuredAlertPipeline(model_version="lfm2.5-vl-450m-prompted")
+
+    candidate = pipeline.parse_candidate(
+        raw_output_text=('[{"bbox":[0.0,0.0,0.1,0.1],"confidence":0.0,"action":"discard"}]')
+    )
+
+    assert candidate is not None
+    assert candidate.event_type == "no_event"
+    assert candidate.severity == "low"
+    assert candidate.civilian_impact == "no_material_impact"
+    assert candidate.action == "discard"

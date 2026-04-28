@@ -115,6 +115,9 @@ def _strip_json_fence(text: str) -> str:
 
 
 def _unwrap_payload(payload: object) -> object:
+    if isinstance(payload, list) and len(payload) == 1 and isinstance(payload[0], dict):
+        return payload[0]
+
     if not isinstance(payload, dict):
         return payload
 
@@ -138,7 +141,20 @@ def _normalize_payload(payload: dict[str, object]) -> dict[str, object]:
         mapped = _normalize_confidence_string(confidence)
         if mapped is not None:
             normalized["confidence"] = mapped
+    _repair_safe_discard_payload(normalized)
     return normalized
+
+
+def _repair_safe_discard_payload(payload: dict[str, object]) -> None:
+    if payload.get("action") != "discard":
+        return
+
+    payload.setdefault("event_type", "no_event")
+    payload.setdefault("severity", "low")
+    payload.setdefault("confidence", 0.0)
+    payload.setdefault("bbox", [0.0, 0.0, 1.0, 1.0])
+    payload.setdefault("civilian_impact", "no_material_impact")
+    payload.setdefault("why", "Model returned discard with insufficient disruption evidence.")
 
 
 def _normalize_confidence_string(value: str) -> float | None:
