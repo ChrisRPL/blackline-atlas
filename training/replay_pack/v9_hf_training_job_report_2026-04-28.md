@@ -18,8 +18,9 @@ Submit the calibration-gated v9 adapter run for `LiquidAI/LFM2.5-VL-450M` using 
 ## Jobs
 
 - Canceled path-based attempt: `69f0a5f0d70108f37ace0f29`
-- Correct URL-based job: `69f0a6fed2c8bd8662bd1e64`
-- Job URL: `https://huggingface.co/jobs/ChrisRPL/69f0a6fed2c8bd8662bd1e64`
+- URL-based MCP-token job: `69f0a6fed2c8bd8662bd1e64`
+- Correct local-token wrapper job: `69f0a8afd70108f37ace0f44`
+- Job URL: `https://huggingface.co/jobs/ChrisRPL/69f0a8afd70108f37ace0f44`
 - Adapter target: `ChrisRPL/blackline-atlas-lfm25-vl-sft-train-hf-aux-v9-adapter`
 - Hardware: `l4x1`
 - Timeout: `8h`
@@ -28,6 +29,33 @@ The first job was canceled because inspection showed the HF command contained a 
 filesystem script path. The corrected job uses the pinned public runner script URL:
 
 `https://raw.githubusercontent.com/ChrisRPL/blackline-atlas/f7e2ee8/training/scripts/run_train_backend_hf_job.py`
+
+The second job used the URL correctly but failed at adapter publication with `403
+Forbidden` because the MCP `$HF_TOKEN` secret could not create/write under the
+`ChrisRPL` model namespace. The final wrapper job used the local `ChrisRPL` write
+token and completed successfully.
+
+## Training Result
+
+- Status: completed
+- Adapter published: `ChrisRPL/blackline-atlas-lfm25-vl-sft-train-hf-aux-v9-adapter`
+- Trainer steps: 21
+- Eval loss: `2.9309 -> 2.9173`
+- Assessment: training was stable but too weak to materially learn the required
+  evidence-first JSON behavior.
+
+## Smoke Eval Result
+
+Local 3-case eval-gold smoke:
+
+| Model | JSON valid | Evidence schema valid | Action match |
+| --- | ---: | ---: | ---: |
+| Base `LiquidAI/LFM2.5-VL-450M` | 3/3 | 0/3 | 0/3 |
+| v9 adapter | 3/3 | 0/3 | 0/3 |
+
+The adapter still emits descriptive nested JSON rather than the required
+`EvidenceFirstCandidate` object. Full 51-case evaluation is not useful until a
+run produces nonzero schema-valid outputs in smoke.
 
 ## Acceptance Gate
 

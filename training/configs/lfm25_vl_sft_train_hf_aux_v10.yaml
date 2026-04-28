@@ -1,0 +1,55 @@
+version: "2026-04-28"
+run_name: "lfm25_vl_sft_train_hf_aux_v10"
+purpose: "Schema-learning sanity run on satellite-disruption-triage-aux-v2.2 after v9 produced zero schema-valid eval-gold smoke outputs."
+dataset:
+  historical_endpoint: null
+  replay_dataset: "training/replay_pack/train_01.jsonl"
+  aux_candidate_eval_datasets: []
+  capture_overrides: null
+  capture_output_dir: "training/corpus/lfm25-vl-train-01/capture"
+  capture_manifest: "training/corpus/lfm25-vl-train-01/capture/simsat_capture_manifest.json"
+  corpus_output_dir: "training/corpus/lfm25-vl-train-01-aux-v10/corpus"
+  leap_output_dir: "training/corpus/lfm25-vl-train-01-aux-v10/leap_vlm_sft"
+  dataset_manifest_name: "dataset_manifest.json"
+model:
+  model_id: "LiquidAI/LFM2.5-VL-450M"
+  task_kind: "candidate_json_sft"
+eval:
+  mode: "smoke"
+  benchmark_on_start: true
+  max_eval_cases: 51
+  save_full_predictions: true
+runtime:
+  execution_environment: "hf_jobs"
+  editable_extras: "dev,vlm,train"
+  output_dir: "/outputs/blackline-train"
+hf_job:
+  flavor: "l4x1"
+  timeout: "8h"
+  publish_adapter_repo_id: "ChrisRPL/blackline-atlas-lfm25-vl-sft-train-hf-aux-v10-adapter"
+  publish_adapter_private: false
+trainer:
+  backend: "leap_finetune"
+  project_name: "blackline-atlas"
+  dataset_test_size: 0.1
+  dataset_limit: null
+  authoritative_eval_note: "v10 is a schema-learning sanity run after v9 failed eval-gold smoke. Promotion still requires v2.2 eval_gold_sft: schema-valid evidence JSON, improved action_match, nonzero downlink_now recall, and no false-positive regression."
+  training_config:
+    extends: "DEFAULT_VLM_SFT"
+    num_train_epochs: 10
+    per_device_train_batch_size: 1
+    gradient_accumulation_steps: 8
+    learning_rate: 5.0e-5
+    logging_steps: 10
+    eval_on_start: true
+    eval_strategy: "epoch"
+    save_strategy: "epoch"
+    save_total_limit: 1
+    warmup_ratio: 0.05
+    lr_scheduler_type: "cosine"
+  peft_config:
+    extends: "DEFAULT_VLM_LORA"
+    use_peft: true
+    r: 16
+    lora_alpha: 32
+    lora_dropout: 0.05

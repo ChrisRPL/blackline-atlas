@@ -121,6 +121,25 @@ def test_load_train_adapter_config_from_checked_in_hf_aux_v9_yaml() -> None:
     assert config.trainer.training_config.learning_rate == 1.0e-5
 
 
+def test_load_train_adapter_config_from_checked_in_hf_aux_v10_yaml() -> None:
+    config_path = ROOT / "training" / "configs" / "lfm25_vl_sft_train_hf_aux_v10.yaml"
+
+    config = train_adapter.load_train_adapter_config(config_path)
+
+    assert config.run_name == "lfm25_vl_sft_train_hf_aux_v10"
+    assert config.runtime.execution_environment == "hf_jobs"
+    assert (
+        config.hf_job.publish_adapter_repo_id
+        == "ChrisRPL/blackline-atlas-lfm25-vl-sft-train-hf-aux-v10-adapter"
+    )
+    assert config.trainer is not None
+    assert "schema-learning sanity run" in config.trainer.authoritative_eval_note
+    assert config.trainer.training_config.num_train_epochs == 10
+    assert config.trainer.training_config.learning_rate == 5.0e-5
+    assert config.trainer.peft_config.r == 16
+    assert config.trainer.peft_config.lora_alpha == 32
+
+
 def test_build_train_adapter_plan_resolves_aux_candidate_eval_paths(tmp_path: Path) -> None:
     aux_path = (
         ROOT
