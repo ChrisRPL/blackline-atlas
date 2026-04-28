@@ -40,3 +40,5 @@ def test_ui_shell_serves_same_origin_dashboard() -> None:
     assert "planner fallback" in response.text
     assert "renderPlannerChip" in static_response.text
     assert "renderModelGate" in static_response.text
+    assert "runtime ${runtime}" in static_response.text
+    assert "downlink ${adapter.downlink_recall}/${adapter.downlink_total}" in static_response.text
