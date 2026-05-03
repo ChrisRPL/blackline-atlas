@@ -4,39 +4,57 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Blackline Atlas</title>
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' fill='%2305090a'/%3E%3Cpath d='M12 48 32 10l20 38H12Z' fill='%23b7f2c1'/%3E%3C/svg%3E"
+    />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap"
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&family=Rajdhani:wght@500;600;700&display=swap"
       rel="stylesheet"
     />
     <link
       rel="stylesheet"
       href="https://unpkg.com/maplibre-gl@5.12.0/dist/maplibre-gl.css"
     />
-    <link rel="stylesheet" href="/ui-static/shell.css" />
+    <link rel="stylesheet" href="/ui-static/shell.css?v=20260430-5" />
     <script defer src="https://unpkg.com/maplibre-gl@5.12.0/dist/maplibre-gl.js"></script>
-    <script defer src="/ui-static/shell.js"></script>
+    <script defer src="/ui-static/shell.js?v=20260430-5"></script>
   </head>
   <body>
     <div class="shell">
       <header class="topbar">
-        <p class="badge">Blackline Atlas</p>
+        <div class="brand-block">
+          <p class="badge">Blackline Atlas</p>
+          <p class="theater-line">Theater of war</p>
+          <p class="mission-line">Global conflict theater / lifeline intelligence</p>
+        </div>
 
         <div class="topchips">
-          <span class="chip neutral" id="health-chip">connecting</span>
-          <span class="chip neutral" id="mode-chip">replay-safe</span>
-          <span class="chip neutral" id="model-chip">gate pending</span>
-          <span class="chip degraded" id="planner-chip" hidden>planner fallback</span>
-          <span class="chip neutral" id="alert-chip">0 alerts</span>
+          <span class="chip neutral" id="health-chip">checking system</span>
+          <span class="chip neutral" id="mode-chip">live feed loading</span>
+          <span class="chip neutral" id="model-chip" hidden>diagnostics</span>
+          <span class="chip degraded" id="planner-chip" hidden>planner degraded</span>
+          <span class="chip neutral" id="alert-chip">0 active alerts</span>
         </div>
       </header>
 
       <main class="workspace">
         <section class="panel map-panel">
           <div class="map-stage" id="map-stage">
-            <div class="map-canvas" id="map-canvas" aria-hidden="true"></div>
+            <div class="map-canvas" id="map-canvas" aria-label="Interactive conflict map"></div>
             <div class="map-wash"></div>
+            <div class="scan-sweep" aria-hidden="true"></div>
+
+            <div class="ops-ribbon" aria-live="polite">
+              <div>
+                <p class="ops-label">Situation report</p>
+                <h1 id="stage-title">Global conflict theater</h1>
+              </div>
+              <p id="stage-subtitle">Live geolocated reports initializing. Ask Atlas to focus a region.</p>
+              <p class="ops-clock" id="stage-clock">--:-- UTC</p>
+            </div>
 
             <div class="map-markers" id="map-markers"></div>
 
@@ -70,16 +88,37 @@
 
         <section class="panel channel-panel" data-sheet="chat">
           <button class="sheet-toggle" type="button" data-sheet-target="chat">
-            <span>Command</span>
+            <span>Ask Atlas</span>
             <span class="sheet-toggle-state">dock</span>
           </button>
 
           <div class="panel-shell">
+            <div class="panel-title-row">
+              <div class="panel-title-block">
+                <p class="panel-kicker">Command</p>
+                <h2>Ask Atlas</h2>
+              </div>
+              <button class="lead-refresh-button" id="lead-refresh" type="button">
+                Refresh live leads
+              </button>
+            </div>
+
             <div class="transcript" id="chat-log">
               <article class="message assistant">
                 <p class="message-role">atlas</p>
-                <p class="message-body">Atlas online. Globe watch active.</p>
+                <p class="message-body">
+                  Click a live source marker or ask what happened in a region. I will focus the
+                  globe, summarize source reports, and load evidence when a site is linked.
+                </p>
               </article>
+            </div>
+
+            <div class="mission-steps" id="mission-steps" aria-label="Atlas command progress">
+              <span class="mission-step idle" data-step="parse">parse</span>
+              <span class="mission-step idle" data-step="fetch">fetch</span>
+              <span class="mission-step idle" data-step="focus">focus</span>
+              <span class="mission-step idle" data-step="evidence">evidence</span>
+              <span class="mission-step idle" data-step="summarize">summarize</span>
             </div>
 
             <form class="composer" id="chat-form">
@@ -89,7 +128,7 @@
                 name="chat-input"
                 type="text"
                 autocomplete="off"
-                placeholder="Ask: show biggest disruption near the watchlist"
+                placeholder="Try: what happened recently in Iran?"
               />
               <button type="submit">Run</button>
             </form>
@@ -100,7 +139,7 @@
 
         <aside class="panel drawer-panel" data-sheet="site">
           <button class="sheet-toggle" type="button" data-sheet-target="site">
-            <span>Focus</span>
+            <span>Evidence</span>
             <span class="sheet-toggle-state">focus</span>
           </button>
 
@@ -108,7 +147,10 @@
             <div class="site-head">
               <div class="site-head-copy">
                 <h1 id="site-name">Select a site</h1>
-                <p class="site-summary" id="site-summary">Map click or command. Compare lands here.</p>
+                <p class="site-summary" id="site-summary">
+                  Click a live marker to read the source report. Linked sites can load current and
+                  baseline imagery.
+                </p>
               </div>
               <p class="status-pill idle" id="site-impact">idle</p>
             </div>
@@ -119,18 +161,24 @@
               <span id="site-coords">-</span>
             </p>
 
-            <article class="drawer-card model-gate-card">
-              <p class="drawer-label">Model Gate</p>
-              <h2 id="model-gate-decision">Gate pending</h2>
-              <p class="drawer-summary" id="model-gate-summary">Loading adapter acceptance state.</p>
+            <article class="drawer-card model-gate-card" hidden>
+              <p class="drawer-label">Diagnostics</p>
+              <h2 id="model-gate-decision">Hidden from operator view</h2>
+              <p class="drawer-summary" id="model-gate-summary">
+                Technical model diagnostics stay out of the first-use workflow.
+              </p>
               <p class="tray-inline" id="model-gate-stats">-</p>
             </article>
 
             <div class="tray-grid">
               <article class="drawer-card">
-                <p class="drawer-label">Current</p>
-                <h2 id="current-title">Compare pending</h2>
-                <p class="drawer-summary" id="current-note">Fetching site evidence.</p>
+                <p class="drawer-label">Current image</p>
+                <h2 id="current-title">Waiting for site</h2>
+                <p class="drawer-summary" id="current-note">Select a marker to load evidence.</p>
+                <figure class="evidence-frame" id="current-frame" hidden>
+                  <img id="current-image" alt="Current satellite frame" loading="lazy" />
+                  <figcaption id="current-image-caption">Current satellite frame</figcaption>
+                </figure>
                 <p class="tray-inline">
                   <span id="current-status">-</span>
                   <span id="current-captured">-</span>
@@ -138,9 +186,13 @@
               </article>
 
               <article class="drawer-card">
-                <p class="drawer-label">Baseline</p>
-                <h2 id="baseline-title">Baseline pending</h2>
-                <p class="drawer-summary" id="baseline-note">Waiting for compare.</p>
+                <p class="drawer-label">Baseline image</p>
+                <h2 id="baseline-title">Waiting for site</h2>
+                <p class="drawer-summary" id="baseline-note">Baseline appears after a site is selected.</p>
+                <figure class="evidence-frame" id="baseline-frame" hidden>
+                  <img id="baseline-image" alt="Baseline satellite frame" loading="lazy" />
+                  <figcaption id="baseline-image-caption">Baseline satellite frame</figcaption>
+                </figure>
                 <p class="tray-inline">
                   <span id="baseline-captured">-</span>
                   <span id="baseline-source">-</span>
@@ -148,9 +200,22 @@
               </article>
             </div>
 
+            <article class="drawer-card liquid-analyst-card" id="liquid-analyst-card" hidden>
+              <p class="drawer-label">Liquid VLM analyst</p>
+              <h2 id="liquid-analyst-title">Waiting for image pair</h2>
+              <p class="drawer-summary" id="liquid-analyst-summary">
+                The Liquid vision-language model summarizes selected current and baseline imagery.
+              </p>
+              <p class="tray-inline">
+                <span id="liquid-analyst-model">-</span>
+                <span id="liquid-analyst-action">-</span>
+                <span id="liquid-analyst-confidence">-</span>
+              </p>
+            </article>
+
             <div class="signal-row">
               <article class="signal-card alert-signal">
-                <p class="drawer-label">Alert</p>
+                <p class="drawer-label">Decision</p>
                 <p class="signal-value" id="signal-action">watch</p>
                 <p class="signal-meta">
                   <span id="signal-severity">-</span>
