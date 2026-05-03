@@ -4,24 +4,26 @@
 
 Blackline Atlas is onboard civilian lifeline monitoring.
 
-Demo promise:
+Runtime promise:
 Blackline Atlas watches a small list of public civilian lifelines from orbit and only downlinks compact disruption alerts when something materially changes.
 
 ## Product architecture
 
 ```text
 public lead registry
-  -> web/news source fetch
-  -> geocode / dedupe / daily refresh
+  -> GDELT Cloud live refresh; GDELT Project fallback; ACLED/UCDP validation later
+  -> already-geocoded event/source-url ingest
+  -> rank / dedupe / refresh by CLI, UI button, or stale-on-boot check
   -> globe markers
 
 watchlist assets or selected lead
+  -> agent planner resolves tool + camera intent
   -> current Sentinel fetch
   -> historical Sentinel baseline
   -> hard filters
-  -> anomaly proposer
-  -> VLM grounding / VQA / rationale
-  -> policy decision
+  -> SAM3 concept evidence
+  -> optional Liquid paired-image analyst summary
+  -> deterministic policy decision
   -> alert queue
   -> optional Mapbox context
   -> globe/card/chat/evidence UI
@@ -40,11 +42,14 @@ Meaning:
 - the globe is the browsing and awareness surface
 - the chat is the agentic control surface
 - the evidence tray is the proof surface
+- every agent answer should include operator prose plus UI intent:
+  camera focus, highlighted leads/assets, selected evidence, and alert summary
 
 Important rule:
 
 - a visible point on the globe is a lead, not always a model-confirmed alert
 - point selection should trigger the expensive review path only when needed
+- linked live leads can become inspectable assets for current-versus-baseline review
 
 ## Recommended build phases
 
@@ -70,7 +75,9 @@ Important rule:
 ### Phase 2
 - add chat-driven globe control
 - add prompt builder
-- call VLM
+- call agent planner
+- call required selected-site SAM3 evidence lane for live image masks
+- call optional Liquid analyst lane after evidence is loaded
 - parse strict JSON
 - retry or discard malformed outputs
 - merge outputs into alert schema
@@ -86,7 +93,7 @@ Important rule:
 - optional adapter
 - compare against prompted baseline
 
-## Demo-safe asset strategy
+## Civilian Asset Strategy
 
 Prefer:
 - food hubs near population centers
@@ -106,7 +113,7 @@ Avoid:
 ## Non-negotiables
 
 - one-page, globe-to-map UI
-- deterministic replay
+- planner-first routing; no keyword fallback for open-ended chat
 - cache everything
 - structured outputs only
 - visible metrics

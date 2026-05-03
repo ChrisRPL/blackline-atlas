@@ -201,6 +201,15 @@ cython_debug/
 .cursorignore
 .cursorindexingignore
 
+.DS_Store
+
+# Model weights / checkpoints
+*.safetensors
+*.pt
+*.pth
+*.ckpt
+*.bin
+
 # Local support material / implementation notes
 support/
 blackline-docs/
@@ -208,13 +217,17 @@ vendor/huggingface-skills/
 vendor/leap-finetune/
 work/
 session_logs/
+output/
+.playwright-mcp/
 satellite-disruption-triage-aux-v2/
 satellite-disruption-triage-aux-v2-1/
+var/
 AGENTS.md
 docs/local/
 wiki/local/
 *.local.md
 *.scratch.md
+test.txt
 *.tmp.md
 
 # Generated benchmark / eval artifacts

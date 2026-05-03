@@ -20,6 +20,8 @@
 - lifeline classes centered on food, water, aid, and only then mobility
 - missing and cloudy frame rejection
 - anomaly proposal
+- SAM3/SAM3.1 concept-segmentation evidence lane
+- optional Liquid paired-image analyst lane for safe civilian summaries
 - structured alert generation
 - policy action: `discard | defer | downlink_now`
 - metrics panel
@@ -85,6 +87,14 @@ evidence-first candidates into this alert candidate shape by deriving
 }
 ```
 
+Guardrails:
+
+- parser accepts common JSON wrappers, fences, action aliases, confidence strings, and single-item arrays
+- negative/artifact evidence such as SAR speckle, seasonal change, construction change, or no visible change is downgraded away from `downlink_now`
+- low-confidence positive outputs are repaired to `discard`
+- alert IDs, timestamps, asset metadata, and source metadata remain seed-authoritative
+- unrepairable output fails closed and emits no alert
+
 ## API
 
 - `GET /health`
@@ -97,6 +107,10 @@ evidence-first candidates into this alert candidate shape by deriving
 - `POST /replay/start`
 - `POST /replay/stop`
 - `GET /replay/status`
+- `GET /replay/snapshot`
+- `GET /evidence/current`
+- `GET /evidence/assets/{asset_id}`
+- `GET /analyst/assets/{asset_id}`
 - `GET /frames/current`
 - `GET /frames/baseline`
 - `GET /alerts`
@@ -122,11 +136,29 @@ Single page only.
     - animate globe / map to the area
     - highlight matching points
     - summarize in chat
+    - request current/baseline evidence when the selected lead is linked
 - center:
   - globe-first at wide zoom
   - map-first at inspection zoom
 - command dock:
-  - compact agent control for latest, biggest, compare, explain, and geographic drill-down flows
+  - compact agent control for live-source search, latest confirmed alerts, biggest alerts,
+    compare, explain, live refresh, and geographic drill-down flows
+- agent response contract:
+  - `summary` is the text shown in chat
+  - `camera` drives map movement and marker highlights
+  - `focus_asset_id` / `focus_lead_id` updates selection
+  - `compare` populates current and baseline evidence
+  - `analyst_report` may add a paired-image Liquid VLM summary when available
+  - `alerts` updates alert cards and metrics
+  - `leads` carries refreshed or matching lead markers when a command touches live lead state
+  - `observations` records which typed tools ran and what they returned
+- agent tools:
+  - `search_live_leads`
+  - `latest_alerts`
+  - `biggest_disruptions`
+  - `site_compare`
+  - `explain_alert`
+  - `refresh_live_leads`
 - evidence tray or drawer:
   - current
   - baseline
@@ -143,6 +175,7 @@ Single page only.
   - what changed
   - why it matters
   - show me nearby
+  - what evidence is loaded or missing
 - point markers are not all equal:
   - some are news / source leads
   - some are VLM-reviewed reference sites
@@ -172,11 +205,40 @@ Each lead should carry:
 Rule:
 
 - registry refresh is a fetch / sourcing problem, not a VLM training problem
+- app refresh uses `POST /leads/refresh` with `source_mode=auto`
+- `auto` uses GDELT Cloud v2 Events when `GDELT_API_KEY` or
+  `GDELT_CLOUD_API_KEY` exists
+- `auto` falls back to public GDELT Project exports when Cloud is unavailable
+- ACLED remains disabled until `/api/acled/read` access is confirmed; UCDP
+  Candidate is useful for slower validation, not hackathon live UX
 - do not run the VLM on every point by default
-- VLM runs only when:
+- evidence review runs only when:
   - a point is selected
   - a chat flow requests review
   - a background batch explicitly targets a shortlist
+- linked live leads may be converted into runtime assets for SimSat current-versus-baseline review
+- current repo command:
+  - `python3 -m app.services.lead_registry_refresh --dry-run`
+  - dry-run probes source reachability and prints counts
+  - full write mode is deliberate, not automatic on app boot
+
+## SAM3 evidence lane
+
+SAM3 is the preferred visual evidence tool, not the rejected fine-tuned VLM adapter.
+The runtime seam is:
+
+- selected lead or watchlist asset
+- current/baseline satellite pair
+- prompt set such as `bridge span`, `container yard`, `rubble pile`, `debris field`, or `burn scar`
+- SAM3/SAM3.1 concept segmentation masks
+- optional Liquid analyst summary over the same pair and evidence tags
+- evidence tags, bbox, score, and area ratio
+- deterministic rule layer emits `discard | defer | downlink_now`
+
+Fixture masks are allowed only for tests and offline replay/reference evals. Live
+selected-point evidence requires the local HTTP SAM3 bridge on the same machine
+as the app. This keeps SimSat/Sentinel frame paths readable and avoids remote
+image transfer during the judge demo.
 
 ## Acceptance criteria
 
