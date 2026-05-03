@@ -5,6 +5,7 @@ from pathlib import Path
 
 from app.core.config import Settings
 from app.schemas.asset import Asset
+from app.schemas.frame import FrameEnvelope, FrameRecord
 from app.services.frame_cache import FrameCacheLayout
 from app.services.frame_client import CachedFrameClient, FixtureFrameClient
 from app.services.frame_types import FrameRequest
@@ -66,6 +67,96 @@ def test_cached_frame_client_reuses_cached_baseline_payload(tmp_path) -> None:
 
     assert first.frame.image_ref is not None
     assert second.frame.frame_id == "base_demo_bridge_01_cached"
+
+
+def test_cached_frame_client_uses_request_alias_before_delegate(tmp_path) -> None:
+    source_image = tmp_path / "source.png"
+    source_image.write_bytes(b"frame-bytes")
+    delegate = _CountingFrameClient(
+        FrameEnvelope(
+            frame=FrameRecord(
+                frame_id="cur-live-001",
+                asset_id="live_asset",
+                captured_at="2026-04-30T12:00:00Z",
+                image_ref=str(source_image),
+                source="simsat",
+            )
+        )
+    )
+    client = CachedFrameClient(
+        delegate=delegate,
+        cache_layout=FrameCacheLayout(tmp_path / "cache"),
+    )
+    request = FrameRequest(
+        asset_id="live_asset",
+        scenario_id="live_lead_001",
+        latitude=50.45,
+        longitude=30.52,
+        requested_timestamp="2026-04-30T12:00:00Z",
+    )
+
+    first = client.get_current_frame(request)
+    second = client.get_current_frame(request)
+
+    assert delegate.current_calls == 1
+    assert first.frame.frame_id == "cur-live-001"
+    assert second.frame.frame_id == "cur-live-001"
+    assert second.frame.image_ref is not None
+    assert Path(second.frame.image_ref).read_bytes() == b"frame-bytes"
+
+
+def test_cached_frame_client_scopes_request_aliases_by_namespace(tmp_path) -> None:
+    live_image = tmp_path / "live.png"
+    fixture_image = tmp_path / "fixture.png"
+    live_image.write_bytes(b"live-frame")
+    fixture_image.write_bytes(b"fixture-frame")
+    live_delegate = _CountingFrameClient(
+        FrameEnvelope(
+            frame=FrameRecord(
+                frame_id="cur-live-001",
+                asset_id="shared_asset",
+                captured_at="2026-04-30T12:00:00Z",
+                image_ref=str(live_image),
+                source="simsat",
+            )
+        )
+    )
+    fixture_delegate = _CountingFrameClient(
+        FrameEnvelope(
+            frame=FrameRecord(
+                frame_id="cur-fixture-001",
+                asset_id="shared_asset",
+                captured_at="2026-04-30T12:00:00Z",
+                image_ref=str(fixture_image),
+                source="fixture",
+            )
+        )
+    )
+    cache_layout = FrameCacheLayout(tmp_path / "cache")
+    request = FrameRequest(
+        asset_id="shared_asset",
+        scenario_id="shared_scenario",
+        latitude=50.45,
+        longitude=30.52,
+        requested_timestamp="2026-04-30T12:00:00Z",
+    )
+    live_client = CachedFrameClient(
+        delegate=live_delegate,
+        cache_layout=cache_layout,
+        cache_namespace="simsat-live",
+    )
+    fixture_client = CachedFrameClient(
+        delegate=fixture_delegate,
+        cache_layout=cache_layout,
+        cache_namespace="fixture",
+    )
+
+    assert live_client.get_current_frame(request).frame.frame_id == "cur-live-001"
+    assert fixture_client.get_current_frame(request).frame.frame_id == "cur-fixture-001"
+    assert live_client.get_current_frame(request).frame.frame_id == "cur-live-001"
+    assert fixture_client.get_current_frame(request).frame.frame_id == "cur-fixture-001"
+    assert live_delegate.current_calls == 1
+    assert fixture_delegate.current_calls == 1
 
 
 def test_cached_frame_client_materializes_baseline_adapter_output(tmp_path) -> None:
@@ -274,3 +365,20 @@ def _scenarios():
         hero_asset=hero_asset,
         bridge_asset=bridge_asset,
     )
+
+
+class _CountingFrameClient:
+    def __init__(self, current: FrameEnvelope) -> None:
+        self.current = current
+        self.current_calls = 0
+
+    def get_current_frame(self, request: FrameRequest) -> FrameEnvelope:
+        _ = request
+        self.current_calls += 1
+        if self.current_calls > 1:
+            raise AssertionError("cache should satisfy repeated request before delegate")
+        return self.current
+
+    def get_baseline_frame(self, request: FrameRequest) -> FrameEnvelope:
+        _ = request
+        raise NotImplementedError

@@ -1,12 +1,15 @@
 from __future__ import annotations
 
 import json
+from pathlib import Path
 from urllib.error import URLError
+from urllib.parse import parse_qs, urlparse
 
 from fastapi.testclient import TestClient
 
 from app.core.config import get_settings
 from app.main import app, create_app
+from app.schemas.lead import Lead
 from app.services.frame_filters import FrameFilterPolicy
 from app.services.sentinel_client import FixtureSentinelPayloadTransport
 
@@ -20,6 +23,7 @@ def build_api_client(
     simsat_baseline_endpoint: str | None,
     simsat_current_http_enabled: bool = False,
     simsat_baseline_http_enabled: bool = False,
+    simsat_required: bool = False,
     mapbox_context_enabled: bool | None = None,
     model_endpoint: str | None = None,
     model_http_enabled: bool = False,
@@ -28,26 +32,38 @@ def build_api_client(
     agent_http_enabled: bool = False,
     agent_provider: str | None = None,
     agent_model_version: str | None = None,
+    sam3_endpoint: str | None = None,
+    sam3_http_enabled: bool | None = None,
+    sam3_required: bool | None = None,
+    analyst_endpoint: str | None = None,
+    analyst_http_enabled: bool = False,
+    analyst_provider: str | None = None,
+    analyst_model_version: str | None = None,
 ) -> TestClient:
     if simsat_current_endpoint is None:
-        monkeypatch.delenv("SIMSAT_CURRENT_ENDPOINT", raising=False)
+        monkeypatch.setenv("SIMSAT_CURRENT_ENDPOINT", "")
     else:
         monkeypatch.setenv("SIMSAT_CURRENT_ENDPOINT", simsat_current_endpoint)
 
     if simsat_baseline_endpoint is None:
-        monkeypatch.delenv("SIMSAT_BASELINE_ENDPOINT", raising=False)
+        monkeypatch.setenv("SIMSAT_BASELINE_ENDPOINT", "")
     else:
         monkeypatch.setenv("SIMSAT_BASELINE_ENDPOINT", simsat_baseline_endpoint)
 
     if simsat_current_http_enabled:
         monkeypatch.setenv("SIMSAT_CURRENT_HTTP_ENABLED", "true")
     else:
-        monkeypatch.delenv("SIMSAT_CURRENT_HTTP_ENABLED", raising=False)
+        monkeypatch.setenv("SIMSAT_CURRENT_HTTP_ENABLED", "")
 
     if simsat_baseline_http_enabled:
         monkeypatch.setenv("SIMSAT_BASELINE_HTTP_ENABLED", "true")
     else:
-        monkeypatch.delenv("SIMSAT_BASELINE_HTTP_ENABLED", raising=False)
+        monkeypatch.setenv("SIMSAT_BASELINE_HTTP_ENABLED", "")
+
+    if simsat_required:
+        monkeypatch.setenv("SIMSAT_REQUIRED", "true")
+    else:
+        monkeypatch.setenv("SIMSAT_REQUIRED", "")
 
     if mapbox_context_enabled is None:
         monkeypatch.delenv("MAPBOX_CONTEXT_ENABLED", raising=False)
@@ -91,6 +107,45 @@ def build_api_client(
     else:
         monkeypatch.setenv("AGENT_MODEL_VERSION", agent_model_version)
 
+    if sam3_endpoint is None:
+        monkeypatch.delenv("SAM3_ENDPOINT", raising=False)
+    else:
+        monkeypatch.setenv("SAM3_ENDPOINT", sam3_endpoint)
+
+    if sam3_http_enabled is None:
+        monkeypatch.delenv("SAM3_HTTP_ENABLED", raising=False)
+    elif sam3_http_enabled:
+        monkeypatch.setenv("SAM3_HTTP_ENABLED", "true")
+    else:
+        monkeypatch.setenv("SAM3_HTTP_ENABLED", "false")
+
+    if sam3_required is None:
+        monkeypatch.delenv("SAM3_REQUIRED", raising=False)
+    elif sam3_required:
+        monkeypatch.setenv("SAM3_REQUIRED", "true")
+    else:
+        monkeypatch.setenv("SAM3_REQUIRED", "false")
+
+    if analyst_endpoint is None:
+        monkeypatch.delenv("ANALYST_ENDPOINT", raising=False)
+    else:
+        monkeypatch.setenv("ANALYST_ENDPOINT", analyst_endpoint)
+
+    if analyst_http_enabled:
+        monkeypatch.setenv("ANALYST_HTTP_ENABLED", "true")
+    else:
+        monkeypatch.delenv("ANALYST_HTTP_ENABLED", raising=False)
+
+    if analyst_provider is None:
+        monkeypatch.delenv("ANALYST_PROVIDER", raising=False)
+    else:
+        monkeypatch.setenv("ANALYST_PROVIDER", analyst_provider)
+
+    if analyst_model_version is None:
+        monkeypatch.delenv("ANALYST_MODEL_VERSION", raising=False)
+    else:
+        monkeypatch.setenv("ANALYST_MODEL_VERSION", analyst_model_version)
+
     get_settings.cache_clear()
     return TestClient(create_app())
 
@@ -103,10 +158,12 @@ def stub_sentinel_health_probe(
 ) -> None:
     def fake_urlopen(url: str, timeout: float):
         assert timeout == 5.0
-        if url.endswith("mode=current"):
+        query = parse_qs(urlparse(url).query)
+        mode = query.get("mode", [None])[0]
+        if mode == "current":
             assert current_status is not None
             return _FakeHTTPResponse(body=b'{"ok":true}', status=current_status)
-        if url.endswith("mode=baseline"):
+        if mode == "baseline":
             assert baseline_status is not None
             return _FakeHTTPResponse(body=b'{"ok":true}', status=baseline_status)
         raise AssertionError(f"unexpected url: {url}")
@@ -124,6 +181,8 @@ def test_health_endpoint() -> None:
     assert payload["model_backend"]["detail"] == "lfm2.5-vl-450m-prompted (fixture backend)"
     assert payload["agent_backend"]["status"] == "ready"
     assert payload["agent_backend"]["detail"] == "lfm2.5-1.2b-instruct (fixture planner)"
+    assert payload["sam3_backend"]["status"] == "degraded"
+    assert "real SAM3 HTTP segmentation is required" in payload["sam3_backend"]["detail"]
 
 
 def test_model_status_endpoint_exposes_adapter_gate() -> None:
@@ -134,26 +193,35 @@ def test_model_status_endpoint_exposes_adapter_gate() -> None:
     assert payload["base_model"] == "LiquidAI/LFM2.5-VL-450M"
     assert (
         payload["candidate_adapter"]
-        == "ChrisRPL/blackline-atlas-lfm25-vl-sft-train-hf-aux-v8-adapter"
+        == "ChrisRPL/blackline-atlas-lfm25-vl-sft-train-hf-aux-v10-adapter"
     )
-    assert payload["training_dataset"] == "ChrisRPL/satellite-disruption-triage-aux-v2-1"
+    assert payload["training_dataset"] == "ChrisRPL/satellite-disruption-triage-aux-v2-2"
+    assert payload["adapter_signal_role"] == "optional_non_authoritative"
+    assert payload["runtime_authority"] == "deterministic_replay"
+    assert payload["can_affect_alerts"] is False
     assert payload["decision"] == "replay_safe_adapter_rejected"
     assert payload["recommended_runtime"] == "deterministic_replay"
-    assert payload["frozen_gold_cases"] == 22
-    assert payload["reported_eval_cases"] == 5
-    assert payload["reported_eval_scope"] == "runtime_evidence_public_seed_and_xbd_seed"
+    assert payload["frozen_gold_cases"] == 51
+    assert payload["reported_eval_cases"] == 3
+    assert payload["reported_eval_scope"] == "v2_2_eval_gold_three_case_schema_smoke"
     assert payload["base_eval"]["action_match"] == 0
-    assert payload["base_eval"]["schema_valid"] == 1
-    assert payload["adapter_eval"]["action_match"] == 1
-    assert payload["adapter_eval"]["schema_valid"] == 2
+    assert payload["base_eval"]["schema_valid"] == 0
+    assert payload["adapter_eval"]["action_match"] == 0
+    assert payload["adapter_eval"]["schema_valid"] == 0
     assert payload["adapter_eval"]["false_positives"] == 0
-    assert payload["latest_training_job"] == "69efd6e8d2c8bd8662bd13bf"
-    assert payload["training_eval_loss_start"] == 2.7993
-    assert payload["training_eval_loss_final"] == 1.2974
+    assert payload["latest_training_job"] == "69f0ac8bd70108f37ace0f4d"
+    assert payload["training_eval_loss_start"] == 2.9309
+    assert payload["training_eval_loss_final"] == 1.2123
     assert payload["acceptance_failures"] == [
-        "adapter downlink_now recall must strictly beat base",
-        "adapter predicted zero downlink_now rows on a positive smoke set",
-        "full 22-case frozen gold eval still required before promotion",
+        "v10 evidence schema valid count is 0/3 on eval-gold smoke",
+        "v10 action match is 0/3 on positive eval-gold smoke",
+        "v10 predicted zero downlink_now rows on positive smoke cases",
+        "full 51-case frozen eval remains blocked until schema smoke passes",
+    ]
+    assert [item["status"] for item in payload["evaluated_adapters"]] == [
+        "superseded_rejected",
+        "superseded_rejected",
+        "published_rejected",
     ]
 
 
@@ -167,6 +235,8 @@ def test_ui_shell_is_served_same_origin() -> None:
     assert "Blackline Atlas" in response.text
     assert "/health" in static_response.text
     assert "/model/status" in static_response.text
+    assert "/replay/snapshot" in static_response.text
+    assert "/evidence/current" in static_response.text
     assert "/replay/status" in static_response.text
     assert "/assets" in static_response.text
 
@@ -385,6 +455,61 @@ def test_health_endpoint_reflects_unconfigured_dependencies(tmp_path, monkeypatc
     get_settings.cache_clear()
 
 
+def test_health_endpoint_marks_missing_simsat_degraded_when_required(monkeypatch) -> None:
+    required_client = build_api_client(
+        monkeypatch,
+        simsat_current_endpoint=None,
+        simsat_baseline_endpoint=None,
+        simsat_required=True,
+    )
+    response = required_client.get("/health")
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["config"]["simsat_required"] is True
+    assert payload["simsat_current"]["status"] == "degraded"
+    assert payload["simsat_baseline"]["status"] == "degraded"
+    assert "live SimSat required" in payload["simsat_current"]["detail"]
+    assert "live SimSat required" in payload["simsat_baseline"]["detail"]
+    get_settings.cache_clear()
+
+
+def test_frame_image_serves_cached_simsat_frame() -> None:
+    image_path = Path(".cache/frames/test_route/current/frame/image.png")
+    image_path.parent.mkdir(parents=True, exist_ok=True)
+    image_path.write_bytes(
+        b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01"
+        b"\x00\x00\x00\x01\x08\x02\x00\x00\x00\x90wS\xde"
+    )
+
+    response = client.get("/frame-image", params={"ref": str(image_path)})
+
+    assert response.status_code == 200
+    assert response.headers["content-type"] == "image/png"
+    assert response.content.startswith(b"\x89PNG")
+
+
+def test_frame_image_serves_mapbox_context_frame() -> None:
+    image_path = Path("var/mapbox_context/live_test_marker/current_1.00000_2.00000.png")
+    image_path.parent.mkdir(parents=True, exist_ok=True)
+    image_path.write_bytes(
+        b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01"
+        b"\x00\x00\x00\x01\x08\x02\x00\x00\x00\x90wS\xde"
+    )
+
+    response = client.get("/frame-image", params={"ref": str(image_path)})
+
+    assert response.status_code == 200
+    assert response.headers["content-type"] == "image/png"
+    assert response.content.startswith(b"\x89PNG")
+
+
+def test_frame_image_rejects_path_outside_frame_cache() -> None:
+    response = client.get("/frame-image", params={"ref": "app/api/routes.py"})
+
+    assert response.status_code == 404
+
+
 def test_health_endpoint_reflects_configured_mapbox_token(tmp_path, monkeypatch) -> None:
     monkeypatch.chdir(tmp_path)
     monkeypatch.setenv("MAPBOX_TOKEN", "test-mapbox-token")
@@ -458,12 +583,19 @@ def test_health_endpoint_exposes_machine_readable_config_flags(monkeypatch) -> N
     assert configured_response.json()["config"] == {
         "simsat_current_http_enabled": True,
         "simsat_baseline_http_enabled": True,
+        "simsat_required": False,
         "mapbox_context_enabled": False,
         "model_http_enabled": False,
         "model_provider": "atlas_json_http",
         "agent_model_version": "lfm2.5-1.2b-instruct",
         "agent_http_enabled": False,
         "agent_provider": "atlas_json_http",
+        "sam3_model_version": "facebook/sam3",
+        "sam3_http_enabled": True,
+        "sam3_required": True,
+        "analyst_model_version": "LiquidAI/LFM2.5-VL-450M",
+        "analyst_http_enabled": False,
+        "analyst_provider": "atlas_json_http",
     }
     get_settings.cache_clear()
 
@@ -481,12 +613,19 @@ def test_health_endpoint_exposes_default_config_flags(tmp_path, monkeypatch) -> 
     assert default_response.json()["config"] == {
         "simsat_current_http_enabled": False,
         "simsat_baseline_http_enabled": False,
+        "simsat_required": False,
         "mapbox_context_enabled": True,
         "model_http_enabled": False,
         "model_provider": "atlas_json_http",
         "agent_model_version": "lfm2.5-1.2b-instruct",
         "agent_http_enabled": False,
         "agent_provider": "atlas_json_http",
+        "sam3_model_version": "facebook/sam3",
+        "sam3_http_enabled": True,
+        "sam3_required": True,
+        "analyst_model_version": "LiquidAI/LFM2.5-VL-450M",
+        "analyst_http_enabled": False,
+        "analyst_provider": "atlas_json_http",
     }
     get_settings.cache_clear()
 
@@ -507,12 +646,19 @@ def test_health_endpoint_exposes_disabled_mapbox_config_flags(tmp_path, monkeypa
     assert configured_response.json()["config"] == {
         "simsat_current_http_enabled": False,
         "simsat_baseline_http_enabled": False,
+        "simsat_required": False,
         "mapbox_context_enabled": False,
         "model_http_enabled": False,
         "model_provider": "atlas_json_http",
         "agent_model_version": "lfm2.5-1.2b-instruct",
         "agent_http_enabled": False,
         "agent_provider": "atlas_json_http",
+        "sam3_model_version": "facebook/sam3",
+        "sam3_http_enabled": True,
+        "sam3_required": True,
+        "analyst_model_version": "LiquidAI/LFM2.5-VL-450M",
+        "analyst_http_enabled": False,
+        "analyst_provider": "atlas_json_http",
     }
     assert configured_response.json()["mapbox"]["status"] == "ready"
     assert configured_response.json()["mapbox"]["detail"] == (
@@ -536,12 +682,19 @@ def test_health_endpoint_exposes_mixed_transport_config_flags(tmp_path, monkeypa
     assert configured_response.json()["config"] == {
         "simsat_current_http_enabled": True,
         "simsat_baseline_http_enabled": False,
+        "simsat_required": False,
         "mapbox_context_enabled": True,
         "model_http_enabled": False,
         "model_provider": "atlas_json_http",
         "agent_model_version": "lfm2.5-1.2b-instruct",
         "agent_http_enabled": False,
         "agent_provider": "atlas_json_http",
+        "sam3_model_version": "facebook/sam3",
+        "sam3_http_enabled": True,
+        "sam3_required": True,
+        "analyst_model_version": "LiquidAI/LFM2.5-VL-450M",
+        "analyst_http_enabled": False,
+        "analyst_provider": "atlas_json_http",
     }
     get_settings.cache_clear()
 
@@ -566,12 +719,19 @@ def test_health_endpoint_exposes_baseline_only_transport_config_flags(
     assert configured_response.json()["config"] == {
         "simsat_current_http_enabled": False,
         "simsat_baseline_http_enabled": True,
+        "simsat_required": False,
         "mapbox_context_enabled": True,
         "model_http_enabled": False,
         "model_provider": "atlas_json_http",
         "agent_model_version": "lfm2.5-1.2b-instruct",
         "agent_http_enabled": False,
         "agent_provider": "atlas_json_http",
+        "sam3_model_version": "facebook/sam3",
+        "sam3_http_enabled": True,
+        "sam3_required": True,
+        "analyst_model_version": "LiquidAI/LFM2.5-VL-450M",
+        "analyst_http_enabled": False,
+        "analyst_provider": "atlas_json_http",
     }
     assert configured_response.json()["simsat_current"]["status"] == "not_configured"
     assert configured_response.json()["simsat_baseline"]["status"] == "ready"
@@ -645,6 +805,69 @@ def test_health_endpoint_exposes_agent_http_config_and_backend_mode(tmp_path, mo
     assert agent_response.json()["config"]["agent_model_version"] == "lfm2.5-1.2b-instruct"
     assert agent_response.json()["config"]["agent_http_enabled"] is True
     assert agent_response.json()["config"]["agent_provider"] == "atlas_json_http"
+    get_settings.cache_clear()
+
+
+def test_health_endpoint_exposes_sam3_http_config_and_backend_mode(tmp_path, monkeypatch) -> None:
+    monkeypatch.chdir(tmp_path)
+    sam3_client = build_api_client(
+        monkeypatch,
+        simsat_current_endpoint=None,
+        simsat_baseline_endpoint=None,
+        sam3_endpoint="https://example.test/sam3",
+        sam3_http_enabled=True,
+    )
+    sam3_response = sam3_client.get("/health")
+
+    assert sam3_response.status_code == 200
+    assert sam3_response.json()["sam3_backend"]["status"] == "ready"
+    assert sam3_response.json()["sam3_backend"]["detail"] == (
+        "facebook/sam3 (sam3_http segmentation)"
+    )
+    assert sam3_response.json()["config"]["sam3_model_version"] == "facebook/sam3"
+    assert sam3_response.json()["config"]["sam3_http_enabled"] is True
+    get_settings.cache_clear()
+
+
+def test_health_endpoint_marks_missing_sam3_endpoint_not_configured(tmp_path, monkeypatch) -> None:
+    monkeypatch.chdir(tmp_path)
+    sam3_client = build_api_client(
+        monkeypatch,
+        simsat_current_endpoint=None,
+        simsat_baseline_endpoint=None,
+        sam3_http_enabled=True,
+    )
+    sam3_response = sam3_client.get("/health")
+
+    assert sam3_response.status_code == 200
+    assert sam3_response.json()["sam3_backend"]["status"] == "degraded"
+    assert (
+        "real SAM3 HTTP segmentation is required" in sam3_response.json()["sam3_backend"]["detail"]
+    )
+    assert sam3_response.json()["config"]["sam3_http_enabled"] is True
+    assert sam3_response.json()["config"]["sam3_required"] is True
+    get_settings.cache_clear()
+
+
+def test_health_endpoint_allows_explicit_offline_sam3_fixture_mode(
+    tmp_path,
+    monkeypatch,
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    sam3_client = build_api_client(
+        monkeypatch,
+        simsat_current_endpoint=None,
+        simsat_baseline_endpoint=None,
+        sam3_http_enabled=False,
+        sam3_required=False,
+    )
+    sam3_response = sam3_client.get("/health")
+
+    assert sam3_response.status_code == 200
+    assert sam3_response.json()["sam3_backend"]["status"] == "ready"
+    assert "reference-only fixture" in sam3_response.json()["sam3_backend"]["detail"]
+    assert sam3_response.json()["config"]["sam3_http_enabled"] is False
+    assert sam3_response.json()["config"]["sam3_required"] is False
     get_settings.cache_clear()
 
 
@@ -877,6 +1100,57 @@ def test_leads_endpoint_returns_seeded_lead_registry() -> None:
     } <= lead_ids
 
 
+def test_lead_refresh_endpoint_updates_runtime_registry(tmp_path, monkeypatch) -> None:
+    monkeypatch.chdir(tmp_path)
+
+    def fake_refresh_lead_registry(**kwargs):
+        assert kwargs["source_mode"] == "gdelt"
+        assert kwargs["output_path"] == "var/live_leads.json"
+        assert kwargs["gdelt_limit"] == 12
+        return (
+            [
+                Lead(
+                    lead_id="gdelt_api_1",
+                    title="Dnipro armed conflict",
+                    region="Dnipro, Ukraine",
+                    latitude=48.4647,
+                    longitude=35.0462,
+                    category_guess="civilian_building_cluster",
+                    status="lead_only",
+                    source_date="2026-04-28",
+                )
+            ],
+            3,
+        )
+
+    monkeypatch.setattr("app.services.stub.refresh_lead_registry", fake_refresh_lead_registry)
+    refresh_client = build_api_client(
+        monkeypatch,
+        simsat_current_endpoint=None,
+        simsat_baseline_endpoint=None,
+    )
+
+    response = refresh_client.post(
+        "/leads/refresh",
+        json={
+            "source_mode": "gdelt",
+            "hours": 2,
+            "max_files": 4,
+            "limit": 12,
+            "min_articles": 1,
+            "country_allowlist": "default",
+        },
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["lead_count"] == 1
+    assert payload["reachable_source_count"] == 3
+    assert payload["leads"][0]["lead_id"] == "gdelt_api_1"
+    assert refresh_client.get("/leads").json()[0]["lead_id"] == "gdelt_api_1"
+    get_settings.cache_clear()
+
+
 def test_replay_cycle() -> None:
     start_response = client.post("/replay/start", json={"asset_id": "demo_bridge_01"})
     assert start_response.status_code == 200
@@ -1066,6 +1340,60 @@ def test_default_frames_alerts_and_metrics_use_hero_scenario() -> None:
     assert metrics.json()["downlink_rate"] == 0.035
 
 
+def test_current_evidence_endpoint_returns_sam3_fixture_report() -> None:
+    client.post("/replay/stop")
+
+    response = client.get("/evidence/current")
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["asset_id"] == "demo_port_01"
+    assert payload["model_version"] == "facebook/sam3"
+    assert payload["backend"] == "fixture"
+    assert payload["decision"] == "segmentation_ready"
+    assert payload["triage_action"] == "downlink_now"
+    assert payload["masks"][0]["bbox_norm"] == [0.19, 0.26, 0.73, 0.84]
+    assert payload["visual_evidence_tags"] == ["damaged_port_or_logistics_apron"]
+
+
+def test_asset_evidence_endpoint_returns_reference_event_report() -> None:
+    response = client.get("/evidence/assets/beirut_port_01")
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["asset_id"] == "beirut_port_01"
+    assert payload["decision"] == "segmentation_ready"
+    assert payload["triage_action"] != "discard"
+    assert payload["masks"]
+
+
+def test_asset_evidence_endpoint_returns_null_for_unknown_asset() -> None:
+    response = client.get("/evidence/assets/unknown_asset")
+
+    assert response.status_code == 200
+    assert response.json() is None
+
+
+def test_replay_snapshot_returns_aligned_hero_payload() -> None:
+    client.post("/replay/stop")
+
+    snapshot = client.get("/replay/snapshot")
+
+    assert snapshot.status_code == 200
+    payload = snapshot.json()
+    assert payload["replay"]["running"] is False
+    assert payload["current_frame"]["frame"]["asset_id"] == "demo_port_01"
+    assert payload["current_frame"]["baseline_frame_id"] == (
+        payload["baseline_frame"]["frame"]["frame_id"]
+    )
+    assert payload["alerts"][0]["alert_id"] == "blk_00017"
+    assert payload["alerts"][0]["source"]["current_frame_id"] == (
+        payload["current_frame"]["frame"]["frame_id"]
+    )
+    assert payload["metrics"]["frames_scanned"] == 143
+    assert payload["metrics"]["alerts_emitted"] == len(payload["alerts"]) + 4
+
+
 def test_replay_switches_frames_alerts_and_metrics_to_selected_asset() -> None:
     start_response = client.post("/replay/start", json={"asset_id": "demo_bridge_01"})
     assert start_response.status_code == 200
@@ -1097,6 +1425,26 @@ def test_replay_switches_frames_alerts_and_metrics_to_selected_asset() -> None:
     assert metrics.json()["alerts_emitted"] == 2
     assert metrics.json()["raw_frames_suppressed"] == 86
     assert metrics.json()["downlink_rate"] == 0.023
+
+
+def test_replay_snapshot_returns_aligned_selected_asset_payload() -> None:
+    start_response = client.post("/replay/start", json={"asset_id": "demo_bridge_01"})
+    snapshot = client.get("/replay/snapshot")
+
+    assert start_response.status_code == 200
+    assert snapshot.status_code == 200
+    payload = snapshot.json()
+    assert payload["replay"]["running"] is True
+    assert payload["replay"]["asset_id"] == "demo_bridge_01"
+    assert payload["replay"]["scenario_id"] == "bridge_access_obstruction"
+    assert payload["current_frame"]["frame"]["asset_id"] == "demo_bridge_01"
+    assert payload["baseline_frame"]["frame"]["asset_id"] == "demo_bridge_01"
+    assert payload["alerts"][0]["alert_id"] == "blk_00018"
+    assert payload["alerts"][0]["source"]["baseline_frame_id"] == (
+        payload["baseline_frame"]["frame"]["frame_id"]
+    )
+    assert payload["metrics"]["frames_scanned"] == 88
+    assert payload["metrics"]["alerts_emitted"] == 2
 
 
 def test_replay_prefers_explicit_scenario_id_over_asset_hint() -> None:

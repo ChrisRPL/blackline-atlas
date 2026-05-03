@@ -7,12 +7,1177 @@ from urllib.error import URLError
 
 from app.core.config import Settings
 from app.schemas.agent import AtlasAgentQueryRequest
+from app.schemas.lead import Lead, LeadRefreshRequest
 from app.schemas.replay import ReplayStartRequest
 from app.services.frame_filters import FrameFilterPolicy
 from app.services.model_wrapper import PromptedCandidateModel
 from app.services.prompt_builder import CandidatePromptBuilder
 from app.services.sentinel_client import FixtureSentinelPayloadTransport
 from app.services.stub import StubAtlasService
+
+
+def test_stub_service_reloads_generated_live_lead_cache(tmp_path: Path) -> None:
+    lead_registry_path = tmp_path / "live_leads.json"
+    lead_registry_path.write_text(
+        json.dumps(
+            [
+                {
+                    "lead_id": "gdelt_1",
+                    "title": "Kharkiv armed conflict",
+                    "region": "Kharkiv, Ukraine",
+                    "latitude": 49.9935,
+                    "longitude": 36.2304,
+                    "category_guess": "civilian_building_cluster",
+                    "status": "lead_only",
+                    "source_date": "2026-04-28",
+                }
+            ]
+        ),
+        encoding="utf-8",
+    )
+    service = StubAtlasService(
+        Settings(
+            app_env="test",
+            app_port=8000,
+            model_version="lfm2.5-vl-450m-prompted",
+            simsat_current_endpoint=None,
+            simsat_baseline_endpoint=None,
+            mapbox_token_present=False,
+            watchlist_path=None,
+            lead_registry_path=str(lead_registry_path),
+        )
+    )
+
+    assert [lead.lead_id for lead in service.list_leads()] == ["gdelt_1"]
+
+    lead_registry_path.write_text(
+        json.dumps(
+            [
+                {
+                    "lead_id": "gdelt_2",
+                    "title": "Gaza disruption lead",
+                    "region": "Gaza",
+                    "latitude": 31.5017,
+                    "longitude": 34.4668,
+                    "category_guess": "civilian_building_cluster",
+                    "status": "lead_only",
+                    "source_date": "2026-04-28",
+                }
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    assert [lead.lead_id for lead in service.list_leads()] == ["gdelt_2"]
+
+
+def test_stub_service_does_not_link_live_lead_to_seeded_evidence_when_simsat_missing(
+    tmp_path: Path,
+) -> None:
+    lead_registry_path = tmp_path / "live_leads.json"
+    lead_registry_path.write_text(
+        json.dumps(
+            [
+                {
+                    "lead_id": "gdelt_kramatorsk",
+                    "title": "Russian shelling reported in Kramatorsk",
+                    "region": "Kramatorsk, Donetsk, Ukraine",
+                    "latitude": 48.7387,
+                    "longitude": 37.5848,
+                    "category_guess": "water_infrastructure",
+                    "status": "lead_only",
+                    "source_date": "2026-04-28",
+                }
+            ]
+        ),
+        encoding="utf-8",
+    )
+    service = StubAtlasService(
+        Settings(
+            app_env="test",
+            app_port=8000,
+            model_version="lfm2.5-vl-450m-prompted",
+            simsat_current_endpoint=None,
+            simsat_baseline_endpoint=None,
+            mapbox_token_present=False,
+            watchlist_path=None,
+            lead_registry_path=str(lead_registry_path),
+        )
+    )
+
+    lead = service.list_leads()[0]
+    assert lead.linked_asset_id is None
+
+    response = service.run_agent_query(
+        AtlasAgentQueryRequest(
+            tool="site_compare",
+            selected_lead_id=lead.lead_id,
+        )
+    )
+
+    assert response.tool == "site_compare"
+    assert response.status == "no_result"
+    assert response.focus_asset_id is None
+    assert response.focus_lead_id == lead.lead_id
+    assert response.compare is None
+    assert response.leads[0].lead_id == lead.lead_id
+    assert "not satellite-observable" in response.summary
+
+
+def test_stub_service_links_only_satellite_observable_live_leads(
+    tmp_path: Path,
+) -> None:
+    lead_registry_path = tmp_path / "live_leads.json"
+    lead_registry_path.write_text(
+        json.dumps(
+            [
+                {
+                    "lead_id": "gdelt_visible_damage",
+                    "title": "Drone strike damages port warehouse",
+                    "region": "Odesa, Ukraine",
+                    "latitude": 46.4825,
+                    "longitude": 30.7233,
+                    "category_guess": "aid_warehouse_cluster",
+                    "status": "lead_only",
+                    "summary": (
+                        "Visible building damage and fire reported at a civilian logistics site."
+                    ),
+                    "source_date": "2026-04-30",
+                },
+                {
+                    "lead_id": "gdelt_source_only",
+                    "title": "Two people killed during armed clash",
+                    "region": "Kramatorsk, Ukraine",
+                    "latitude": 48.7387,
+                    "longitude": 37.5848,
+                    "category_guess": "civilian_building_cluster",
+                    "status": "lead_only",
+                    "summary": (
+                        "Local source reports casualties after a brief clash; "
+                        "no infrastructure site is described."
+                    ),
+                    "source_date": "2026-04-30",
+                    "linked_asset_id": "live_gdelt_source_only",
+                },
+            ]
+        ),
+        encoding="utf-8",
+    )
+    service = StubAtlasService(
+        Settings(
+            app_env="test",
+            app_port=8000,
+            model_version="lfm2.5-vl-450m-prompted",
+            simsat_current_endpoint="http://simsat/current",
+            simsat_baseline_endpoint="http://simsat/baseline",
+            simsat_current_http_enabled=True,
+            simsat_baseline_http_enabled=True,
+            mapbox_token_present=False,
+            watchlist_path=None,
+            lead_registry_path=str(lead_registry_path),
+        )
+    )
+
+    leads = {lead.lead_id: lead for lead in service.list_leads()}
+
+    assert leads["gdelt_visible_damage"].linked_asset_id == "live_gdelt_visible_damage"
+    assert leads["gdelt_source_only"].linked_asset_id is None
+    assert "live_gdelt_source_only" not in {asset.asset_id for asset in service.list_assets()}
+
+    response = service.run_agent_query(
+        AtlasAgentQueryRequest(
+            tool="site_compare",
+            selected_lead_id="gdelt_source_only",
+        )
+    )
+
+    assert response.status == "no_result"
+    assert response.focus_asset_id is None
+    assert response.focus_lead_id == "gdelt_source_only"
+    assert "not satellite-observable" in response.summary
+    assert response.leads[0].linked_asset_id is None
+
+
+def test_stub_service_uses_mapbox_context_when_simsat_pair_is_unresolved(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    lead_registry_path = tmp_path / "live_leads.json"
+    lead_registry_path.write_text(
+        json.dumps(
+            [
+                {
+                    "lead_id": "gdelt_dnipro",
+                    "title": "Dnipro strike damages apartment buildings",
+                    "region": "Dnipro, Ukraine",
+                    "latitude": 48.4647,
+                    "longitude": 35.0462,
+                    "category_guess": "civilian_building_cluster",
+                    "status": "lead_only",
+                    "source_date": "2026-04-14",
+                }
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    def fake_sentinel_urlopen(url: str, timeout: float):
+        _ = url
+        _ = timeout
+        raise URLError("simsat unavailable")
+
+    class FakeMapboxResponse:
+        status = 200
+        headers: dict[str, str] = {}
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc, tb) -> None:
+            _ = exc_type
+            _ = exc
+            _ = tb
+
+        def read(self) -> bytes:
+            return b"png"
+
+        def getcode(self) -> int:
+            return self.status
+
+    requested_mapbox_urls: list[str] = []
+
+    def fake_mapbox_urlopen(url: str, timeout: float):
+        requested_mapbox_urls.append(url)
+        assert timeout == 4.0
+        assert "access_token=test-mapbox-token" in url
+        return FakeMapboxResponse()
+
+    monkeypatch.setattr("app.services.sentinel_client.urlopen", fake_sentinel_urlopen)
+    monkeypatch.setattr("app.services.stub.urlopen", fake_mapbox_urlopen)
+    service = StubAtlasService(
+        Settings(
+            app_env="test",
+            app_port=8000,
+            model_version="lfm2.5-vl-450m-prompted",
+            simsat_current_endpoint="http://localhost:9005/data/current/image/sentinel",
+            simsat_baseline_endpoint="http://localhost:9005/data/image/sentinel",
+            simsat_current_http_enabled=True,
+            simsat_baseline_http_enabled=True,
+            mapbox_token_present=True,
+            mapbox_token="test-mapbox-token",
+            mapbox_context_enabled=True,
+            watchlist_path=None,
+            lead_registry_path=str(lead_registry_path),
+        )
+    )
+
+    lead = service.list_leads()[0]
+    response = service.run_agent_query(
+        AtlasAgentQueryRequest(tool="site_compare", selected_lead_id=lead.lead_id)
+    )
+
+    assert response.status == "ok"
+    assert response.compare is not None
+    assert response.compare.satellite_evidence is not None
+    assert response.compare.satellite_evidence.scope == "satellite_context_only"
+    assert response.compare.satellite_evidence.usable_for_evidence is False
+    assert response.compare.satellite_evidence.usability == "context_only"
+    assert response.compare.satellite_evidence.attempts
+    assert response.compare.current_frame.filter_reason == "satellite_context_only"
+    assert response.compare.baseline_frame.filter_reason == "satellite_context_only"
+    assert Path(response.compare.current_frame.frame.image_ref or "").exists()
+    assert Path(response.compare.baseline_frame.frame.image_ref or "").exists()
+    assert response.analyst_report is None
+    assert service.get_asset_analyst_report(lead.linked_asset_id or f"live_{lead.lead_id}") is None
+    assert service.get_asset_evidence(lead.linked_asset_id or f"live_{lead.lead_id}") is None
+    assert len(requested_mapbox_urls) == 2
+    assert all(",18.0,0/1024x576@2x" in url for url in requested_mapbox_urls)
+    assert response.compare.satellite_evidence.size_km < 3.0
+
+
+def test_stub_service_search_live_leads_skips_watchlist_evaluation(monkeypatch) -> None:
+    def fake_urlopen(request, timeout: float):
+        _ = request
+        _ = timeout
+        return _FakeHTTPResponse(
+            body=json.dumps(
+                {
+                    "output_text": json.dumps(
+                        {
+                            "tool": "search_live_leads",
+                            "area": "Red Sea",
+                            "category": None,
+                            "site_id": None,
+                            "alert_id": None,
+                        }
+                    )
+                }
+            ).encode("utf-8")
+        )
+
+    monkeypatch.setattr("app.services.model_gateway.urlopen", fake_urlopen)
+    service = StubAtlasService(
+        Settings(
+            app_env="test",
+            app_port=8000,
+            model_version="lfm2.5-vl-450m-prompted",
+            simsat_current_endpoint="https://example.test/sentinel/current/",
+            simsat_baseline_endpoint="https://example.test/sentinel/baseline/",
+            simsat_current_http_enabled=True,
+            simsat_baseline_http_enabled=True,
+            mapbox_token_present=False,
+            watchlist_path=None,
+            agent_endpoint="https://example.test/agent",
+            agent_http_enabled=True,
+            agent_provider="atlas_json_http",
+        )
+    )
+
+    def fail_watchlist_evaluation():
+        raise AssertionError("search_live_leads must not evaluate replay watchlist frames")
+
+    monkeypatch.setattr(service, "_watchlist_evaluations", fail_watchlist_evaluation)
+
+    response = service.run_agent_query(
+        AtlasAgentQueryRequest(
+            query="Which active conflict regions near the Red Sea should I inspect first?"
+        )
+    )
+
+    assert response.tool == "search_live_leads"
+    assert response.resolved.area == "Red Sea"
+    assert response.compare is None
+
+
+def test_stub_service_refreshes_live_leads_into_runtime_cache(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    monkeypatch.chdir(tmp_path)
+
+    def fake_refresh_lead_registry(**kwargs):
+        assert kwargs["source_mode"] == "gdelt"
+        assert kwargs["output_path"] == "var/live_leads.json"
+        assert kwargs["gdelt_hours"] == 72
+        assert kwargs["gdelt_limit"] == 500
+        assert kwargs["preserve_on_empty"] is True
+        return (
+            [
+                Lead(
+                    lead_id="gdelt_live_1",
+                    title="Kharkiv armed conflict",
+                    region="Kharkiv, Ukraine",
+                    latitude=49.9935,
+                    longitude=36.2304,
+                    category_guess="civilian_building_cluster",
+                    status="lead_only",
+                    source_date="2026-04-28",
+                )
+            ],
+            2,
+        )
+
+    monkeypatch.setattr("app.services.stub.refresh_lead_registry", fake_refresh_lead_registry)
+    service = StubAtlasService(
+        Settings(
+            app_env="test",
+            app_port=8000,
+            model_version="lfm2.5-vl-450m-prompted",
+            simsat_current_endpoint=None,
+            simsat_baseline_endpoint=None,
+            mapbox_token_present=False,
+            watchlist_path=None,
+            lead_registry_path=None,
+        )
+    )
+
+    response = service.refresh_leads(LeadRefreshRequest(source_mode="gdelt"))
+
+    assert response.output_path == "var/live_leads.json"
+    assert response.source_mode == "gdelt"
+    assert response.lead_count == 1
+    assert response.reachable_source_count == 2
+    assert [lead.lead_id for lead in service.list_leads()] == ["gdelt_live_1"]
+
+
+def test_stub_service_preserves_existing_leads_when_live_refresh_returns_empty(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    monkeypatch.chdir(tmp_path)
+
+    def fake_refresh_lead_registry(**kwargs):
+        assert kwargs["preserve_on_empty"] is True
+        return [], 0
+
+    monkeypatch.setattr("app.services.stub.refresh_lead_registry", fake_refresh_lead_registry)
+    service = StubAtlasService(
+        Settings(
+            app_env="test",
+            app_port=8000,
+            model_version="lfm2.5-vl-450m-prompted",
+            simsat_current_endpoint=None,
+            simsat_baseline_endpoint=None,
+            mapbox_token_present=False,
+            watchlist_path=None,
+            lead_registry_path=None,
+        )
+    )
+    before = [lead.lead_id for lead in service.list_leads()]
+
+    response = service.refresh_leads(LeadRefreshRequest(source_mode="gdelt"))
+
+    assert response.lead_count == 0
+    assert [lead.lead_id for lead in service.list_leads()] == before
+
+
+def test_stub_service_auto_refresh_prefers_acled_when_configured(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    monkeypatch.chdir(tmp_path)
+
+    def fake_refresh_lead_registry(**kwargs):
+        assert kwargs["source_mode"] == "acled"
+        assert kwargs["acled_access_token"] == "token-123"
+        return (
+            [
+                Lead(
+                    lead_id="acled_live_1",
+                    title="Gaza Air/drone strike",
+                    region="Gaza, Palestine",
+                    latitude=31.5017,
+                    longitude=34.4668,
+                    category_guess="civilian_building_cluster",
+                    status="lead_only",
+                    source_date="2026-04-28",
+                )
+            ],
+            1,
+        )
+
+    monkeypatch.setattr("app.services.stub.refresh_lead_registry", fake_refresh_lead_registry)
+    service = StubAtlasService(
+        Settings(
+            app_env="test",
+            app_port=8000,
+            model_version="lfm2.5-vl-450m-prompted",
+            simsat_current_endpoint=None,
+            simsat_baseline_endpoint=None,
+            mapbox_token_present=False,
+            watchlist_path=None,
+            lead_registry_path=None,
+            acled_access_token="token-123",
+            acled_lead_enabled=True,
+        )
+    )
+
+    response = service.refresh_leads(LeadRefreshRequest())
+
+    assert response.source_mode == "acled"
+    assert response.lead_count == 1
+    assert [lead.lead_id for lead in service.list_leads()] == ["acled_live_1"]
+
+
+def test_stub_service_auto_refresh_prefers_gdelt_cloud_when_key_configured(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    monkeypatch.chdir(tmp_path)
+
+    def fake_refresh_lead_registry(**kwargs):
+        assert kwargs["source_mode"] == "gdelt_cloud"
+        assert kwargs["gdelt_cloud_api_key"] == "gdelt_sk_test"
+        return (
+            [
+                Lead(
+                    lead_id="gdeltcloud_live_1",
+                    title="Strike damages infrastructure in Kharkiv",
+                    region="Kharkiv, Ukraine",
+                    latitude=49.9935,
+                    longitude=36.2304,
+                    category_guess="civilian_building_cluster",
+                    status="lead_only",
+                    source_date="2026-04-28",
+                )
+            ],
+            1,
+        )
+
+    monkeypatch.setattr("app.services.stub.refresh_lead_registry", fake_refresh_lead_registry)
+    service = StubAtlasService(
+        Settings(
+            app_env="test",
+            app_port=8000,
+            model_version="lfm2.5-vl-450m-prompted",
+            simsat_current_endpoint=None,
+            simsat_baseline_endpoint=None,
+            mapbox_token_present=False,
+            watchlist_path=None,
+            lead_registry_path=None,
+            gdelt_cloud_api_key="gdelt_sk_test",
+        )
+    )
+
+    response = service.refresh_leads(LeadRefreshRequest())
+
+    assert response.source_mode == "gdelt_cloud"
+    assert response.lead_count == 1
+    assert [lead.lead_id for lead in service.list_leads()] == ["gdeltcloud_live_1"]
+
+
+def test_stub_service_auto_refresh_falls_back_to_gdelt_when_gdelt_cloud_empty(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    seen_modes: list[str] = []
+
+    def fake_refresh_lead_registry(**kwargs):
+        seen_modes.append(kwargs["source_mode"])
+        if kwargs["source_mode"] == "gdelt_cloud":
+            return [], 0
+        return (
+            [
+                Lead(
+                    lead_id="gdelt_live_1",
+                    title="Kharkiv armed conflict",
+                    region="Kharkiv, Ukraine",
+                    latitude=49.9935,
+                    longitude=36.2304,
+                    category_guess="civilian_building_cluster",
+                    status="lead_only",
+                    source_date="2026-04-28",
+                )
+            ],
+            4,
+        )
+
+    monkeypatch.setattr("app.services.stub.refresh_lead_registry", fake_refresh_lead_registry)
+    service = StubAtlasService(
+        Settings(
+            app_env="test",
+            app_port=8000,
+            model_version="lfm2.5-vl-450m-prompted",
+            simsat_current_endpoint=None,
+            simsat_baseline_endpoint=None,
+            mapbox_token_present=False,
+            watchlist_path=None,
+            lead_registry_path=None,
+            gdelt_cloud_api_key="gdelt_sk_test",
+        )
+    )
+
+    response = service.refresh_leads(LeadRefreshRequest())
+
+    assert seen_modes == ["gdelt_cloud", "gdelt"]
+    assert response.source_mode == "gdelt"
+    assert response.lead_count == 1
+
+
+def test_stub_service_auto_refresh_falls_back_to_gdelt_when_acled_empty(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    seen_modes: list[str] = []
+
+    def fake_refresh_lead_registry(**kwargs):
+        seen_modes.append(kwargs["source_mode"])
+        if kwargs["source_mode"] == "acled":
+            return [], 0
+        return (
+            [
+                Lead(
+                    lead_id="gdelt_live_1",
+                    title="Kharkiv armed conflict",
+                    region="Kharkiv, Ukraine",
+                    latitude=49.9935,
+                    longitude=36.2304,
+                    category_guess="civilian_building_cluster",
+                    status="lead_only",
+                    source_date="2026-04-28",
+                )
+            ],
+            4,
+        )
+
+    monkeypatch.setattr("app.services.stub.refresh_lead_registry", fake_refresh_lead_registry)
+    service = StubAtlasService(
+        Settings(
+            app_env="test",
+            app_port=8000,
+            model_version="lfm2.5-vl-450m-prompted",
+            simsat_current_endpoint=None,
+            simsat_baseline_endpoint=None,
+            mapbox_token_present=False,
+            watchlist_path=None,
+            lead_registry_path=None,
+            acled_access_token="token-123",
+            acled_lead_enabled=True,
+        )
+    )
+
+    response = service.refresh_leads(LeadRefreshRequest())
+
+    assert seen_modes == ["acled", "gdelt"]
+    assert response.source_mode == "gdelt"
+    assert response.lead_count == 1
+    assert [lead.lead_id for lead in service.list_leads()] == ["gdelt_live_1"]
+
+
+def test_stub_service_auto_refresh_uses_gdelt_when_acled_disabled(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    seen_modes: list[str] = []
+
+    def fake_refresh_lead_registry(**kwargs):
+        seen_modes.append(kwargs["source_mode"])
+        return (
+            [
+                Lead(
+                    lead_id="gdelt_live_1",
+                    title="Kharkiv armed conflict",
+                    region="Kharkiv, Ukraine",
+                    latitude=49.9935,
+                    longitude=36.2304,
+                    category_guess="civilian_building_cluster",
+                    status="lead_only",
+                    source_date="2026-04-28",
+                )
+            ],
+            4,
+        )
+
+    monkeypatch.setattr("app.services.stub.refresh_lead_registry", fake_refresh_lead_registry)
+    service = StubAtlasService(
+        Settings(
+            app_env="test",
+            app_port=8000,
+            model_version="lfm2.5-vl-450m-prompted",
+            simsat_current_endpoint=None,
+            simsat_baseline_endpoint=None,
+            mapbox_token_present=False,
+            watchlist_path=None,
+            lead_registry_path=None,
+            acled_access_token="token-123",
+            acled_lead_enabled=False,
+        )
+    )
+
+    response = service.refresh_leads(LeadRefreshRequest())
+
+    assert seen_modes == ["gdelt"]
+    assert response.source_mode == "gdelt"
+    assert response.lead_count == 1
+
+
+def test_stub_service_compares_unlinked_live_lead_through_simsat(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    lead_registry_path = tmp_path / "live_leads.json"
+    lead_registry_path.write_text(
+        json.dumps(
+            [
+                {
+                    "lead_id": "gdelt_1",
+                    "title": "Kharkiv strike damages civilian buildings",
+                    "region": "Kharkiv, Ukraine",
+                    "latitude": 49.9935,
+                    "longitude": 36.2304,
+                    "category_guess": "civilian_building_cluster",
+                    "status": "lead_only",
+                    "source_date": "2026-04-28",
+                }
+            ]
+        ),
+        encoding="utf-8",
+    )
+    metadata = {
+        "image_available": True,
+        "source": "sentinel",
+        "spectral_bands": ["red", "green", "blue"],
+        "footprint": [],
+        "size_km": 5.0,
+        "cloud_cover": 0.1,
+        "datetime": "2026-04-28T12:00:00Z",
+        "timestamp": "2026-04-28T12:00:00Z",
+    }
+    requested_urls: list[str] = []
+
+    class FakeResponse:
+        status = 200
+        headers = {"sentinel_metadata": json.dumps(metadata)}
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc, tb) -> None:
+            _ = exc_type
+            _ = exc
+            _ = tb
+
+        def read(self) -> bytes:
+            return b"png"
+
+        def getcode(self) -> int:
+            return self.status
+
+    def fake_urlopen(url: str, timeout: float):
+        requested_urls.append(url)
+        assert timeout == 5.0
+        return FakeResponse()
+
+    monkeypatch.setattr("app.services.sentinel_client.urlopen", fake_urlopen)
+    service = StubAtlasService(
+        Settings(
+            app_env="test",
+            app_port=8000,
+            model_version="lfm2.5-vl-450m-prompted",
+            simsat_current_endpoint="http://simsat.test/data/current/image/sentinel",
+            simsat_baseline_endpoint="http://simsat.test/data/image/sentinel",
+            simsat_current_http_enabled=True,
+            simsat_baseline_http_enabled=True,
+            mapbox_token_present=False,
+            watchlist_path=None,
+            lead_registry_path=str(lead_registry_path),
+        )
+    )
+    lead = service.list_leads()[0]
+
+    response = service.run_agent_query(
+        AtlasAgentQueryRequest(tool="site_compare", selected_lead_id=lead.lead_id)
+    )
+
+    assert response.status == "ok"
+    assert response.compare is not None
+    assert response.compare.satellite_evidence is not None
+    assert response.compare.satellite_evidence.scope == "exact_aoi"
+    assert response.compare.satellite_evidence.offset_km == 0
+    assert response.compare.satellite_evidence.usability == "direct_clear"
+    assert response.compare.satellite_evidence.quality_score == 0.9
+    assert response.focus_asset_id == lead.linked_asset_id
+    assert any("lon=36.230400" in url for url in requested_urls)
+    assert any("lat=49.993500" in url for url in requested_urls)
+    assert "/data/image/sentinel" in response.compare.current_frame.frame.source
+    assert any("timestamp=2026-04-28T12%3A00%3A00Z" in url for url in requested_urls)
+    assert any("timestamp=2023-04-29T12%3A00%3A00Z" in url for url in requested_urls)
+    assert len(response.compare.satellite_evidence.attempts) == 1
+    assert response.compare.satellite_evidence.quality_warnings == []
+    assert response.compare.satellite_evidence.attempts[0].current_cloud_cover == 0.1
+    assert response.compare.satellite_evidence.attempts[0].baseline_cloud_cover == 0.1
+    assert response.analyst_report is None
+    assert service.get_asset_evidence(lead.linked_asset_id or f"live_{lead.lead_id}") is None
+    assert service.get_asset_analyst_report(lead.linked_asset_id or f"live_{lead.lead_id}") is None
+    assert Path(response.compare.current_frame.frame.image_ref or "").exists()
+
+
+def test_stub_service_prefers_clear_nearby_simsat_over_cloudy_exact_pair(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    lead_registry_path = tmp_path / "live_leads.json"
+    lead_registry_path.write_text(
+        json.dumps(
+            [
+                {
+                    "lead_id": "gdelt_cloudy_exact",
+                    "title": "Kharkiv strike damages civilian buildings",
+                    "region": "Kharkiv, Ukraine",
+                    "latitude": 49.9935,
+                    "longitude": 36.2304,
+                    "category_guess": "civilian_building_cluster",
+                    "status": "lead_only",
+                    "source_date": "2026-04-28",
+                }
+            ]
+        ),
+        encoding="utf-8",
+    )
+    requested_urls: list[str] = []
+
+    class FakeResponse:
+        status = 200
+
+        def __init__(self, cloud_cover: float) -> None:
+            metadata = {
+                "image_available": True,
+                "source": "sentinel",
+                "spectral_bands": ["red", "green", "blue"],
+                "footprint": [],
+                "size_km": 5.0,
+                "cloud_cover": cloud_cover,
+                "datetime": "2026-04-28T12:00:00Z",
+                "timestamp": "2026-04-28T12:00:00Z",
+            }
+            self.headers = {"sentinel_metadata": json.dumps(metadata)}
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc, tb) -> None:
+            _ = exc_type
+            _ = exc
+            _ = tb
+
+        def read(self) -> bytes:
+            return b"png"
+
+        def getcode(self) -> int:
+            return self.status
+
+    def fake_urlopen(url: str, timeout: float):
+        requested_urls.append(url)
+        assert timeout == 5.0
+        if "lat=49.993500" in url and "lon=36.230400" in url:
+            return FakeResponse(0.9)
+        return FakeResponse(0.08)
+
+    monkeypatch.setattr("app.services.sentinel_client.urlopen", fake_urlopen)
+    service = StubAtlasService(
+        Settings(
+            app_env="test",
+            app_port=8000,
+            model_version="lfm2.5-vl-450m-prompted",
+            simsat_current_endpoint="http://simsat.test/data/current/image/sentinel",
+            simsat_baseline_endpoint="http://simsat.test/data/image/sentinel",
+            simsat_current_http_enabled=True,
+            simsat_baseline_http_enabled=True,
+            mapbox_token_present=False,
+            watchlist_path=None,
+            lead_registry_path=str(lead_registry_path),
+        )
+    )
+    lead = service.list_leads()[0]
+
+    response = service.run_agent_query(
+        AtlasAgentQueryRequest(tool="site_compare", selected_lead_id=lead.lead_id)
+    )
+
+    assert response.status == "ok"
+    assert response.compare is not None
+    assert response.compare.satellite_evidence is not None
+    evidence = response.compare.satellite_evidence
+    assert evidence.scope == "nearby_aoi"
+    assert evidence.usable_for_evidence is True
+    assert evidence.usability == "direct_clear"
+    assert evidence.quality_score > 0.8
+    assert evidence.offset_km > 0
+    assert len(evidence.attempts) >= 4
+    assert evidence.attempts[0].current_cloud_cover == 0.9
+    assert evidence.attempts[0].baseline_cloud_cover == 0.9
+    assert evidence.attempts[-1].current_cloud_cover == 0.08
+    assert evidence.attempts[-1].baseline_cloud_cover == 0.08
+    assert evidence.quality_warnings == [f"nearby_offset_{evidence.offset_km:.1f}km"]
+    assert any("lat=49.966473" in url for url in requested_urls)
+    assert Path(response.compare.current_frame.frame.image_ref or "").exists()
+
+
+def test_stub_service_marks_all_cloudy_simsat_pair_as_cloud_limited(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    lead_registry_path = tmp_path / "live_leads.json"
+    lead_registry_path.write_text(
+        json.dumps(
+            [
+                {
+                    "lead_id": "gdelt_clouded_all_day",
+                    "title": "Dnipro strike damages apartment buildings",
+                    "region": "Dnipro, Ukraine",
+                    "latitude": 48.4647,
+                    "longitude": 35.0462,
+                    "category_guess": "civilian_building_cluster",
+                    "status": "lead_only",
+                    "source_date": "2026-04-29",
+                }
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    class FakeResponse:
+        status = 200
+
+        def __init__(self) -> None:
+            metadata = {
+                "image_available": True,
+                "source": "sentinel",
+                "spectral_bands": ["red", "green", "blue"],
+                "footprint": [],
+                "size_km": 5.0,
+                "cloud_cover": 0.92,
+                "datetime": "2026-04-29T12:00:00Z",
+                "timestamp": "2026-04-29T12:00:00Z",
+            }
+            self.headers = {"sentinel_metadata": json.dumps(metadata)}
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc, tb) -> None:
+            _ = exc_type
+            _ = exc
+            _ = tb
+
+        def read(self) -> bytes:
+            return b"png"
+
+        def getcode(self) -> int:
+            return self.status
+
+    def fake_urlopen(url: str, timeout: float):
+        _ = url
+        assert timeout == 5.0
+        return FakeResponse()
+
+    monkeypatch.setattr("app.services.sentinel_client.urlopen", fake_urlopen)
+    service = StubAtlasService(
+        Settings(
+            app_env="test",
+            app_port=8000,
+            model_version="lfm2.5-vl-450m-prompted",
+            simsat_current_endpoint="http://simsat.test/data/current/image/sentinel",
+            simsat_baseline_endpoint="http://simsat.test/data/image/sentinel",
+            simsat_current_http_enabled=True,
+            simsat_baseline_http_enabled=True,
+            mapbox_token_present=False,
+            watchlist_path=None,
+            lead_registry_path=str(lead_registry_path),
+        )
+    )
+    lead = service.list_leads()[0]
+
+    response = service.run_agent_query(
+        AtlasAgentQueryRequest(tool="site_compare", selected_lead_id=lead.lead_id)
+    )
+
+    assert response.status == "ok"
+    assert response.compare is not None
+    assert response.compare.satellite_evidence is not None
+    evidence = response.compare.satellite_evidence
+    assert evidence.scope == "exact_aoi"
+    assert evidence.usability == "cloud_limited"
+    assert evidence.usable_for_evidence is False
+    assert evidence.quality_score < 0.2
+    assert "visual scoring" in evidence.quality_summary
+    assert evidence.quality_warnings == ["current_cloud_92pct", "baseline_cloud_92pct"]
+    assert len(evidence.attempts) == 8
+    assert response.analyst_report is None
+    assert "not a confirmed visual alert" in response.summary
+
+
+def test_stub_service_uses_timestamped_simsat_when_current_overpass_has_no_image(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    lead_registry_path = tmp_path / "live_leads.json"
+    lead_registry_path.write_text(
+        json.dumps(
+            [
+                {
+                    "lead_id": "gdelt_2",
+                    "title": "Dnipro strike damages apartment buildings",
+                    "region": "Dnipro, Ukraine",
+                    "latitude": 48.4647,
+                    "longitude": 35.0462,
+                    "category_guess": "civilian_building_cluster",
+                    "status": "lead_only",
+                    "source_date": "2026-04-29",
+                }
+            ]
+        ),
+        encoding="utf-8",
+    )
+    no_current_metadata = {
+        "image_available": False,
+        "source": None,
+        "spectral_bands": ["red", "green", "blue"],
+        "footprint": [],
+        "size_km": 5.0,
+        "cloud_cover": None,
+        "datetime": None,
+        "timestamp": None,
+    }
+    historical_metadata = {
+        "image_available": True,
+        "source": "sentinel",
+        "spectral_bands": ["red", "green", "blue"],
+        "footprint": [],
+        "size_km": 5.0,
+        "cloud_cover": 0.08,
+        "datetime": "2026-04-29T12:00:00Z",
+        "timestamp": "2026-04-29T12:00:00Z",
+    }
+    requested_urls: list[str] = []
+
+    class FakeResponse:
+        status = 200
+
+        def __init__(self, metadata: dict[str, object], body: bytes) -> None:
+            self.headers = {"sentinel_metadata": json.dumps(metadata)}
+            self._body = body
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc, tb) -> None:
+            _ = exc_type
+            _ = exc
+            _ = tb
+
+        def read(self) -> bytes:
+            return self._body
+
+        def getcode(self) -> int:
+            return self.status
+
+    def fake_urlopen(url: str, timeout: float):
+        requested_urls.append(url)
+        assert timeout == 5.0
+        if "/data/current/image/sentinel" in url:
+            return FakeResponse(no_current_metadata, b"")
+        return FakeResponse(historical_metadata, b"png")
+
+    monkeypatch.setattr("app.services.sentinel_client.urlopen", fake_urlopen)
+    service = StubAtlasService(
+        Settings(
+            app_env="test",
+            app_port=8000,
+            model_version="lfm2.5-vl-450m-prompted",
+            simsat_current_endpoint="http://simsat.test/data/current/image/sentinel",
+            simsat_baseline_endpoint="http://simsat.test/data/image/sentinel",
+            simsat_current_http_enabled=True,
+            simsat_baseline_http_enabled=True,
+            mapbox_token_present=False,
+            watchlist_path=None,
+            lead_registry_path=str(lead_registry_path),
+        )
+    )
+    lead = service.list_leads()[0]
+
+    response = service.run_agent_query(
+        AtlasAgentQueryRequest(tool="site_compare", selected_lead_id=lead.lead_id)
+    )
+
+    assert response.compare is not None
+    assert response.compare.current_frame.filter_reason == "simsat_historical_current_frame"
+    assert response.compare.satellite_evidence is not None
+    assert response.compare.satellite_evidence.scope == "exact_aoi"
+    assert "/data/image/sentinel" in response.compare.current_frame.frame.source
+    assert sum("/data/image/sentinel" in url for url in requested_urls) >= 2
+    assert Path(response.compare.current_frame.frame.image_ref or "").exists()
+
+
+def test_stub_service_falls_back_to_nearby_simsat_imagery_for_live_lead(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    lead_registry_path = tmp_path / "live_leads.json"
+    lead_registry_path.write_text(
+        json.dumps(
+            [
+                {
+                    "lead_id": "gdelt_3",
+                    "title": "Kharkiv strike damages civilian buildings",
+                    "region": "Kharkiv, Ukraine",
+                    "latitude": 49.9935,
+                    "longitude": 36.2304,
+                    "category_guess": "civilian_building_cluster",
+                    "status": "lead_only",
+                    "source_date": "2026-04-28",
+                }
+            ]
+        ),
+        encoding="utf-8",
+    )
+    no_image_metadata = {
+        "image_available": False,
+        "source": None,
+        "spectral_bands": ["red", "green", "blue"],
+        "footprint": [],
+        "size_km": 5.0,
+        "cloud_cover": None,
+        "datetime": None,
+        "timestamp": None,
+    }
+    available_metadata = {
+        "image_available": True,
+        "source": "sentinel",
+        "spectral_bands": ["red", "green", "blue"],
+        "footprint": [],
+        "size_km": 10.0,
+        "cloud_cover": 0.2,
+        "datetime": "2026-04-28T12:00:00Z",
+        "timestamp": "2026-04-28T12:00:00Z",
+    }
+    requested_urls: list[str] = []
+
+    class FakeResponse:
+        status = 200
+
+        def __init__(self, metadata: dict[str, object], body: bytes) -> None:
+            self.headers = {"sentinel_metadata": json.dumps(metadata)}
+            self._body = body
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc, tb) -> None:
+            _ = exc_type
+            _ = exc
+            _ = tb
+
+        def read(self) -> bytes:
+            return self._body
+
+        def getcode(self) -> int:
+            return self.status
+
+    def fake_urlopen(url: str, timeout: float):
+        requested_urls.append(url)
+        assert timeout == 5.0
+        if "lat=49.993500" in url and "lon=36.230400" in url:
+            return FakeResponse(no_image_metadata, b"")
+        return FakeResponse(available_metadata, b"png")
+
+    monkeypatch.setattr("app.services.sentinel_client.urlopen", fake_urlopen)
+    service = StubAtlasService(
+        Settings(
+            app_env="test",
+            app_port=8000,
+            model_version="lfm2.5-vl-450m-prompted",
+            simsat_current_endpoint="http://simsat.test/data/current/image/sentinel",
+            simsat_baseline_endpoint="http://simsat.test/data/image/sentinel",
+            simsat_current_http_enabled=True,
+            simsat_baseline_http_enabled=True,
+            mapbox_token_present=False,
+            watchlist_path=None,
+            lead_registry_path=str(lead_registry_path),
+        )
+    )
+    lead = service.list_leads()[0]
+
+    response = service.run_agent_query(
+        AtlasAgentQueryRequest(tool="site_compare", selected_lead_id=lead.lead_id)
+    )
+
+    assert response.compare is not None
+    assert response.compare.satellite_evidence is not None
+    assert response.compare.satellite_evidence.scope == "nearby_aoi"
+    assert response.compare.satellite_evidence.usable_for_evidence is True
+    assert response.compare.satellite_evidence.offset_km > 0
+    assert any("lat=49.966473" in url for url in requested_urls)
+    assert Path(response.compare.current_frame.frame.image_ref or "").exists()
 
 
 def test_stub_service_marks_cloudy_frame_as_suppressed() -> None:
@@ -301,6 +1466,119 @@ def test_stub_service_keeps_fixture_only_frames_without_sentinel_endpoints(
     assert baseline.frame.source == "sentinel_baseline_stub"
 
 
+def test_stub_service_replay_snapshot_uses_one_active_scenario(tmp_path: Path, monkeypatch) -> None:
+    monkeypatch.chdir(tmp_path)
+    service = StubAtlasService(
+        Settings(
+            app_env="test",
+            app_port=8000,
+            model_version="lfm2.5-vl-450m-prompted",
+            simsat_current_endpoint=None,
+            simsat_baseline_endpoint=None,
+            mapbox_token_present=False,
+            watchlist_path=None,
+        )
+    )
+    service.start_replay(
+        ReplayStartRequest(
+            asset_id="demo_bridge_01",
+            scenario_id="bridge_access_obstruction",
+        )
+    )
+
+    snapshot = service.get_replay_snapshot()
+
+    assert snapshot.replay.asset_id == "demo_bridge_01"
+    assert snapshot.current_frame.frame.asset_id == "demo_bridge_01"
+    assert snapshot.baseline_frame.frame.asset_id == "demo_bridge_01"
+    assert snapshot.current_frame.baseline_frame_id == snapshot.baseline_frame.frame.frame_id
+    assert snapshot.alerts[0].alert_id == "blk_00018"
+    assert snapshot.metrics.frames_scanned == 88
+
+
+def test_stub_service_sam3_fixture_evidence_uses_active_alert_bbox(
+    tmp_path: Path, monkeypatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    service = StubAtlasService(
+        Settings(
+            app_env="test",
+            app_port=8000,
+            model_version="lfm2.5-vl-450m-prompted",
+            simsat_current_endpoint=None,
+            simsat_baseline_endpoint=None,
+            mapbox_token_present=False,
+            watchlist_path=None,
+        )
+    )
+
+    report = service.get_current_evidence()
+
+    assert report.model_version == "facebook/sam3"
+    assert report.backend == "fixture"
+    assert report.decision == "segmentation_ready"
+    assert report.triage_action == "downlink_now"
+    assert report.masks[0].bbox_norm == (0.19, 0.26, 0.73, 0.84)
+    assert report.prompts[:3] == ["warehouse", "container yard", "port crane"]
+
+
+def test_stub_service_can_opt_in_sam3_http_backend(tmp_path: Path, monkeypatch) -> None:
+    monkeypatch.chdir(tmp_path)
+
+    def fake_urlopen(request, timeout: float):
+        assert request.full_url == "https://example.test/sam3"
+        assert timeout == 20.0
+        body = json.loads(request.data.decode("utf-8"))
+        assert body["asset"]["asset_id"] == "demo_port_01"
+        assert "container yard" in body["prompts"]
+        return _FakeHTTPResponse(
+            body=json.dumps(
+                {
+                    "asset_id": "demo_port_01",
+                    "current_frame_id": "cur_demo_port_01_20260414",
+                    "baseline_frame_id": "base_demo_port_01_20250901",
+                    "model_version": "facebook/sam3.1",
+                    "backend": "sam3_http",
+                    "decision": "segmentation_ready",
+                    "prompts": body["prompts"],
+                    "masks": [
+                        {
+                            "label": "damaged port logistics apron",
+                            "prompt": "damaged port logistics apron",
+                            "score": 0.88,
+                            "bbox_norm": [0.19, 0.26, 0.73, 0.84],
+                            "area_ratio": 0.31,
+                        }
+                    ],
+                    "visual_evidence_tags": ["damaged_port_or_logistics_apron"],
+                    "triage_action": "downlink_now",
+                    "summary": "Remote SAM3 bridge returned one candidate mask.",
+                }
+            ).encode("utf-8")
+        )
+
+    monkeypatch.setattr("app.services.sam3_evidence.urlopen", fake_urlopen)
+    service = StubAtlasService(
+        Settings(
+            app_env="test",
+            app_port=8000,
+            model_version="lfm2.5-vl-450m-prompted",
+            simsat_current_endpoint=None,
+            simsat_baseline_endpoint=None,
+            mapbox_token_present=False,
+            watchlist_path=None,
+            sam3_endpoint="https://example.test/sam3",
+            sam3_http_enabled=True,
+        )
+    )
+
+    report = service.get_current_evidence()
+
+    assert report.backend == "sam3_http"
+    assert report.decision == "segmentation_ready"
+    assert report.masks[0].score == 0.88
+
+
 def test_stub_service_composes_sentinel_adapters_when_endpoints_are_configured(
     tmp_path: Path, monkeypatch
 ) -> None:
@@ -320,11 +1598,11 @@ def test_stub_service_composes_sentinel_adapters_when_endpoints_are_configured(
     current = service.get_current_frame()
     baseline = service.get_baseline_frame()
 
-    assert current.frame.source == (
+    assert current.frame.source.startswith(
         "https://example.test/sentinel/current"
         "?asset_id=demo_port_01&scenario_id=hero_port_disruption&mode=current"
     )
-    assert baseline.frame.source == (
+    assert baseline.frame.source.startswith(
         "https://example.test/sentinel/baseline"
         "?asset_id=demo_port_01&scenario_id=hero_port_disruption&mode=baseline"
     )
@@ -369,7 +1647,7 @@ def test_stub_service_uses_current_adapter_and_fixture_baseline_with_current_onl
     current = service.get_current_frame()
     baseline = service.get_baseline_frame()
 
-    assert current.frame.source == (
+    assert current.frame.source.startswith(
         "https://example.test/sentinel/current"
         "?asset_id=demo_port_01&scenario_id=hero_port_disruption&mode=current"
     )
@@ -739,15 +2017,18 @@ def test_stub_service_can_focus_selected_lead_without_asset() -> None:
 
     response = service.run_agent_query(
         AtlasAgentQueryRequest(
-            query="show latest alerts here",
+            tool="search_live_leads",
+            area="South Lebanon",
             selected_lead_id="lead_qasmiyeh_bridge_202604",
         )
     )
 
-    assert response.tool == "latest_alerts"
-    assert response.status == "no_result"
+    assert response.tool == "search_live_leads"
+    assert response.status == "ok"
     assert response.focus_asset_id is None
     assert response.focus_lead_id == "lead_qasmiyeh_bridge_202604"
+    assert response.leads[0].lead_id == "lead_qasmiyeh_bridge_202604"
+    assert "live source" in response.summary
     assert response.camera is not None
     assert response.camera.mode == "focus_lead"
 
@@ -814,7 +2095,7 @@ def test_stub_service_can_opt_in_http_agent_planner(tmp_path: Path, monkeypatch)
 
     def fake_urlopen(request, timeout: float):
         assert request.full_url == "https://example.test/agent"
-        assert timeout == 10.0
+        assert timeout == 3.0
         body = json.loads(request.data.decode("utf-8"))
         assert body["model_version"] == "lfm2.5-1.2b-instruct"
         return _FakeHTTPResponse(
@@ -862,7 +2143,7 @@ def test_stub_service_can_opt_in_openai_chat_agent_planner(tmp_path: Path, monke
 
     def fake_urlopen(request, timeout: float):
         assert request.full_url == "https://liquid.example/v1/chat/completions"
-        assert timeout == 10.0
+        assert timeout == 3.0
         body = json.loads(request.data.decode("utf-8"))
         assert body["model"] == "LiquidAI/LFM2.5-1.2B-Instruct"
         assert body["messages"][0]["role"] == "system"
@@ -1025,14 +2306,72 @@ def test_stub_service_sanitizes_invalid_live_planner_area_filter(
 
     assert response.tool == "latest_alerts"
     assert response.planner.mode == "live"
-    assert response.focus_asset_id == "demo_bridge_01"
-    assert response.focus_alert_id == "blk_00018"
     assert response.resolved.area is None
+    assert response.resolved.alert_id is None
 
 
-def test_stub_service_drops_spurious_live_planner_category_filter(
+def test_stub_service_regrounds_spurious_live_planner_area_from_query(
     tmp_path: Path, monkeypatch
 ) -> None:
+    monkeypatch.chdir(tmp_path)
+
+    def fake_urlopen(request, timeout: float):
+        _ = request
+        _ = timeout
+        return _FakeHTTPResponse(
+            body=json.dumps(
+                {
+                    "choices": [
+                        {
+                            "message": {
+                                "content": json.dumps(
+                                    {
+                                        "tool": "search_live_leads",
+                                        "area": "Port Sudan Aid Hub",
+                                        "category": None,
+                                        "site_id": None,
+                                        "alert_id": None,
+                                    }
+                                )
+                            }
+                        }
+                    ]
+                }
+            ).encode("utf-8")
+        )
+
+    monkeypatch.setattr("app.services.model_gateway.urlopen", fake_urlopen)
+    service = StubAtlasService(
+        Settings(
+            app_env="test",
+            app_port=8000,
+            model_version="lfm2.5-vl-450m-prompted",
+            simsat_current_endpoint=None,
+            simsat_baseline_endpoint=None,
+            mapbox_token_present=False,
+            watchlist_path=None,
+            agent_model_version="hf.co/LiquidAI/LFM2.5-1.2B-Instruct-GGUF",
+            agent_endpoint="http://127.0.0.1:11434/v1/chat/completions",
+            agent_http_enabled=True,
+            agent_provider="openai_chat_completions_http",
+        )
+    )
+
+    response = service.run_agent_query(
+        AtlasAgentQueryRequest(
+            query=(
+                "Scan current conflict disruption reports around Sudan and focus the strongest "
+                "civilian infrastructure marker with source context."
+            )
+        ),
+    )
+
+    assert response.tool == "search_live_leads"
+    assert response.planner.mode == "live"
+    assert response.resolved.area == "Sudan"
+
+
+def test_stub_service_honors_live_planner_category_filter(tmp_path: Path, monkeypatch) -> None:
     monkeypatch.chdir(tmp_path)
 
     def fake_urlopen(request, timeout: float):
@@ -1078,15 +2417,236 @@ def test_stub_service_drops_spurious_live_planner_category_filter(
     )
 
     response = service.run_agent_query(
-        AtlasAgentQueryRequest(query="show latest alerts near Black Sea"),
+        AtlasAgentQueryRequest(query="show latest aid warehouse cluster alerts near Black Sea"),
     )
 
     assert response.tool == "latest_alerts"
     assert response.planner.mode == "live"
-    assert response.focus_asset_id == "demo_port_01"
-    assert response.focus_alert_id == "blk_00017"
+    assert response.focus_asset_id is None
+    assert response.focus_alert_id is None
     assert response.resolved.area == "Black Sea"
+    assert response.resolved.category == "aid_warehouse_cluster"
+
+
+def test_stub_service_drops_inferred_category_for_broad_region_search(
+    tmp_path: Path, monkeypatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+
+    def fake_urlopen(request, timeout: float):
+        _ = request
+        _ = timeout
+        return _FakeHTTPResponse(
+            body=json.dumps(
+                {
+                    "choices": [
+                        {
+                            "message": {
+                                "content": json.dumps(
+                                    {
+                                        "tool": "search_live_leads",
+                                        "area": "Lebanon",
+                                        "category": "aid_shelter_campus",
+                                        "site_id": None,
+                                        "alert_id": None,
+                                    }
+                                )
+                            }
+                        }
+                    ]
+                }
+            ).encode("utf-8")
+        )
+
+    monkeypatch.setattr("app.services.model_gateway.urlopen", fake_urlopen)
+    service = StubAtlasService(
+        Settings(
+            app_env="test",
+            app_port=8000,
+            model_version="lfm2.5-vl-450m-prompted",
+            simsat_current_endpoint=None,
+            simsat_baseline_endpoint=None,
+            mapbox_token_present=False,
+            watchlist_path=None,
+            agent_model_version="hf.co/LiquidAI/LFM2.5-1.2B-Instruct-GGUF",
+            agent_endpoint="http://127.0.0.1:11434/v1/chat/completions",
+            agent_http_enabled=True,
+            agent_provider="openai_chat_completions_http",
+        )
+    )
+
+    response = service.run_agent_query(
+        AtlasAgentQueryRequest(query="show recent conflict reports near Lebanon"),
+    )
+
+    assert response.tool == "search_live_leads"
+    assert response.planner.mode == "live"
+    assert response.resolved.area == "Lebanon"
     assert response.resolved.category is None
+
+
+def test_stub_service_honors_live_planner_region_lead_search(tmp_path: Path, monkeypatch) -> None:
+    lead_registry_path = tmp_path / "live_leads.json"
+    lead_registry_path.write_text(
+        json.dumps(
+            [
+                {
+                    "lead_id": "gdeltcloud_iran_tehran",
+                    "title": "Reported disruption in Tehran",
+                    "region": "Tehran, Iran",
+                    "latitude": 35.6892,
+                    "longitude": 51.389,
+                    "category_guess": "civilian_building_cluster",
+                    "status": "lead_only",
+                    "summary": "Live source reports disruption affecting a civilian district.",
+                    "source_date": "2026-04-29",
+                }
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    def fake_urlopen(request, timeout: float):
+        _ = request
+        _ = timeout
+        return _FakeHTTPResponse(
+            body=json.dumps(
+                {
+                    "choices": [
+                        {
+                            "message": {
+                                "content": json.dumps(
+                                    {
+                                        "tool": "search_live_leads",
+                                        "area": "Tehran, Iran",
+                                        "category": None,
+                                        "site_id": None,
+                                        "alert_id": None,
+                                    }
+                                )
+                            }
+                        }
+                    ]
+                }
+            ).encode("utf-8")
+        )
+
+    monkeypatch.setattr("app.services.model_gateway.urlopen", fake_urlopen)
+    service = StubAtlasService(
+        Settings(
+            app_env="test",
+            app_port=8000,
+            model_version="lfm2.5-vl-450m-prompted",
+            simsat_current_endpoint=None,
+            simsat_baseline_endpoint=None,
+            mapbox_token_present=False,
+            watchlist_path=None,
+            lead_registry_path=str(lead_registry_path),
+            agent_model_version="hf.co/LiquidAI/LFM2.5-1.2B-Instruct-GGUF",
+            agent_endpoint="http://127.0.0.1:11434/v1/chat/completions",
+            agent_http_enabled=True,
+            agent_provider="openai_chat_completions_http",
+        )
+    )
+
+    response = service.run_agent_query(
+        AtlasAgentQueryRequest(query="what happened recently in Iran?"),
+    )
+
+    assert response.tool == "search_live_leads"
+    assert response.status == "ok"
+    assert response.focus_lead_id == "gdeltcloud_iran_tehran"
+    assert response.camera is not None
+    assert response.camera.mode == "focus_lead"
+    assert response.resolved.area == "Tehran, Iran"
+
+
+def test_stub_service_matches_macro_region_alias_for_live_lead_search(
+    tmp_path: Path, monkeypatch
+) -> None:
+    lead_registry_path = tmp_path / "live_leads.json"
+    lead_registry_path.write_text(
+        json.dumps(
+            [
+                {
+                    "lead_id": "gdeltcloud_iran_bushehr",
+                    "title": "Reported blast disruption near Bushehr port",
+                    "region": "Bushehr, Iran, Middle East",
+                    "latitude": 28.9234,
+                    "longitude": 50.8203,
+                    "category_guess": "logistics_hub",
+                    "status": "lead_only",
+                    "summary": "Live source reports disruption affecting a coastal district.",
+                    "source_date": "2026-04-29",
+                },
+                {
+                    "lead_id": "gdeltcloud_ukraine_kharkiv",
+                    "title": "Reported strike disruption in Kharkiv",
+                    "region": "Kharkiv, Ukraine, Europe",
+                    "latitude": 49.9935,
+                    "longitude": 36.2304,
+                    "category_guess": "civilian_building_cluster",
+                    "status": "lead_only",
+                    "summary": "Live source reports disruption affecting a civilian district.",
+                    "source_date": "2026-04-29",
+                },
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    def fake_urlopen(request, timeout: float):
+        _ = request
+        _ = timeout
+        return _FakeHTTPResponse(
+            body=json.dumps(
+                {
+                    "choices": [
+                        {
+                            "message": {
+                                "content": json.dumps(
+                                    {
+                                        "tool": "search_live_leads",
+                                        "area": "Persian Gulf",
+                                        "category": None,
+                                        "site_id": None,
+                                        "alert_id": None,
+                                    }
+                                )
+                            }
+                        }
+                    ]
+                }
+            ).encode("utf-8")
+        )
+
+    monkeypatch.setattr("app.services.model_gateway.urlopen", fake_urlopen)
+    service = StubAtlasService(
+        Settings(
+            app_env="test",
+            app_port=8000,
+            model_version="lfm2.5-vl-450m-prompted",
+            simsat_current_endpoint=None,
+            simsat_baseline_endpoint=None,
+            mapbox_token_present=False,
+            watchlist_path=None,
+            lead_registry_path=str(lead_registry_path),
+            agent_model_version="hf.co/LiquidAI/LFM2.5-1.2B-Instruct-GGUF",
+            agent_endpoint="http://127.0.0.1:11434/v1/chat/completions",
+            agent_http_enabled=True,
+            agent_provider="openai_chat_completions_http",
+        )
+    )
+
+    response = service.run_agent_query(
+        AtlasAgentQueryRequest(query="Show active conflict disruptions around the Persian Gulf."),
+    )
+
+    assert response.tool == "search_live_leads"
+    assert response.status == "ok"
+    assert response.resolved.area == "Persian Gulf"
+    assert response.focus_lead_id == "gdeltcloud_iran_bushehr"
+    assert [lead.lead_id for lead in response.leads] == ["gdeltcloud_iran_bushehr"]
 
 
 def test_stub_service_drops_spurious_live_planner_area_on_selected_site(
@@ -1178,6 +2738,7 @@ def test_stub_service_reports_agent_planner_http_fallback(tmp_path: Path, monkey
     )
 
     assert response.tool == "biggest_disruptions"
+    assert response.status == "no_result"
     assert response.planner.mode == "fallback"
     assert response.planner.reason == "planner_http_failed"
 
@@ -1212,7 +2773,8 @@ def test_stub_service_reports_agent_planner_invalid_json_fallback(
         AtlasAgentQueryRequest(query="compare the bridge"),
     )
 
-    assert response.tool == "site_compare"
+    assert response.tool == "search_live_leads"
+    assert response.status == "ok"
     assert response.planner.mode == "fallback"
     assert response.planner.reason == "planner_invalid_json"
 

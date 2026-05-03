@@ -168,3 +168,87 @@ def test_structured_alert_pipeline_repairs_single_item_discard_arrays() -> None:
     assert candidate.severity == "low"
     assert candidate.civilian_impact == "no_material_impact"
     assert candidate.action == "discard"
+
+
+def test_structured_alert_pipeline_repairs_messy_evidence_first_output() -> None:
+    pipeline = StructuredAlertPipeline(model_version="lfm2.5-vl-450m-prompted")
+
+    candidate = pipeline.parse_candidate(
+        raw_output_text=(
+            "Model note:\n```json\n"
+            '{"candidate":{"visual_evidence_tag":"debris_field",'
+            '"evidence_strength":"strong","damage_mechanism":"airstrike_or_artillery",'
+            '"visibility_quality":"excellent","negative_type":"none",'
+            '"bbox":[0.25,0.49,0.54,0.59],"bbox_quality":"tight",'
+            '"change_confidence":"91%","civilian_infrastructure_type":"apartment_complex",'
+            '"rationale":"Visible debris field affects a civilian apartment complex.",'
+            '"triage_action":"download_now"}}\n```'
+        )
+    )
+
+    assert candidate is not None
+    assert candidate.action == "downlink_now"
+    assert candidate.confidence == 0.91
+    assert candidate.bbox == (0.25, 0.49, 0.54, 0.59)
+
+
+def test_structured_alert_pipeline_downgrades_negative_evidence_to_discard() -> None:
+    pipeline = StructuredAlertPipeline(model_version="lfm2.5-vl-450m-prompted")
+    alert_seed = Alert(
+        alert_id="blk_00019",
+        timestamp="2026-04-14T18:40:00Z",
+        asset_id="demo_port_01",
+        asset_name="Demo Port 01",
+        asset_type="grain_port",
+        event_type="probable_large_scale_disruption",
+        severity="high",
+        confidence=0.89,
+        bbox=(0.19, 0.26, 0.73, 0.84),
+        civilian_impact="shipping_or_aid_disruption",
+        why="placeholder",
+        action="downlink_now",
+        source=AlertSource(
+            current_frame_id="cur_demo_port_01_20260414",
+            baseline_frame_id="base_demo_port_01_20250901",
+            model_version="fixture",
+        ),
+    )
+
+    resolution = pipeline.resolve(
+        raw_output_text=(
+            '{"visual_evidence_tags":["sar_speckle_or_modality_artifact"],'
+            '"evidence_strength":"weak","damage_mechanism":"modality_artifact",'
+            '"visibility_quality":"cross_modality",'
+            '"negative_type":"sar_speckle_or_modality_artifact",'
+            '"bbox_norm":[0.10,0.10,0.90,0.90],"bbox_quality":"coarse",'
+            '"change_confidence":0.82,"civilian_infrastructure_type":"grain_port",'
+            '"rationale":"SAR texture difference could be artifact.",'
+            '"triage_action":"downlink_now"}'
+        ),
+        alert_seed=alert_seed,
+        current_frame_id="cur_demo_port_01_20260414",
+        baseline_frame_id="base_demo_port_01_20250901",
+    )
+
+    assert resolution.reason == "model_discarded"
+    assert resolution.alert is None
+    assert resolution.candidate is not None
+    assert resolution.candidate.action == "discard"
+    assert resolution.candidate.event_type == "no_event"
+
+
+def test_structured_alert_pipeline_discards_low_confidence_positive_output() -> None:
+    pipeline = StructuredAlertPipeline(model_version="lfm2.5-vl-450m-prompted")
+
+    candidate = pipeline.parse_candidate(
+        raw_output_text=(
+            '{"event_type":"probable_large_scale_disruption","severity":"high",'
+            '"confidence":0.41,"bbox":[0.19,0.26,0.73,0.84],'
+            '"civilian_impact":"shipping_or_aid_disruption",'
+            '"why":"Weak positive claim.","action":"downlink_now"}'
+        )
+    )
+
+    assert candidate is not None
+    assert candidate.action == "discard"
+    assert candidate.event_type == "no_event"

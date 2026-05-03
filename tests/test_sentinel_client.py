@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass, field
+from pathlib import Path
 
 import pytest
 
@@ -120,6 +121,54 @@ def test_http_sentinel_payload_transport_returns_none_for_invalid_response(monke
     assert transport.fetch(plan) is None
 
 
+def test_http_sentinel_payload_transport_materializes_simsat_png(
+    monkeypatch,
+    tmp_path: Path,
+) -> None:
+    plan = SentinelRequestPlan(
+        endpoint="http://localhost:9005/data/current/image/sentinel",
+        params={
+            "asset_id": "live_gdelt_1",
+            "scenario_id": "live_lead_gdelt_1",
+            "mode": "current",
+            "lon": "36.230400",
+            "lat": "49.993500",
+            "return_type": "png",
+        },
+    )
+    metadata = {
+        "image_available": True,
+        "source": "sentinel",
+        "spectral_bands": ["red", "green", "blue"],
+        "footprint": [],
+        "size_km": 5.0,
+        "cloud_cover": 0.18,
+        "datetime": "2026-04-28T12:00:00Z",
+        "timestamp": "2026-04-28T12:00:00Z",
+    }
+
+    def fake_urlopen(url: str, timeout: float):
+        assert url == plan.url
+        assert timeout == 5.0
+        return _FakeHTTPResponse(
+            status=200,
+            body=b"png-bytes",
+            headers={"sentinel_metadata": json.dumps(metadata)},
+        )
+
+    monkeypatch.setattr("app.services.sentinel_client.urlopen", fake_urlopen)
+    transport = HttpSentinelPayloadTransport(output_dir=tmp_path / "frames")
+
+    payload = transport.fetch(plan)
+
+    assert payload is not None
+    assert payload["asset_id"] == "live_gdelt_1"
+    assert payload["captured_at"] == "2026-04-28T12:00:00Z"
+    assert payload["cloud_cover"] == 0.18
+    assert payload["filter_reason"] == "simsat_live_frame"
+    assert Path(str(payload["image_ref"])).read_bytes() == b"png-bytes"
+
+
 def test_configured_sentinel_source_builds_current_and_baseline_plans() -> None:
     source = ConfiguredSentinelEndpointSource(
         current_endpoint="https://example.test/sentinel/current/",
@@ -141,6 +190,41 @@ def test_configured_sentinel_source_builds_current_and_baseline_plans() -> None:
     assert baseline.url == (
         "https://example.test/sentinel/baseline"
         "?asset_id=demo_bridge_01&scenario_id=bridge_access_obstruction&mode=baseline"
+    )
+
+
+def test_configured_sentinel_source_builds_coordinate_simsat_plans() -> None:
+    source = ConfiguredSentinelEndpointSource(
+        current_endpoint="http://localhost:9005/data/current/image/sentinel/",
+        baseline_endpoint="http://localhost:9005/data/image/sentinel/",
+    )
+    request = FrameRequest(
+        asset_id="live_gdelt_1",
+        scenario_id="live_lead_gdelt_1",
+        latitude=49.9935,
+        longitude=36.2304,
+        requested_timestamp="2026-04-28T12:00:00Z",
+        baseline_timestamp="2023-04-29T12:00:00Z",
+    )
+
+    current = source.build_current_plan(request)
+    baseline = source.build_baseline_plan(request)
+
+    assert current is not None
+    assert baseline is not None
+    assert current.url == (
+        "http://localhost:9005/data/current/image/sentinel"
+        "?asset_id=live_gdelt_1&scenario_id=live_lead_gdelt_1&mode=current"
+        "&lon=36.230400&lat=49.993500&spectral_bands=red&spectral_bands=green"
+        "&spectral_bands=blue&size_km=5.0&window_seconds=864000&return_type=png"
+        "&timestamp=2026-04-28T12%3A00%3A00Z"
+    )
+    assert baseline.url == (
+        "http://localhost:9005/data/image/sentinel"
+        "?asset_id=live_gdelt_1&scenario_id=live_lead_gdelt_1&mode=baseline"
+        "&lon=36.230400&lat=49.993500&spectral_bands=red&spectral_bands=green"
+        "&spectral_bands=blue&size_km=5.0&window_seconds=864000&return_type=png"
+        "&timestamp=2023-04-29T12%3A00%3A00Z"
     )
 
 
@@ -528,9 +612,16 @@ class _FakeTransport:
 
 
 class _FakeHTTPResponse:
-    def __init__(self, *, status: int, body: bytes) -> None:
+    def __init__(
+        self,
+        *,
+        status: int,
+        body: bytes,
+        headers: dict[str, str] | None = None,
+    ) -> None:
         self.status = status
         self._body = body
+        self.headers = headers or {}
 
     def __enter__(self) -> _FakeHTTPResponse:
         return self

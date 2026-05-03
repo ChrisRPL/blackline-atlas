@@ -242,6 +242,59 @@ def test_eval_structured_outputs_scores_evidence_first_rows(tmp_path: Path) -> N
     assert summary["metrics"]["action_match"] == 1
 
 
+def test_eval_structured_outputs_uses_runtime_guardrails(tmp_path: Path) -> None:
+    _, dataset_path = build_dataset.write_replay_pack(tmp_path)
+    rows = [
+        json.loads(line)
+        for line in dataset_path.read_text(encoding="utf-8").splitlines()
+        if line.strip()
+    ]
+    rows[0]["expected_action"] = "discard"
+    rows[0]["expected_candidate"] = {
+        "event_type": "no_event",
+        "severity": "low",
+        "confidence": 0.35,
+        "bbox": [0.0, 0.0, 1.0, 1.0],
+        "civilian_impact": "no_material_impact",
+        "why": "SAR texture difference could be artifact.",
+        "action": "discard",
+    }
+    rows[0]["expected_alert"] = {
+        **rows[0]["expected_alert"],
+        **rows[0]["expected_candidate"],
+    }
+    dataset_path.write_text(json.dumps(rows[0]) + "\n", encoding="utf-8")
+    predictions_path = tmp_path / "predictions.jsonl"
+    predictions_path.write_text(
+        json.dumps(
+            {
+                "case_id": rows[0]["case_id"],
+                "raw_output": (
+                    '{"visual_evidence_tags":["sar_speckle_or_modality_artifact"],'
+                    '"evidence_strength":"weak","damage_mechanism":"modality_artifact",'
+                    '"visibility_quality":"cross_modality",'
+                    '"negative_type":"sar_speckle_or_modality_artifact",'
+                    '"bbox_norm":[0.10,0.10,0.90,0.90],"bbox_quality":"coarse",'
+                    '"change_confidence":0.82,"civilian_infrastructure_type":"grain_port",'
+                    '"rationale":"SAR texture difference could be artifact.",'
+                    '"triage_action":"downlink_now"}'
+                ),
+            }
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+    summary = eval_structured_outputs.evaluate_dataset(
+        dataset_path,
+        predictions_path=predictions_path,
+    )
+
+    assert summary["passed"] is True
+    assert summary["metrics"]["schema_valid"] == 1
+    assert summary["predicted_action_counts"]["discard"] == 1
+
+
 def test_eval_structured_outputs_fails_empty_dataset(tmp_path: Path) -> None:
     dataset_path = tmp_path / "empty.jsonl"
     dataset_path.write_text("", encoding="utf-8")

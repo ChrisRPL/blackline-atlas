@@ -4,6 +4,7 @@ import json
 from urllib.error import URLError
 
 from app.schemas.agent import AtlasAgentPlan
+from app.schemas.lead import Lead
 from app.services.agent_planner import (
     AgentPlannerBackendResult,
     HttpAgentPlannerBackend,
@@ -32,22 +33,80 @@ def test_agent_prompt_builder_targets_tool_plan_only() -> None:
         selected_lead=qasmiyeh,
     )
 
-    assert "Choose exactly one tool" in prompt.system
-    assert "Return JSON only" in prompt.system
-    assert "tool, area, category, site_id, alert_id, camera" in prompt.system
+    assert "Output exactly one minified JSON object" in prompt.system
+    assert "Required keys: tool, area, category, site_id, alert_id, camera" in prompt.system
+    assert "answer" in prompt.system
+    assert "scope_refusal" in prompt.system
+    assert "search_live_leads" in prompt.system
     assert "latest_alerts" in prompt.system
     assert "biggest_disruptions" in prompt.system
+    assert "refresh_live_leads" in prompt.system
     assert (
-        "Allowed category values: aid_shelter_campus, aid_warehouse_cluster, "
+        "Categories: aid_shelter_campus, aid_warehouse_cluster, "
         "bridge, container_port, grain_port, grain_storage_complex, logistics_hub, "
         "medical_aid_node, water_infrastructure."
     ) in prompt.system
-    assert "site_id must be exactly one watchlist asset_id or null." in prompt.system
-    assert "camera.mode must be watchlist, focus_asset, or focus_lead" in prompt.system
-    assert "For site_compare, set site_id" in prompt.system
+    assert "site_id must be one listed asset id or null." in prompt.system
+    assert "use site_compare" in prompt.system
+    assert "tool must be search_live_leads" in prompt.system
+    assert "use refresh_live_leads" in prompt.system
+    assert "If a selected_lead exists" in prompt.system
+    assert "Inspect the selected marker" in prompt.system
+    assert "use answer" in prompt.system
+    assert "If the user asks targeting/strike/troop/weapon" in prompt.system
+    assert 'Example output: {"tool":"search_live_leads"' in prompt.system
     assert "selected_asset: demo_port_01" in prompt.user
     assert "selected_lead: lead_qasmiyeh_bridge_202604" in prompt.user
+    assert "linked_asset_id=none" in prompt.user
     assert "user_query: show biggest disruptions near Black Sea" in prompt.user
+
+
+def test_agent_prompt_builder_marks_linked_leads_as_inspectable() -> None:
+    assets = load_watchlist_assets(None)
+    leads = load_lead_registry(None)
+    qasmiyeh = next(lead for lead in leads if lead.lead_id == "lead_qasmiyeh_bridge_202604")
+    inspectable = qasmiyeh.model_copy(update={"linked_asset_id": "live_lead_qasmiyeh"})
+
+    prompt = AgentPlannerPromptBuilder().build(
+        query="compare this point with baseline",
+        assets=assets,
+        leads=[inspectable],
+        selected_asset=None,
+        selected_lead=inspectable,
+    )
+
+    assert "use site_compare" in prompt.system
+    assert "lead_qasmiyeh_bridge_202604:" in prompt.user
+    assert "selected_lead: lead_qasmiyeh_bridge_202604" in prompt.user
+    assert "linked_asset_id=live_lead_qasmiyeh" in prompt.user
+
+
+def test_agent_prompt_builder_keeps_live_registry_context_compact() -> None:
+    assets = load_watchlist_assets(None)
+    leads = [
+        Lead(
+            lead_id=f"lead_{index}",
+            title=f"Lead {index}",
+            region=f"Region {index}",
+            latitude=0.0,
+            longitude=0.0,
+            category_guess="water_infrastructure",
+            status="lead_only",
+        )
+        for index in range(120)
+    ]
+
+    prompt = AgentPlannerPromptBuilder().build(
+        query="show recent disruption near Lebanon",
+        assets=assets,
+        leads=leads,
+        selected_asset=None,
+        selected_lead=None,
+    )
+
+    assert "lead_count: 120" in prompt.user
+    assert "selected_or_relevant_leads: none" in prompt.user
+    assert "lead_0" not in prompt.user
 
 
 def test_prompted_agent_planner_builds_text_only_payload() -> None:
@@ -91,6 +150,47 @@ def test_prompted_agent_planner_falls_back_on_invalid_json() -> None:
     assert decision.plan == fallback
     assert decision.mode == "fallback"
     assert decision.reason == "planner_invalid_json"
+
+
+def test_prompted_agent_planner_accepts_refresh_live_leads_plan() -> None:
+    plan = PromptedAtlasAgentPlanner(
+        model_version="lfm2.5-1.2b-instruct",
+        backend=_RecordingPlannerBackend(raw_text='{"tool":"refresh_live_leads","area":"Ukraine"}'),
+    ).parse_plan(
+        raw_text='{"tool":"refresh_live_leads","area":"Ukraine"}',
+        fallback_plan=AtlasAgentPlan(tool="latest_alerts"),
+    )
+
+    assert plan == AtlasAgentPlan(tool="refresh_live_leads", area="Ukraine")
+
+
+def test_prompted_agent_planner_normalizes_common_local_model_json_drift() -> None:
+    plan = PromptedAtlasAgentPlanner(
+        model_version="lfm2.5-1.2b-instruct",
+        backend=_RecordingPlannerBackend(raw_text="unused"),
+    ).parse_plan(
+        raw_text=(
+            "```json\n"
+            '{"tool":"search_live_leads","area":"Lebanon","category":"disruptions",'
+            '"site_id":"none","alert_id":"none","camera":null}\n'
+            "```"
+        ),
+        fallback_plan=AtlasAgentPlan(tool="answer"),
+    )
+
+    assert plan == AtlasAgentPlan(tool="search_live_leads", area="Lebanon")
+
+
+def test_prompted_agent_planner_rejects_payload_without_tool() -> None:
+    plan = PromptedAtlasAgentPlanner(
+        model_version="lfm2.5-1.2b-instruct",
+        backend=_RecordingPlannerBackend(raw_text="unused"),
+    ).parse_plan(
+        raw_text='{"area":"Lebanon","category":null}',
+        fallback_plan=AtlasAgentPlan(tool="answer"),
+    )
+
+    assert plan is None
 
 
 def test_http_agent_planner_backend_posts_payload() -> None:
