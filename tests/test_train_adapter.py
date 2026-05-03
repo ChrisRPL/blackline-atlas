@@ -179,7 +179,8 @@ runtime:
 hf_job:
   flavor: "l4x1"
   timeout: "4h"
-""".strip() + "\n",
+""".strip()
+        + "\n",
         encoding="utf-8",
     )
 
@@ -221,7 +222,8 @@ runtime:
 hf_job:
   flavor: "l4x1"
   timeout: "4h"
-""".strip() + "\n",
+""".strip()
+        + "\n",
         encoding="utf-8",
     )
     capture_dir = tmp_path / "capture"
@@ -324,7 +326,8 @@ runtime:
 hf_job:
   flavor: "l4x1"
   timeout: "4h"
-""".strip() + "\n",
+""".strip()
+        + "\n",
         encoding="utf-8",
     )
 
