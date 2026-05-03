@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
@@ -24,6 +24,16 @@ def create_app() -> FastAPI:
     app.state.atlas_service = StubAtlasService(settings=settings)
     app.include_router(router)
     app.mount("/ui-static", StaticFiles(directory=UI_DIR), name="ui-static")
+
+    @app.middleware("http")
+    async def no_store_ui_assets(request: Request, call_next):
+        response = await call_next(request)
+        path = request.url.path
+        if path in {"/ui", "/ui/"} or path.startswith("/ui-static/"):
+            response.headers["Cache-Control"] = "no-store, max-age=0"
+            response.headers["Pragma"] = "no-cache"
+            response.headers["Expires"] = "0"
+        return response
 
     @app.get("/ui", include_in_schema=False)
     @app.get("/ui/", include_in_schema=False)

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass
-from typing import Protocol
+from typing import Protocol, get_args
 
 from pydantic import ValidationError
 
@@ -10,8 +10,9 @@ from app.schemas.agent import (
     AtlasAgentPlan,
     AtlasAgentPlannerMode,
     AtlasAgentPlannerReason,
+    AtlasAgentTool,
 )
-from app.schemas.asset import Asset
+from app.schemas.asset import Asset, AssetType
 from app.schemas.lead import Lead
 from app.schemas.planner_payload import PlannerRequestPayload, PlannerTextInput
 from app.services.agent_prompt_builder import AgentPlannerPrompt, AgentPlannerPromptBuilder
@@ -200,8 +201,11 @@ class PromptedAtlasAgentPlanner:
                 continue
             if not isinstance(payload, dict):
                 continue
+            normalized = _normalize_plan_payload(payload)
+            if normalized is None:
+                continue
             try:
-                return AtlasAgentPlan.model_validate(payload)
+                return AtlasAgentPlan.model_validate(normalized)
             except ValidationError:
                 continue
         return None
@@ -231,3 +235,37 @@ def _json_blobs(raw_text: str) -> list[str]:
             blobs.append(excerpt)
 
     return blobs
+
+
+_ALLOWED_TOOLS = set(get_args(AtlasAgentTool))
+_ALLOWED_CATEGORIES = set(get_args(AssetType))
+_NULL_STRINGS = {"", "null", "none", "nil", "n/a", "undefined"}
+
+
+def _normalize_plan_payload(payload: dict[str, object]) -> dict[str, object] | None:
+    tool = _clean_optional_string(payload.get("tool"))
+    if tool not in _ALLOWED_TOOLS:
+        return None
+
+    normalized = dict(payload)
+    normalized["tool"] = tool
+    normalized["area"] = _clean_optional_string(payload.get("area"))
+    category = _clean_optional_string(payload.get("category"))
+    normalized["category"] = category if category in _ALLOWED_CATEGORIES else None
+    normalized["site_id"] = _clean_optional_string(payload.get("site_id"))
+    normalized["alert_id"] = _clean_optional_string(payload.get("alert_id"))
+
+    camera = payload.get("camera")
+    normalized["camera"] = camera if isinstance(camera, dict) else None
+    return normalized
+
+
+def _clean_optional_string(value: object) -> str | None:
+    if value is None:
+        return None
+    if not isinstance(value, str):
+        return None
+    normalized = " ".join(value.strip().split())
+    if normalized.lower() in _NULL_STRINGS:
+        return None
+    return normalized

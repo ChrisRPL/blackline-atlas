@@ -1,21 +1,32 @@
 from __future__ import annotations
 
+from pathlib import Path
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from fastapi.responses import FileResponse
 
 from app.schemas.agent import AtlasAgentQueryRequest, AtlasAgentQueryResponse, AtlasAgentToolSpec
 from app.schemas.alert import Alert
 from app.schemas.asset import Asset
 from app.schemas.frame import FrameEnvelope
 from app.schemas.health import HealthResponse
-from app.schemas.lead import Lead
+from app.schemas.lead import Lead, LeadRefreshRequest, LeadRefreshResponse
+from app.schemas.liquid_analyst import LiquidAnalystReport
 from app.schemas.metrics import Metrics
 from app.schemas.model_status import ModelStatus
-from app.schemas.replay import ReplayStartRequest, ReplayState
+from app.schemas.replay import ReplaySnapshot, ReplayStartRequest, ReplayState
+from app.schemas.sam3_evidence import Sam3EvidenceReport
 from app.services.contracts import AtlasService
 
 router = APIRouter()
+REPO_ROOT = Path(__file__).resolve().parents[2]
+FRAME_IMAGE_ROOTS = (
+    REPO_ROOT / ".cache" / "frames",
+    REPO_ROOT / "var" / "simsat_frames",
+    REPO_ROOT / "var" / "mapbox_context",
+    REPO_ROOT / "ui" / "assets",
+)
 
 
 def get_service(request: Request) -> AtlasService:
@@ -40,6 +51,14 @@ def assets(service: Annotated[AtlasService, Depends(get_service)]) -> list[Asset
 @router.get("/leads", response_model=list[Lead])
 def leads(service: Annotated[AtlasService, Depends(get_service)]) -> list[Lead]:
     return service.list_leads()
+
+
+@router.post("/leads/refresh", response_model=LeadRefreshResponse)
+def refresh_leads(
+    payload: LeadRefreshRequest,
+    service: Annotated[AtlasService, Depends(get_service)],
+) -> LeadRefreshResponse:
+    return service.refresh_leads(payload)
 
 
 @router.get("/agent/tools", response_model=list[AtlasAgentToolSpec])
@@ -73,6 +92,40 @@ def replay_status(service: Annotated[AtlasService, Depends(get_service)]) -> Rep
     return service.get_replay_state()
 
 
+@router.get("/replay/snapshot", response_model=ReplaySnapshot)
+def replay_snapshot(service: Annotated[AtlasService, Depends(get_service)]) -> ReplaySnapshot:
+    return service.get_replay_snapshot()
+
+
+@router.get("/evidence/current", response_model=Sam3EvidenceReport)
+def current_evidence(service: Annotated[AtlasService, Depends(get_service)]) -> Sam3EvidenceReport:
+    return service.get_current_evidence()
+
+
+@router.get("/evidence/assets/{asset_id}", response_model=Sam3EvidenceReport | None)
+def asset_evidence(
+    asset_id: str,
+    service: Annotated[AtlasService, Depends(get_service)],
+) -> Sam3EvidenceReport | None:
+    return service.get_asset_evidence(asset_id)
+
+
+@router.get("/frame-image", include_in_schema=False)
+def frame_image(ref: Annotated[str, Query(min_length=1)]) -> FileResponse:
+    image_path = _resolve_frame_image_ref(ref)
+    if image_path is None:
+        raise HTTPException(status_code=404, detail="frame image unavailable")
+    return FileResponse(image_path)
+
+
+@router.get("/analyst/assets/{asset_id}", response_model=LiquidAnalystReport | None)
+def asset_analyst_report(
+    asset_id: str,
+    service: Annotated[AtlasService, Depends(get_service)],
+) -> LiquidAnalystReport | None:
+    return service.get_asset_analyst_report(asset_id)
+
+
 @router.get("/frames/current", response_model=FrameEnvelope)
 def current_frame(service: Annotated[AtlasService, Depends(get_service)]) -> FrameEnvelope:
     return service.get_current_frame()
@@ -91,3 +144,23 @@ def alerts(service: Annotated[AtlasService, Depends(get_service)]) -> list[Alert
 @router.get("/metrics", response_model=Metrics)
 def metrics(service: Annotated[AtlasService, Depends(get_service)]) -> Metrics:
     return service.get_metrics()
+
+
+def _resolve_frame_image_ref(ref: str) -> Path | None:
+    if ref.startswith(("http://", "https://", "data:")):
+        return None
+
+    candidate = Path(ref)
+    if not candidate.is_absolute():
+        candidate = REPO_ROOT / candidate
+    try:
+        resolved = candidate.resolve()
+    except OSError:
+        return None
+
+    allowed_roots = [root.resolve() for root in FRAME_IMAGE_ROOTS]
+    if not any(resolved == root or root in resolved.parents for root in allowed_roots):
+        return None
+    if not resolved.is_file():
+        return None
+    return resolved

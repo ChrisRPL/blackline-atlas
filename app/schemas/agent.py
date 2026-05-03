@@ -7,15 +7,23 @@ from pydantic import BaseModel, Field, model_validator
 from app.schemas.alert import Alert
 from app.schemas.asset import AssetType
 from app.schemas.frame import FrameEnvelope
+from app.schemas.lead import Lead
+from app.schemas.liquid_analyst import LiquidAnalystReport
 from app.schemas.replay import ReplayState
+from app.schemas.satellite_evidence import SatelliteEvidenceBundle
 
 AtlasAgentTool = Literal[
+    "answer",
+    "scope_refusal",
+    "search_live_leads",
     "latest_alerts",
     "biggest_disruptions",
     "site_compare",
     "explain_alert",
+    "refresh_live_leads",
 ]
 
+AtlasAgentObservationStatus = Literal["ok", "no_result", "skipped", "error"]
 AtlasAgentTrustMode = Literal["live", "replay_safe", "degraded"]
 AtlasAgentPlannerMode = Literal["deterministic", "live", "fallback"]
 AtlasAgentPlannerReason = Literal[
@@ -39,6 +47,13 @@ class AtlasAgentToolSpec(BaseModel):
     name: AtlasAgentTool
     description: str
     arguments: list[AtlasAgentToolArgument]
+
+
+class AtlasAgentToolObservation(BaseModel):
+    tool: AtlasAgentTool
+    status: AtlasAgentObservationStatus
+    summary: str
+    count: int = 0
 
 
 class AtlasAgentTrust(BaseModel):
@@ -68,6 +83,8 @@ class AtlasAgentResolvedRequest(BaseModel):
     alert_id: str | None = None
     selected_asset_id: str | None = None
     selected_lead_id: str | None = None
+    user_latitude: float | None = Field(default=None, ge=-90, le=90)
+    user_longitude: float | None = Field(default=None, ge=-180, le=180)
     limit: int = Field(default=3, ge=1, le=10)
 
 
@@ -76,6 +93,7 @@ class AtlasAgentCompare(BaseModel):
     asset_name: str
     current_frame: FrameEnvelope
     baseline_frame: FrameEnvelope
+    satellite_evidence: SatelliteEvidenceBundle | None = None
 
 
 class AtlasAgentQueryRequest(BaseModel):
@@ -87,6 +105,8 @@ class AtlasAgentQueryRequest(BaseModel):
     alert_id: str | None = None
     selected_asset_id: str | None = None
     selected_lead_id: str | None = None
+    user_latitude: float | None = Field(default=None, ge=-90, le=90)
+    user_longitude: float | None = Field(default=None, ge=-180, le=180)
     limit: int = Field(default=3, ge=1, le=10)
 
     @model_validator(mode="after")
@@ -115,7 +135,10 @@ class AtlasAgentQueryResponse(BaseModel):
     focus_lead_id: str | None = None
     focus_alert_id: str | None = None
     alerts: list[Alert] = Field(default_factory=list)
+    leads: list[Lead] = Field(default_factory=list)
+    observations: list[AtlasAgentToolObservation] = Field(default_factory=list)
     compare: AtlasAgentCompare | None = None
+    analyst_report: LiquidAnalystReport | None = None
     planner: AtlasAgentPlannerTelemetry
     trust: AtlasAgentTrust
     replay: ReplayState

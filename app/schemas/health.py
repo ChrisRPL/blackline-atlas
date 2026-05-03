@@ -16,12 +16,19 @@ class HealthDependency(BaseModel):
 class HealthConfig(BaseModel):
     simsat_current_http_enabled: bool
     simsat_baseline_http_enabled: bool
+    simsat_required: bool = False
     mapbox_context_enabled: bool
     model_http_enabled: bool
     model_provider: str
     agent_model_version: str
     agent_http_enabled: bool
     agent_provider: str
+    sam3_model_version: str
+    sam3_http_enabled: bool
+    sam3_required: bool = True
+    analyst_model_version: str
+    analyst_http_enabled: bool
+    analyst_provider: str
 
 
 class HealthGatewayRecent(BaseModel):
@@ -37,6 +44,7 @@ class HealthGatewayRecent(BaseModel):
 class HealthDebug(BaseModel):
     model_recent: HealthGatewayRecent | None = None
     agent_recent: HealthGatewayRecent | None = None
+    analyst_recent: HealthGatewayRecent | None = None
 
 
 class HealthResponse(BaseModel):
@@ -44,6 +52,8 @@ class HealthResponse(BaseModel):
     app_env: str
     model_backend: HealthDependency
     agent_backend: HealthDependency
+    sam3_backend: HealthDependency
+    analyst_backend: HealthDependency
     simsat_current: HealthDependency
     simsat_baseline: HealthDependency
     mapbox: HealthDependency

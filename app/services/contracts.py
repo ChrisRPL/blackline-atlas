@@ -7,10 +7,12 @@ from app.schemas.alert import Alert
 from app.schemas.asset import Asset
 from app.schemas.frame import FrameEnvelope
 from app.schemas.health import HealthResponse
-from app.schemas.lead import Lead
+from app.schemas.lead import Lead, LeadRefreshRequest, LeadRefreshResponse
+from app.schemas.liquid_analyst import LiquidAnalystReport
 from app.schemas.metrics import Metrics
 from app.schemas.model_status import ModelStatus
-from app.schemas.replay import ReplayStartRequest, ReplayState
+from app.schemas.replay import ReplaySnapshot, ReplayStartRequest, ReplayState
+from app.schemas.sam3_evidence import Sam3EvidenceReport
 
 
 class AtlasService(Protocol):
@@ -22,6 +24,8 @@ class AtlasService(Protocol):
 
     def list_leads(self) -> list[Lead]: ...
 
+    def refresh_leads(self, request: LeadRefreshRequest) -> LeadRefreshResponse: ...
+
     def list_agent_tools(self) -> list[AtlasAgentToolSpec]: ...
 
     def run_agent_query(self, request: AtlasAgentQueryRequest) -> AtlasAgentQueryResponse: ...
@@ -31,6 +35,14 @@ class AtlasService(Protocol):
     def stop_replay(self) -> ReplayState: ...
 
     def get_replay_state(self) -> ReplayState: ...
+
+    def get_replay_snapshot(self) -> ReplaySnapshot: ...
+
+    def get_current_evidence(self) -> Sam3EvidenceReport: ...
+
+    def get_asset_evidence(self, asset_id: str) -> Sam3EvidenceReport | None: ...
+
+    def get_asset_analyst_report(self, asset_id: str) -> LiquidAnalystReport | None: ...
 
     def get_current_frame(self) -> FrameEnvelope: ...
 

@@ -7,6 +7,9 @@ from pathlib import Path
 
 
 def load_local_env(env_path: str = ".env") -> None:
+    if env_flag("BLACKLINE_SKIP_DOTENV"):
+        return
+
     path = Path(env_path)
     if not path.exists():
         return
@@ -29,6 +32,8 @@ class Settings:
     simsat_baseline_endpoint: str | None
     mapbox_token_present: bool
     watchlist_path: str | None
+    mapbox_token: str | None = None
+    simsat_required: bool = False
     lead_registry_path: str | None = None
     simsat_current_http_enabled: bool = False
     simsat_baseline_http_enabled: bool = False
@@ -42,6 +47,22 @@ class Settings:
     agent_http_enabled: bool = False
     agent_api_key: str | None = None
     agent_provider: str = "atlas_json_http"
+    agent_timeout_seconds: float = 3.0
+    sam3_model_version: str = "facebook/sam3"
+    sam3_endpoint: str | None = None
+    sam3_http_enabled: bool = True
+    sam3_required: bool = True
+    sam3_api_key: str | None = None
+    analyst_model_version: str = "LiquidAI/LFM2.5-VL-450M"
+    analyst_endpoint: str | None = None
+    analyst_http_enabled: bool = False
+    analyst_api_key: str | None = None
+    analyst_provider: str = "atlas_json_http"
+    acled_access_token: str | None = None
+    acled_username: str | None = None
+    acled_password: str | None = None
+    acled_lead_enabled: bool = False
+    gdelt_cloud_api_key: str | None = None
 
 
 def env_flag(name: str, default: bool = False) -> bool:
@@ -60,6 +81,8 @@ def get_settings() -> Settings:
         model_version=os.getenv("MODEL_VERSION", "lfm2.5-vl-450m-prompted"),
         simsat_current_endpoint=os.getenv("SIMSAT_CURRENT_ENDPOINT") or None,
         simsat_baseline_endpoint=os.getenv("SIMSAT_BASELINE_ENDPOINT") or None,
+        simsat_required=env_flag("SIMSAT_REQUIRED"),
+        mapbox_token=os.getenv("MAPBOX_TOKEN") or None,
         mapbox_token_present=bool(os.getenv("MAPBOX_TOKEN")),
         watchlist_path=os.getenv("WATCHLIST_PATH") or None,
         lead_registry_path=os.getenv("LEAD_REGISTRY_PATH") or None,
@@ -75,4 +98,20 @@ def get_settings() -> Settings:
         agent_http_enabled=env_flag("AGENT_HTTP_ENABLED"),
         agent_api_key=os.getenv("AGENT_API_KEY") or None,
         agent_provider=os.getenv("AGENT_PROVIDER", "atlas_json_http"),
+        agent_timeout_seconds=float(os.getenv("AGENT_TIMEOUT_SECONDS", "3.0")),
+        sam3_model_version=os.getenv("SAM3_MODEL_VERSION", "facebook/sam3"),
+        sam3_endpoint=os.getenv("SAM3_ENDPOINT") or None,
+        sam3_http_enabled=env_flag("SAM3_HTTP_ENABLED", default=True),
+        sam3_required=env_flag("SAM3_REQUIRED", default=True),
+        sam3_api_key=os.getenv("SAM3_API_KEY") or None,
+        analyst_model_version=os.getenv("ANALYST_MODEL_VERSION", "LiquidAI/LFM2.5-VL-450M"),
+        analyst_endpoint=os.getenv("ANALYST_ENDPOINT") or None,
+        analyst_http_enabled=env_flag("ANALYST_HTTP_ENABLED"),
+        analyst_api_key=os.getenv("ANALYST_API_KEY") or None,
+        analyst_provider=os.getenv("ANALYST_PROVIDER", "atlas_json_http"),
+        acled_access_token=os.getenv("ACLED_ACCESS_TOKEN") or None,
+        acled_username=os.getenv("ACLED_USERNAME") or None,
+        acled_password=os.getenv("ACLED_PASSWORD") or None,
+        acled_lead_enabled=env_flag("ACLED_LEAD_ENABLED"),
+        gdelt_cloud_api_key=os.getenv("GDELT_API_KEY") or os.getenv("GDELT_CLOUD_API_KEY") or None,
     )

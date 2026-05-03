@@ -1,12 +1,9 @@
 from __future__ import annotations
 
-import json
 from dataclasses import dataclass
 
-from pydantic import ValidationError
-
 from app.schemas.alert import Alert, AlertCandidate, AlertSource
-from app.schemas.evidence_candidate import normalize_evidence_first_payload
+from app.services.candidate_guardrails import parse_alert_candidate
 
 
 @dataclass(frozen=True)
@@ -63,105 +60,4 @@ class StructuredAlertPipeline:
         )
 
     def parse_candidate(self, raw_output_text: str) -> AlertCandidate | None:
-        for blob in _candidate_json_blobs(raw_output_text):
-            try:
-                payload = json.loads(blob)
-            except json.JSONDecodeError:
-                continue
-
-            payload = _unwrap_payload(payload)
-            if not isinstance(payload, dict):
-                continue
-            payload = _normalize_payload(payload)
-
-            try:
-                return AlertCandidate.model_validate(payload)
-            except ValidationError:
-                continue
-
-        return None
-
-
-def _candidate_json_blobs(raw_output_text: str) -> list[str]:
-    text = raw_output_text.strip()
-    if not text:
-        return []
-
-    blobs = [text]
-    fenced = _strip_json_fence(text)
-    if fenced != text:
-        blobs.append(fenced)
-
-    first_brace = text.find("{")
-    last_brace = text.rfind("}")
-    if first_brace != -1 and last_brace != -1 and first_brace < last_brace:
-        excerpt = text[first_brace : last_brace + 1]
-        if excerpt not in blobs:
-            blobs.append(excerpt)
-
-    return blobs
-
-
-def _strip_json_fence(text: str) -> str:
-    if not text.startswith("```"):
-        return text
-
-    lines = text.splitlines()
-    if lines and lines[0].startswith("```"):
-        lines = lines[1:]
-    if lines and lines[-1].startswith("```"):
-        lines = lines[:-1]
-    return "\n".join(lines).strip()
-
-
-def _unwrap_payload(payload: object) -> object:
-    if isinstance(payload, list) and len(payload) == 1 and isinstance(payload[0], dict):
-        return payload[0]
-
-    if not isinstance(payload, dict):
-        return payload
-
-    for key in ("candidate", "alert", "output"):
-        nested = payload.get(key)
-        if isinstance(nested, dict):
-            return nested
-    return payload
-
-
-def _normalize_payload(payload: dict[str, object]) -> dict[str, object]:
-    normalized = dict(payload)
-    if "triage_action" in normalized or "bbox_norm" in normalized:
-        try:
-            normalized = normalize_evidence_first_payload(normalized)
-        except ValidationError:
-            return normalized
-
-    confidence = normalized.get("confidence")
-    if isinstance(confidence, str):
-        mapped = _normalize_confidence_string(confidence)
-        if mapped is not None:
-            normalized["confidence"] = mapped
-    _repair_safe_discard_payload(normalized)
-    return normalized
-
-
-def _repair_safe_discard_payload(payload: dict[str, object]) -> None:
-    if payload.get("action") != "discard":
-        return
-
-    payload.setdefault("event_type", "no_event")
-    payload.setdefault("severity", "low")
-    payload.setdefault("confidence", 0.0)
-    payload.setdefault("bbox", [0.0, 0.0, 1.0, 1.0])
-    payload.setdefault("civilian_impact", "no_material_impact")
-    payload.setdefault("why", "Model returned discard with insufficient disruption evidence.")
-
-
-def _normalize_confidence_string(value: str) -> float | None:
-    normalized = value.strip().lower()
-    mapping = {
-        "low": 0.25,
-        "medium": 0.6,
-        "high": 0.9,
-    }
-    return mapping.get(normalized)
+        return parse_alert_candidate(raw_output_text)

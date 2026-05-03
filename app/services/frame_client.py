@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import hashlib
+import json
 from pathlib import Path
 from shutil import copyfile
 from typing import Mapping, Protocol
@@ -35,9 +37,16 @@ class FixtureFrameClient:
 
 
 class CachedFrameClient:
-    def __init__(self, delegate: FrameClient, cache_layout: FrameCacheLayout) -> None:
+    def __init__(
+        self,
+        delegate: FrameClient,
+        cache_layout: FrameCacheLayout,
+        *,
+        cache_namespace: str = "default",
+    ) -> None:
         self._delegate = delegate
         self._cache_layout = cache_layout
+        self._cache_namespace = cache_namespace
 
     def get_current_frame(self, request: FrameRequest) -> FrameEnvelope:
         return self._get_or_cache(
@@ -60,7 +69,12 @@ class CachedFrameClient:
         variant: str,
         loader,
     ) -> FrameEnvelope:
-        frame_id = self._peek_frame_id(request=request, loader=loader)
+        cached = self._cached_request_envelope(request=request, variant=variant)
+        if cached is not None:
+            return cached
+
+        envelope = loader(request)
+        frame_id = envelope.frame.frame_id
         cache_key = FrameCacheKey(
             asset_id=request.asset_id,
             scenario_id=request.scenario_id,
@@ -77,19 +91,24 @@ class CachedFrameClient:
             except ValidationError:
                 cached = None
             if cached is not None and self._cached_envelope_usable(cached):
+                self._write_request_alias(
+                    request=request,
+                    variant=variant,
+                    metadata_path=metadata_path,
+                )
                 return cached
 
-        envelope = loader(request)
         materialized = self._materialize_envelope(
             envelope=envelope, request=request, variant=variant
         )
         metadata_path.parent.mkdir(parents=True, exist_ok=True)
         metadata_path.write_text(materialized.model_dump_json(indent=2), encoding="utf-8")
+        self._write_request_alias(
+            request=request,
+            variant=variant,
+            metadata_path=metadata_path,
+        )
         return materialized
-
-    def _peek_frame_id(self, *, request: FrameRequest, loader) -> str:
-        envelope = loader(request)
-        return envelope.frame.frame_id
 
     def _materialize_envelope(
         self,
@@ -145,6 +164,83 @@ class CachedFrameClient:
             if path.is_file() and path.stat().st_size == 0:
                 return False
         return True
+
+    def _cached_request_envelope(
+        self,
+        *,
+        request: FrameRequest,
+        variant: str,
+    ) -> FrameEnvelope | None:
+        alias_path = self._request_alias_path(request=request, variant=variant)
+        if not alias_path.exists():
+            return None
+        try:
+            payload = json.loads(alias_path.read_text(encoding="utf-8"))
+        except json.JSONDecodeError:
+            return None
+        metadata_ref = payload.get("metadata_path")
+        if not isinstance(metadata_ref, str):
+            return None
+        metadata_path = Path(metadata_ref)
+        if not metadata_path.is_absolute():
+            metadata_path = self._cache_layout.root / metadata_path
+        if not metadata_path.exists():
+            return None
+        try:
+            cached = FrameEnvelope.model_validate_json(metadata_path.read_text(encoding="utf-8"))
+        except ValidationError:
+            return None
+        if self._cached_envelope_usable(cached):
+            return cached
+        return None
+
+    def _write_request_alias(
+        self,
+        *,
+        request: FrameRequest,
+        variant: str,
+        metadata_path: Path,
+    ) -> None:
+        alias_path = self._request_alias_path(request=request, variant=variant)
+        alias_path.parent.mkdir(parents=True, exist_ok=True)
+        try:
+            metadata_ref = metadata_path.relative_to(self._cache_layout.root)
+        except ValueError:
+            metadata_ref = metadata_path
+        alias_path.write_text(
+            json.dumps({"metadata_path": str(metadata_ref)}, sort_keys=True),
+            encoding="utf-8",
+        )
+
+    def _request_alias_path(self, *, request: FrameRequest, variant: str) -> Path:
+        digest = hashlib.sha256(
+            json.dumps(
+                {
+                    "asset_id": request.asset_id,
+                    "baseline_timestamp": request.baseline_timestamp,
+                    "cache_namespace": self._cache_namespace,
+                    "latitude": request.latitude,
+                    "longitude": request.longitude,
+                    "requested_timestamp": request.requested_timestamp,
+                    "scenario_id": request.scenario_id,
+                    "size_km": request.size_km,
+                    "spectral_bands": list(request.spectral_bands),
+                    "variant": variant,
+                    "window_seconds": request.window_seconds,
+                },
+                sort_keys=True,
+                separators=(",", ":"),
+            ).encode("utf-8")
+        ).hexdigest()[:24]
+        return (
+            self._cache_layout.scenario_dir(
+                asset_id=request.asset_id,
+                scenario_id=request.scenario_id,
+            )
+            / "_requests"
+            / variant
+            / f"{digest}.json"
+        )
 
     def _materialize_ref(self, *, source_ref: str, target_path: Path) -> str:
         source_path = Path(source_ref)

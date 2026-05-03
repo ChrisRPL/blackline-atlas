@@ -28,7 +28,7 @@ def _fallback_assets() -> list[Asset]:
     return [
         Asset(
             asset_id="demo_port_01",
-            asset_name="Demo Grain Port",
+            asset_name="Odesa Civilian Port Logistics Area",
             asset_type="grain_port",
             region="Black Sea",
             latitude=46.501,
@@ -37,7 +37,7 @@ def _fallback_assets() -> list[Asset]:
         ),
         Asset(
             asset_id="demo_bridge_01",
-            asset_name="Demo Logistics Bridge",
+            asset_name="Lower Danube Civilian Bridge Corridor",
             asset_type="bridge",
             region="Lower Danube",
             latitude=45.169,
