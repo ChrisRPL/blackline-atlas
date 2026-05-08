@@ -1,229 +1,196 @@
 # Blackline Atlas Demo Script
 
-## 0:00
+## 0:00 - Intro
+
+Hi, I am Krzysztof Romanowski.
 
 This is Blackline Atlas.
 
-I built it as a small, operational satellite triage workflow for civilian
+Blackline Atlas is a source-led satellite triage workflow for civilian
 disruption.
 
-The basic idea is simple:
+It takes live public reports, connects them to Sentinel imagery, and produces a
+careful Liquid VLM visual site brief.
 
-start with a public report,
+Under the hood, it is a FastAPI app with typed evidence schemas, a WebGL map UI,
+GDELT live lead ingestion, SimSat/Sentinel imagery retrieval, and a guarded
+Liquid model lane.
 
-resolve satellite evidence for that place,
+## 0:20 - What The App Shows First
 
-ask a Liquid vision-language model for a careful visual brief,
+The first screen is the operational view.
 
-and keep the final decision under deterministic guardrails.
+On the left is the operator command rail.
 
-The important part is that the model is not the source of truth.
+In the middle is the live map with source markers.
 
-The source report tells Atlas where to look.
+On the right is the evidence tray where the selected site is reviewed.
 
-The satellite imagery tells Atlas what can actually be seen.
+Under the hood, the frontend talks to typed backend endpoints for health,
+assets, leads, metrics, frames, and model status, so the UI can show degraded
+states instead of pretending everything is ready.
 
-## 0:20
+## 0:40 - Live Lead Feed
 
-The frontend is a FastAPI-backed web app with a WebGL map interface.
+The first real feature is live lead discovery.
 
-On the left, I have the operator command rail.
+I can refresh live leads, and Atlas loads public geolocated disruption reports.
 
-In the middle, live source markers.
+The important point is that Atlas starts from a public source lead, not from a
+model hallucination.
 
-On the right, the evidence tray.
+Under the hood, the backend uses GDELT Cloud when available, falls back to
+public GDELT exports, normalizes the reports into lead objects, and keeps a
+file-backed cache for replayable demos.
 
-The backend exposes typed API contracts for leads, frames, evidence bundles,
-Liquid analyst reports, model status, and health checks.
+## 1:00 - Natural Language Command
 
-That made the demo much easier to stabilize, because every boundary has a
-schema.
-
-## 0:40
-
-The live lead path uses GDELT.
-
-I can refresh the feed, or ask a question like:
+I can also ask a natural question, for example:
 
 What happened around Ukraine?
 
-The planner turns that into a tool call:
+Atlas turns that into an operator action: search live leads, focus the map, or
+inspect a selected site.
 
-search live leads,
+Under the hood, the planner returns a structured tool plan, not free-form UI
+instructions, so the app can keep the workflow deterministic.
 
-focus the map,
+## 1:20 - Auto-Selected Reviewable Lead
 
-or inspect a selected site.
-
-For the demo, Atlas auto-selects the newest lead that is actually reviewable by
+After the feed loads, Atlas auto-selects the newest lead that is reviewable by
 satellite.
 
-## 1:00
+This source report tells Atlas where to look.
 
-This selected source report is just a lead.
+It does not count as visual proof.
 
-It is not treated as visual proof.
+Under the hood, each lead is scored for satellite relevance and linked to a
+synthetic review asset only when it describes something that could plausibly be
+visible at macro scale.
 
-That distinction matters a lot.
+## 1:45 - Source Context Boundary
 
-Casualties, source claims, and article language stay source-side.
+This boundary is central to the product.
 
-The visual lane only talks about what is visible in imagery:
+Source facts stay source-side.
 
-roads,
+Satellite-visible facts have to come from imagery.
 
-buildings,
+So if an article mentions casualties, that is not treated as something the VLM
+can verify visually.
 
-ports,
+Under the hood, the prompt and parser both enforce this: source-only casualty
+language is stripped or withheld from the visual brief.
 
-water systems,
+## 2:05 - Sentinel Evidence Review
 
-clouds,
+Now I inspect the site.
 
-no-data tiles,
+Atlas requests a current Sentinel image and a historical baseline for the
+selected coordinate.
 
-and large-scale disruption patterns.
+The tray shows the current frame, the baseline frame, timestamps, and evidence
+quality.
 
-## 1:25
+Under the hood, the evidence resolver tries exact-coordinate AOIs first, then
+nearby/context fallbacks, while tracking cloud cover, AOI size, offset, and why
+each attempt passed or failed.
 
-When I inspect the site, the backend requests Sentinel imagery through the
-SimSat endpoints.
+## 2:35 - Quality Checks
 
-It tries to resolve a current image and a historical baseline for the selected
-coordinate.
+Atlas is intentionally conservative about imagery.
 
-The resolver keeps metadata about each attempt:
+If the tile is blank, no-data, cloudy, stale, or only context imagery, the UI
+says that clearly.
 
-AOI size,
+It does not turn weak imagery into a strong alert.
 
-cloud cover,
+Under the hood, low-information tiles are rejected before model analysis, and
+cloud-limited imagery caps confidence and prevents visual confirmation claims.
 
-exact or nearby coordinate,
+## 3:00 - Contact Sheet
 
-and why an attempt passed or failed.
+When available, Atlas also shows a contact sheet.
 
-Blank and no-data tiles are rejected before they can become model evidence.
+This gives a quick orientation view at three, five, and eight kilometers.
 
-## 1:50
+It is useful for the operator, but it is labeled as orientation only, not
+primary evidence.
 
-If there is enough imagery, the UI shows the current frame and the baseline
-frame side by side.
+Under the hood, the resolver builds a bounded six-panel sheet from exact
+coordinate baseline/current pairs, and the Liquid model receives it only as
+context.
 
-There is also an optional contact sheet at three, five, and eight kilometers.
+## 3:25 - Liquid Visual Brief
 
-That sheet is useful for orientation,
+Next is the Liquid visual analyst.
 
-but I label it clearly as context only.
+The model writes a short site brief: what is visible, what likely changed, what
+the limitations are, and how the imagery relates to the source report.
 
-The primary evidence remains the best dated current-baseline pair.
+Under the hood, this uses `LiquidAI/LFM2.5-VL-450M` with a PEFT adapter I
+fine-tuned for source-led satellite triage. The prompt asks for structured JSON
+and explicitly separates source context from visual evidence.
 
-I originally explored SAM-style segmentation here,
+## 3:55 - Fail-Closed Model Handling
 
-but for low-resolution Sentinel imagery the masks were not defensible enough,
+The VLM output is not displayed blindly.
 
-so I removed SAM from the judge path instead of overclaiming.
+If the model returns malformed JSON, tactical language, unsupported source
+claims, or a weak visual read, Atlas withholds the brief.
 
-## 2:20
+Under the hood, the backend parses the response into a Pydantic analyst schema,
+repairs only safe low-risk drift, and otherwise returns null so the UI can say
+visual brief withheld.
 
-The Liquid lane uses `LiquidAI/LFM2.5-VL-450M` with a PEFT adapter that I
-fine-tuned for this workflow.
+## 4:20 - Decision And Metrics
 
-The final adapter is on Hugging Face,
+The final action space is deliberately small.
 
-and the training corpus is published too.
+Atlas can discard, defer, or recommend downlink now.
 
-The model receives the source context,
+The decision card and metrics make that visible to the operator.
 
-the baseline image,
+Under the hood, deterministic guardrails sit after the model lane, so the model
+is never autonomous alert authority.
 
-the current image,
+## 4:45 - Safety Scope
 
-and, when available, the orientation contact sheet.
+Blackline Atlas is scoped to civilian resilience and humanitarian transparency.
 
-But the prompt is strict:
+It does not support targeting, strike planning, military asset ranking, troop
+tracking, or sabotage guidance.
 
-do not treat source facts as visual facts,
+Under the hood, that boundary appears in the schemas, prompts, parser, UI copy,
+README, and demo path.
 
-do not mention tactical targets,
+## 5:05 - Model And Dataset
 
-return structured JSON,
+For the Liquid track, I also published the fine-tuned adapter and the training
+corpus on Hugging Face.
 
-and say when the imagery is too limited.
+The adapter is for guarded visual site briefs, not autonomous decisions.
 
-## 2:55
+Under the hood, the training corpus contains planner examples, paired satellite
+image brief examples, hard negatives, and safety examples for separating source
+facts from visual facts.
 
-The Liquid output is not displayed blindly.
+## 5:25 - Closing
 
-The backend parses it into a typed analyst schema.
+The final product is intentionally narrow.
 
-If the JSON is malformed, tactical, source-only, or not grounded enough,
+Blackline Atlas connects a public civilian disruption lead to satellite-visible
+evidence, explains the limitations, and fails closed when evidence is weak.
 
-Atlas withholds the visual brief.
+That is the core workflow:
 
-If the imagery is cloud-limited,
+public lead,
 
-confidence is capped,
+Sentinel evidence,
 
-the action is constrained,
+Liquid visual brief,
 
-and the UI says the brief is low-confidence.
-
-That fail-closed behavior is a big part of the project.
-
-## 3:20
-
-The final action space is intentionally tiny:
-
-discard,
-
-defer,
-
-or downlink now.
-
-There is no targeting workflow here.
-
-No strike support.
-
-No military asset ranking.
-
-No real-time surveillance claim.
-
-This is framed around civilian resilience,
-
-humanitarian logistics transparency,
-
-and public accountability.
-
-## 3:45
-
-Technically, the stack is:
-
-FastAPI for the backend,
-
-Pydantic schemas at the boundaries,
-
-GDELT for live source leads,
-
-SimSat and Sentinel for satellite evidence,
-
-Mapbox or MapLibre only for map context,
-
-and Liquid for the planner and visual analyst lanes.
-
-The repo also includes deterministic replay and cached fallback paths so the
-demo can survive external service issues.
-
-## 4:15
-
-What I like about this version is that it is narrow on purpose.
-
-It does not try to solve every satellite intelligence problem.
-
-It tries to do one thing honestly:
-
-connect a public civilian disruption lead to satellite-visible evidence,
-
-then explain the limits clearly.
+deterministic guardrails.
 
 That is Blackline Atlas.
 
@@ -231,18 +198,12 @@ That is Blackline Atlas.
 
 If live satellite retrieval is slow:
 
-Live coverage can be sparse.
+Live satellite coverage can be sparse.
 
-In that case Atlas keeps the report labeled as source-only,
+Atlas keeps source-only reports labeled as source-only, shows why visual review
+did not run, and does not pretend missing imagery is evidence.
 
-shows why visual review did not run,
+## One-Line Pitch
 
-and does not pretend that missing imagery is evidence.
-
-## Short Version
-
-Blackline Atlas is a source-led satellite triage system.
-
-It uses GDELT leads, SimSat/Sentinel imagery, a fine-tuned Liquid VLM adapter,
-and deterministic guardrails to produce careful visual site briefs for civilian
-disruption.
+Blackline Atlas is source-led satellite triage that turns live conflict reports
+into Sentinel-grounded Liquid VLM site briefs.
