@@ -18,9 +18,9 @@ from app.schemas.evidence_candidate import (  # noqa: E402
     EVIDENCE_FIRST_KEYS,
     EvidenceFirstCandidate,
     is_evidence_first_payload,
-    normalize_evidence_first_payload,
 )
 from app.schemas.metrics import Metrics  # noqa: E402
+from app.services.candidate_guardrails import normalize_candidate_payload  # noqa: E402
 from training.scripts.build_dataset import (  # noqa: E402
     DEFAULT_DATASET_NAME,
     DEFAULT_OUTPUT_DIR,
@@ -175,13 +175,12 @@ def _evaluate_case(case: dict[str, Any], prediction_entry: dict[str, Any] | None
         return result
 
     result["json_valid"] = True
-    normalized_payload = payload
+    normalized_payload = normalize_candidate_payload(payload)
 
     if is_evidence_first_payload(payload):
         try:
             evidence = EvidenceFirstCandidate.model_validate(payload)
             result["evidence_schema_valid"] = True
-            normalized_payload = normalize_evidence_first_payload(payload)
             if expected_evidence is not None:
                 evidence_mismatches = _collect_evidence_field_mismatches(
                     expected_evidence,

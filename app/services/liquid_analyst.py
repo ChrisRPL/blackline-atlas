@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import re
 from typing import Protocol, get_args
 
 from pydantic import ValidationError
@@ -32,6 +33,7 @@ class LiquidAnalystBackend(Protocol):
         evidence: Sam3EvidenceReport | None,
         alert: Alert | None,
         model_version: str,
+        adapter_ref: str | None = None,
     ) -> LiquidAnalystReport: ...
 
 
@@ -47,7 +49,9 @@ class FixtureLiquidAnalystBackend:
         evidence: Sam3EvidenceReport | None,
         alert: Alert | None,
         model_version: str,
+        adapter_ref: str | None = None,
     ) -> LiquidAnalystReport:
+        _ = adapter_ref
         tags = list(evidence.visual_evidence_tags if evidence else [])
         action = alert.action if alert else (evidence.triage_action if evidence else "discard")
         confidence = alert.confidence if alert else _evidence_confidence(evidence)
@@ -113,6 +117,7 @@ class HttpLiquidAnalystBackend:
         evidence: Sam3EvidenceReport | None,
         alert: Alert | None,
         model_version: str,
+        adapter_ref: str | None = None,
     ) -> LiquidAnalystReport:
         fallback = _unavailable_report(
             asset=asset,
@@ -129,6 +134,7 @@ class HttpLiquidAnalystBackend:
             baseline=baseline,
             evidence=evidence,
             model_version=model_version,
+            adapter_ref=adapter_ref,
         )
         result = self.gateway.invoke(
             endpoint=self.endpoint,
@@ -157,9 +163,11 @@ class LiquidAnalystService:
         *,
         model_version: str,
         backend: LiquidAnalystBackend,
+        adapter_ref: str | None = None,
     ) -> None:
         self.model_version = model_version
         self.backend = backend
+        self.adapter_ref = adapter_ref
 
     def analyze(
         self,
@@ -177,6 +185,7 @@ class LiquidAnalystService:
             evidence=evidence,
             alert=alert,
             model_version=self.model_version,
+            adapter_ref=self.adapter_ref,
         )
 
 
@@ -194,9 +203,10 @@ def parse_liquid_analyst_report(
         try:
             payload = json.loads(blob)
         except json.JSONDecodeError:
-            continue
+            payload = _parse_partial_adapter_payload(blob)
         if not isinstance(payload, dict):
             continue
+        payload = _normalize_adapter_schema_payload(payload)
         normalized = {
             **payload,
             "asset_id": asset.asset_id,
@@ -234,6 +244,120 @@ def parse_liquid_analyst_report(
     return None
 
 
+def _parse_partial_adapter_payload(raw_text: str) -> dict[str, object] | None:
+    text = raw_text.strip()
+    if not text.startswith("{"):
+        return None
+
+    payload: dict[str, object] = {}
+    for target, keys in {
+        "visible_change_summary": ("visible_change_summary", "summary"),
+        "short_rationale": ("rationale", "short_rationale"),
+        "recommended_action": ("triage_action", "recommended_action", "action"),
+        "visibility_quality": ("visibility_quality",),
+    }.items():
+        value = _extract_json_string_field(text, keys)
+        if value is not None:
+            payload[target] = value
+
+    confidence = _extract_json_number_field(
+        text,
+        ("confidence", "change_confidence", "confidence_score"),
+    )
+    if confidence is not None:
+        payload["confidence"] = confidence
+
+    tags = _extract_json_string_array_prefix(
+        text,
+        ("visual_evidence_tags", "evidence_tags", "civilian_disruption_evidence"),
+    )
+    if tags:
+        payload["civilian_disruption_evidence"] = tags
+
+    if not payload:
+        return None
+
+    action = str(payload.get("recommended_action") or "")
+    confidence_value = _normalize_confidence(payload.get("confidence", 0.0))
+    visibility = str(payload.get("visibility_quality") or "")
+    if action == "discard" and confidence_value < 0.3:
+        payload["civilian_disruption_evidence"] = []
+        payload["negative_evidence"] = [
+            "low_visibility" if visibility == "low" else "no_visible_change"
+        ]
+        payload["visible_change_summary"] = (
+            "The imagery does not support a defensible visible disruption read "
+            "for this lead."
+        )
+        payload["short_rationale"] = (
+            "The Liquid VLM output was low-confidence; the source report remains "
+            "context, not imagery proof."
+        )
+
+    return payload
+
+
+def _extract_json_string_field(text: str, keys: tuple[str, ...]) -> str | None:
+    for key in keys:
+        match = re.search(rf'"{re.escape(key)}"\s*:\s*"([^"]*)"', text)
+        if match:
+            return match.group(1)
+    return None
+
+
+def _extract_json_number_field(text: str, keys: tuple[str, ...]) -> float | None:
+    for key in keys:
+        match = re.search(rf'"{re.escape(key)}"\s*:\s*(-?\d+(?:\.\d+)?)', text)
+        if match:
+            return float(match.group(1))
+    return None
+
+
+def _extract_json_string_array_prefix(text: str, keys: tuple[str, ...]) -> list[str]:
+    for key in keys:
+        match = re.search(rf'"{re.escape(key)}"\s*:\s*\[(.*)', text, flags=re.DOTALL)
+        if not match:
+            continue
+        items = re.findall(r'"([^"]+)"', match.group(1))
+        if items:
+            return items
+    return []
+
+
+def _normalize_adapter_schema_payload(payload: dict[str, object]) -> dict[str, object]:
+    normalized = dict(payload)
+    if (
+        "civilian_disruption_evidence" not in normalized
+        and "visual_evidence_tags" in normalized
+    ):
+        normalized["civilian_disruption_evidence"] = normalized["visual_evidence_tags"]
+    if "civilian_disruption_evidence" not in normalized and "evidence_tags" in normalized:
+        normalized["civilian_disruption_evidence"] = normalized["evidence_tags"]
+    if "recommended_action" not in normalized and "triage_action" in normalized:
+        normalized["recommended_action"] = normalized["triage_action"]
+    if "confidence" not in normalized and "change_confidence" in normalized:
+        normalized["confidence"] = normalized["change_confidence"]
+    if "confidence" not in normalized and "confidence_score" in normalized:
+        normalized["confidence"] = normalized["confidence_score"]
+    if "short_rationale" not in normalized and "rationale" in normalized:
+        normalized["short_rationale"] = normalized["rationale"]
+    if "short_rationale" not in normalized and "visible_change_summary" in normalized:
+        normalized["short_rationale"] = normalized["visible_change_summary"]
+    if "negative_evidence" not in normalized and "negative_type" in normalized:
+        negative_type = normalized["negative_type"]
+        normalized["negative_evidence"] = (
+            [] if negative_type in {None, "none"} else [negative_type]
+        )
+    if (
+        "visible_change_summary" not in normalized
+        and "visual_evidence_tags" in normalized
+    ):
+        tags = normalized.get("visual_evidence_tags")
+        tag_text = ", ".join(tags) if isinstance(tags, list) else str(tags)
+        normalized["visible_change_summary"] = f"Visible evidence tags: {tag_text}."
+    return normalized
+
+
 def _build_payload(
     *,
     asset: Asset,
@@ -241,10 +365,13 @@ def _build_payload(
     baseline: FrameEnvelope,
     evidence: Sam3EvidenceReport | None,
     model_version: str,
+    adapter_ref: str | None = None,
 ) -> CandidateRequestPayload:
     system = (
         "You are a civilian satellite before/after analyst. Compare the baseline image and "
         "current image. The source report is context, not something to validate from imagery. "
+        "If an adapter_ref is present, use it only as the tuned analyst behavior profile; "
+        "still obey this schema and safety contract. "
         "Report only visible macro-scale civilian infrastructure impact and imagery limits. "
         "Do not mention tactical targets, troops, weapons, bases, convoys, or strike support. "
         "Do not repeat the input. Return one compact JSON object only, with no markdown."
@@ -272,6 +399,7 @@ def _build_payload(
         )
     return CandidateRequestPayload(
         model_version=model_version,
+        adapter_ref=adapter_ref,
         asset_id=asset.asset_id,
         scenario_id=f"analyst_{current.frame.frame_id}",
         inputs=inputs,
@@ -442,12 +570,15 @@ _VISUAL_TAG_ALIASES = {
     "crater": "blast_or_crater_scarring",
     "craters": "blast_or_crater_scarring",
     "burned_area": "burn_scar",
+    "burnt_scar": "burn_scar",
     "fire_damage": "burn_scar",
     "collapsed_structure": "collapsed_building",
     "destroyed_building": "collapsed_building",
     "damaged_building": "collapsed_building",
     "damaged_road": "damaged_bridge_or_access_span",
     "road_damage": "damaged_bridge_or_access_span",
+    "road_or_access_span": "damaged_bridge_or_access_span",
+    "market_or_civilian_cluster": "damaged_market_or_civilian_cluster",
     "urban_damage": "broad_urban_destruction",
 }
 

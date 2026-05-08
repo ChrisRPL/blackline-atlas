@@ -102,7 +102,7 @@ class OpenAIChatCompletionsCandidateProvider:
                     "model": payload.model_version,
                     "messages": _build_openai_chat_messages(payload),
                     "temperature": 0,
-                    "max_tokens": 256,
+                    "max_tokens": 768,
                     "response_format": {"type": "json_object"},
                 }
             ).encode("utf-8"),

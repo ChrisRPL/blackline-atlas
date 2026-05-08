@@ -4,11 +4,18 @@ from typing import Literal
 
 from pydantic import BaseModel, Field
 
-ModelGateDecision = Literal["replay_safe_adapter_rejected"]
+ModelGateDecision = Literal[
+    "replay_safe_adapter_rejected",
+    "evidence_adapter_guarded_runtime",
+]
 AdapterSignalRole = Literal["optional_non_authoritative"]
-RuntimeAuthority = Literal["deterministic_replay"]
+RuntimeAuthority = Literal[
+    "deterministic_replay",
+    "source_led_sam3_liquid_guarded",
+]
 AdapterPublicationStatus = Literal[
     "published_rejected",
+    "published_guarded_runtime",
     "published_research_only",
     "superseded_rejected",
 ]

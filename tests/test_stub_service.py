@@ -764,6 +764,9 @@ def test_stub_service_compares_unlinked_live_lead_through_simsat(
     assert response.focus_asset_id == lead.linked_asset_id
     assert any("lon=36.230400" in url for url in requested_urls)
     assert any("lat=49.993500" in url for url in requested_urls)
+    assert any("size_km=3.0" in url for url in requested_urls)
+    assert not any("size_km=1.5" in url for url in requested_urls)
+    assert not any("size_km=0.75" in url for url in requested_urls)
     assert "/data/image/sentinel" in response.compare.current_frame.frame.source
     assert any("timestamp=2026-04-28T12%3A00%3A00Z" in url for url in requested_urls)
     assert any("timestamp=2023-04-29T12%3A00%3A00Z" in url for url in requested_urls)
@@ -775,6 +778,122 @@ def test_stub_service_compares_unlinked_live_lead_through_simsat(
     assert service.get_asset_evidence(lead.linked_asset_id or f"live_{lead.lead_id}") is None
     assert service.get_asset_analyst_report(lead.linked_asset_id or f"live_{lead.lead_id}") is None
     assert Path(response.compare.current_frame.frame.image_ref or "").exists()
+
+
+def test_stub_service_chains_single_linked_search_match_into_site_compare(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    lead_registry_path = tmp_path / "live_leads.json"
+    lead_registry_path.write_text(
+        json.dumps(
+            [
+                {
+                    "lead_id": "gdelt_port_au_prince",
+                    "title": "Port-Au-Prince armed conflict damages port warehouses",
+                    "summary": "Source reports visible damage around civilian port warehouses.",
+                    "region": "Port-au-Prince, Haiti",
+                    "latitude": 18.5392,
+                    "longitude": -72.335,
+                    "category_guess": "container_port",
+                    "status": "lead_only",
+                    "source_date": "2026-05-02",
+                }
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    class FakeResponse:
+        status = 200
+        headers = {
+            "sentinel_metadata": json.dumps(
+                {
+                    "image_available": True,
+                    "source": "sentinel",
+                    "spectral_bands": ["red", "green", "blue"],
+                    "footprint": [],
+                    "size_km": 3.0,
+                    "cloud_cover": 0.12,
+                    "datetime": "2026-05-02T12:00:00Z",
+                    "timestamp": "2026-05-02T12:00:00Z",
+                }
+            )
+        }
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc, tb) -> None:
+            _ = exc_type
+            _ = exc
+            _ = tb
+
+        def read(self) -> bytes:
+            return b"png"
+
+        def getcode(self) -> int:
+            return self.status
+
+    def fake_planner_urlopen(request, timeout: float):
+        request_url = request.full_url if hasattr(request, "full_url") else str(request)
+        if request_url == "https://example.test/planner":
+            return _FakeHTTPResponse(
+                body=json.dumps(
+                    {
+                        "choices": [
+                            {
+                                "message": {
+                                    "content": json.dumps(
+                                        {
+                                            "tool": "search_live_leads",
+                                            "area": "Port-au-Prince",
+                                            "category": None,
+                                            "site_id": None,
+                                            "alert_id": None,
+                                            "camera": None,
+                                        }
+                                    )
+                                }
+                            }
+                        ]
+                    }
+                ).encode("utf-8")
+            )
+        return FakeResponse()
+
+    monkeypatch.setattr("app.services.sentinel_client.urlopen", fake_planner_urlopen)
+    monkeypatch.setattr("app.services.model_gateway.urlopen", fake_planner_urlopen)
+    service = StubAtlasService(
+        Settings(
+            app_env="test",
+            app_port=8000,
+            model_version="lfm2.5-vl-450m-prompted",
+            simsat_current_endpoint="http://simsat.test/data/current/image/sentinel",
+            simsat_baseline_endpoint="http://simsat.test/data/image/sentinel",
+            simsat_current_http_enabled=True,
+            simsat_baseline_http_enabled=True,
+            mapbox_token_present=False,
+            watchlist_path=None,
+            lead_registry_path=str(lead_registry_path),
+            agent_endpoint="https://example.test/planner",
+            agent_http_enabled=True,
+            agent_provider="openai_chat_completions_http",
+        )
+    )
+
+    response = service.run_agent_query(
+        AtlasAgentQueryRequest(query="What is the current situation in Port-au-Prince?")
+    )
+
+    assert response.status == "ok"
+    assert response.tool == "site_compare"
+    assert response.compare is not None
+    assert response.compare.satellite_evidence is not None
+    assert response.compare.satellite_evidence.size_km == 3.0
+    assert response.focus_asset_id == "live_gdelt_port_au_prince"
+    assert response.planner.mode == "live"
 
 
 def test_stub_service_prefers_clear_nearby_simsat_over_cloudy_exact_pair(
@@ -972,6 +1091,170 @@ def test_stub_service_marks_all_cloudy_simsat_pair_as_cloud_limited(
     assert len(evidence.attempts) == 8
     assert response.analyst_report is None
     assert "not a confirmed visual alert" in response.summary
+
+
+def test_cloud_limited_live_pair_still_runs_source_led_sam3_and_liquid_analyst(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    lead_registry_path = tmp_path / "live_leads.json"
+    lead_registry_path.write_text(
+        json.dumps(
+            [
+                {
+                    "lead_id": "gdelt_clouded_analyst",
+                    "title": "Missile strike damages Dnipro apartment buildings",
+                    "summary": "Local source reports damaged apartments and rubble.",
+                    "region": "Dnipro, Ukraine",
+                    "latitude": 48.4647,
+                    "longitude": 35.0462,
+                    "category_guess": "civilian_building_cluster",
+                    "status": "lead_only",
+                    "source_date": "2026-04-29",
+                }
+            ]
+        ),
+        encoding="utf-8",
+    )
+    calls: list[tuple[str, dict[str, object]]] = []
+
+    class FakeSentinelResponse:
+        status = 200
+
+        def __init__(self) -> None:
+            metadata = {
+                "image_available": True,
+                "source": "sentinel",
+                "spectral_bands": ["red", "green", "blue"],
+                "footprint": [],
+                "size_km": 3.0,
+                "cloud_cover": 0.7,
+                "datetime": "2026-04-29T12:00:00Z",
+                "timestamp": "2026-04-29T12:00:00Z",
+            }
+            self.headers = {"sentinel_metadata": json.dumps(metadata)}
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc, tb) -> None:
+            _ = exc_type
+            _ = exc
+            _ = tb
+
+        def read(self) -> bytes:
+            return b"png"
+
+        def getcode(self) -> int:
+            return self.status
+
+    def fake_sentinel_urlopen(url: str, timeout: float):
+        _ = url
+        assert timeout == 5.0
+        return FakeSentinelResponse()
+
+    def fake_sam3_urlopen(request, timeout: float):
+        assert request.full_url == "https://example.test/sam3"
+        assert timeout == 20.0
+        body = json.loads(request.data.decode("utf-8"))
+        calls.append(("sam3", body))
+        assert body["source_context"]["title"].startswith("Missile strike")
+        assert "apartment block" in body["prompts"]
+        assert "rubble pile" in body["prompts"]
+        return _FakeHTTPResponse(
+            body=json.dumps(
+                {
+                    "asset_id": "live_gdelt_clouded_analyst",
+                    "current_frame_id": body["current_frame"]["frame"]["frame_id"],
+                    "baseline_frame_id": body["baseline_frame"]["frame"]["frame_id"],
+                    "current_image_ref": body["current_frame"]["frame"]["image_ref"],
+                    "baseline_image_ref": body["baseline_frame"]["frame"]["image_ref"],
+                    "model_version": "facebook/sam3",
+                    "backend": "sam3_http",
+                    "decision": "no_evidence",
+                    "source_context": body["source_context"],
+                    "prompts": body["prompts"],
+                    "masks": [],
+                    "visual_evidence_tags": [],
+                    "triage_action": "discard",
+                    "summary": "Cloud-limited frame; no defensible masks.",
+                }
+            ).encode("utf-8")
+        )
+
+    def fake_gateway_urlopen(request, timeout: float):
+        assert request.full_url == "https://example.test/liquid"
+        assert timeout == 60.0
+        body = json.loads(request.data.decode("utf-8"))
+        calls.append(("liquid", body))
+        assert body["adapter_ref"].endswith("hf-corpus-full-v1b-adapter")
+        assert body["model_version"] == "LiquidAI/LFM2.5-VL-450M"
+        user_text = next(
+            item["text"]
+            for item in body["inputs"]
+            if item["type"] == "input_text" and item["role"] == "user"
+        )
+        assert "Source event: Missile strike" in user_text
+        assert "Dynamic SAM3 prompts:" in user_text
+        return _FakeHTTPResponse(
+            body=json.dumps(
+                {
+                    "output_text": json.dumps(
+                        {
+                            "visible_change_summary": (
+                                "Cloud cover limits direct visual confirmation."
+                            ),
+                            "civilian_disruption_evidence": [],
+                            "negative_evidence": ["low_visibility"],
+                            "uncertainty_factors": ["cloud_or_visibility_limit"],
+                            "severity_hint": "none",
+                            "recommended_action": "discard",
+                            "confidence": 0.12,
+                            "short_rationale": (
+                                "The source lead is relevant, but imagery is too clouded."
+                            ),
+                        }
+                    )
+                }
+            ).encode("utf-8")
+        )
+
+    monkeypatch.setattr("app.services.sentinel_client.urlopen", fake_sentinel_urlopen)
+    monkeypatch.setattr("app.services.sam3_evidence.urlopen", fake_sam3_urlopen)
+    monkeypatch.setattr("app.services.model_gateway.urlopen", fake_gateway_urlopen)
+    service = StubAtlasService(
+        Settings(
+            app_env="test",
+            app_port=8000,
+            model_version="lfm2.5-vl-450m-prompted",
+            simsat_current_endpoint="http://simsat.test/data/current/image/sentinel",
+            simsat_baseline_endpoint="http://simsat.test/data/image/sentinel",
+            simsat_current_http_enabled=True,
+            simsat_baseline_http_enabled=True,
+            mapbox_token_present=False,
+            watchlist_path=None,
+            lead_registry_path=str(lead_registry_path),
+            sam3_endpoint="https://example.test/sam3",
+            sam3_http_enabled=True,
+            analyst_endpoint="https://example.test/liquid",
+            analyst_http_enabled=True,
+        )
+    )
+    lead = service.list_leads()[0]
+
+    response = service.run_agent_query(
+        AtlasAgentQueryRequest(tool="site_compare", selected_lead_id=lead.lead_id)
+    )
+
+    assert response.status == "ok"
+    assert response.compare is not None
+    assert response.compare.satellite_evidence is not None
+    assert response.compare.satellite_evidence.usability == "cloud_limited"
+    assert response.analyst_report is not None
+    assert response.analyst_report.backend == "liquid_vlm_http"
+    assert response.analyst_report.negative_evidence == ["low_visibility"]
+    assert [kind for kind, _ in calls] == ["sam3", "liquid"]
 
 
 def test_stub_service_uses_timestamped_simsat_when_current_overpass_has_no_image(

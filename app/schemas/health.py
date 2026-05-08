@@ -27,6 +27,7 @@ class HealthConfig(BaseModel):
     sam3_http_enabled: bool
     sam3_required: bool = True
     analyst_model_version: str
+    analyst_adapter_ref: str | None = None
     analyst_http_enabled: bool
     analyst_provider: str
 

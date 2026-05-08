@@ -63,6 +63,12 @@ class LiquidAnalystReport(BaseModel):
         return {
             "downlink": "downlink_now",
             "downlink now": "downlink_now",
+            "downlink-now": "downlink_now",
+            "downlink_only": "downlink_now",
+            "downlink only": "downlink_now",
+            "downlink_now": "downlink_now",
+            "defer": "defer",
+            "discard": "discard",
             "review": "defer",
             "hold": "defer",
             "ignore": "discard",
@@ -94,8 +100,35 @@ class LiquidAnalystReport(BaseModel):
             normalized["short_rationale"] = normalized["rationale"]
         if "evidence" in normalized and "civilian_disruption_evidence" not in normalized:
             normalized["civilian_disruption_evidence"] = normalized["evidence"]
+        if (
+            "visual_evidence_tags" in normalized
+            and "civilian_disruption_evidence" not in normalized
+        ):
+            normalized["civilian_disruption_evidence"] = normalized["visual_evidence_tags"]
+        if "evidence_tags" in normalized and "civilian_disruption_evidence" not in normalized:
+            normalized["civilian_disruption_evidence"] = normalized["evidence_tags"]
         if "action" in normalized and "recommended_action" not in normalized:
             normalized["recommended_action"] = normalized["action"]
+        if "triage_action" in normalized and "recommended_action" not in normalized:
+            normalized["recommended_action"] = normalized["triage_action"]
+        if "change_confidence" in normalized and "confidence" not in normalized:
+            normalized["confidence"] = normalized["change_confidence"]
+        if "confidence_score" in normalized and "confidence" not in normalized:
+            normalized["confidence"] = normalized["confidence_score"]
+        if "visible_change_summary" in normalized and "short_rationale" not in normalized:
+            normalized["short_rationale"] = normalized["visible_change_summary"]
+        if "negative_type" in normalized and "negative_evidence" not in normalized:
+            negative_type = normalized["negative_type"]
+            normalized["negative_evidence"] = (
+                [] if negative_type in {None, "none"} else [negative_type]
+            )
+        if (
+            "visible_change_summary" not in normalized
+            and "visual_evidence_tags" in normalized
+        ):
+            tags = normalized.get("visual_evidence_tags")
+            tag_text = ", ".join(tags) if isinstance(tags, list) else str(tags)
+            normalized["visible_change_summary"] = f"Visible evidence tags: {tag_text}."
         return normalized
 
     @model_validator(mode="after")

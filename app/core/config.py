@@ -58,6 +58,10 @@ class Settings:
     analyst_http_enabled: bool = False
     analyst_api_key: str | None = None
     analyst_provider: str = "atlas_json_http"
+    analyst_timeout_seconds: float = 60.0
+    analyst_adapter_ref: str | None = (
+        "ChrisRPL/blackline-atlas-lfm25-vl-sft-hf-corpus-full-v1b-adapter"
+    )
     acled_access_token: str | None = None
     acled_username: str | None = None
     acled_password: str | None = None
@@ -109,6 +113,9 @@ def get_settings() -> Settings:
         analyst_http_enabled=env_flag("ANALYST_HTTP_ENABLED"),
         analyst_api_key=os.getenv("ANALYST_API_KEY") or None,
         analyst_provider=os.getenv("ANALYST_PROVIDER", "atlas_json_http"),
+        analyst_timeout_seconds=float(os.getenv("ANALYST_TIMEOUT_SECONDS", "60.0")),
+        analyst_adapter_ref=os.getenv("ANALYST_ADAPTER_REF")
+        or "ChrisRPL/blackline-atlas-lfm25-vl-sft-hf-corpus-full-v1b-adapter",
         acled_access_token=os.getenv("ACLED_ACCESS_TOKEN") or None,
         acled_username=os.getenv("ACLED_USERNAME") or None,
         acled_password=os.getenv("ACLED_PASSWORD") or None,

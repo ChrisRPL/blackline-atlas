@@ -2,6 +2,9 @@ from __future__ import annotations
 
 from app.schemas.model_status import EvaluatedAdapter, ModelEvalScore, ModelStatus
 
+FULL_V1B_ADAPTER = "ChrisRPL/blackline-atlas-lfm25-vl-sft-hf-corpus-full-v1b-adapter"
+FULL_V1B_DATASET = "ChrisRPL/blackline-atlas-training-corpus-v1"
+
 
 def build_model_status() -> ModelStatus:
     base_smoke = ModelEvalScore(
@@ -18,30 +21,38 @@ def build_model_status() -> ModelStatus:
         downlink_total=3,
         false_positives=0,
     )
+    full_v1b_eval = ModelEvalScore(
+        action_match=9,
+        schema_valid=19,
+        downlink_recall=3,
+        downlink_total=12,
+        false_positives=3,
+    )
     return ModelStatus(
         base_model="LiquidAI/LFM2.5-VL-450M",
-        candidate_adapter="ChrisRPL/blackline-atlas-lfm25-vl-sft-train-hf-aux-v10-adapter",
-        training_dataset="ChrisRPL/satellite-disruption-triage-aux-v2-2",
+        candidate_adapter=FULL_V1B_ADAPTER,
+        training_dataset=FULL_V1B_DATASET,
         adapter_signal_role="optional_non_authoritative",
-        runtime_authority="deterministic_replay",
+        runtime_authority="source_led_sam3_liquid_guarded",
         can_affect_alerts=False,
-        frozen_gold_cases=51,
-        reported_eval_cases=3,
-        reported_eval_scope="v2_2_eval_gold_three_case_schema_smoke",
-        decision="replay_safe_adapter_rejected",
-        recommended_runtime="deterministic_replay",
+        frozen_gold_cases=22,
+        reported_eval_cases=22,
+        reported_eval_scope="hf_corpus_simsat_gold_eval_full_22",
+        decision="evidence_adapter_guarded_runtime",
+        recommended_runtime="source_led_sam3_liquid_guarded",
         summary=(
-            "v10 trained and published with strong trainer-loss improvement, but the "
-            "generation smoke still produced zero valid evidence-schema outputs and zero "
-            "downlink_now matches. Runtime alerts remain deterministic replay only."
+            "full-v1b trained on the 30,858-row HF corpus and completed a corpus-native "
+            "SimSat gold eval with 22/22 valid JSON and 19/22 schema-valid reports. "
+            "Action match remains 9/22, so the adapter is wired for guarded Liquid analyst "
+            "summaries behind source-led and SAM3 evidence, not autonomous alert decisions."
         ),
         base_eval=base_smoke,
-        adapter_eval=v10_smoke,
+        adapter_eval=full_v1b_eval,
         acceptance_failures=[
-            "v10 evidence schema valid count is 0/3 on eval-gold smoke",
-            "v10 action match is 0/3 on positive eval-gold smoke",
-            "v10 predicted zero downlink_now rows on positive smoke cases",
-            "full 51-case frozen eval remains blocked until schema smoke passes",
+            "full-v1b action match is 9/22 on corpus-native SimSat gold eval",
+            "full-v1b downlink recall is 3/12 on positive SimSat gold cases",
+            "full-v1b produced 3 false-positive downlink_now predictions on negative cases",
+            "runtime must keep parser repair, source-led context, and SAM3 guardrails active",
         ],
         evaluated_adapters=[
             EvaluatedAdapter(
@@ -106,8 +117,25 @@ def build_model_status() -> ModelStatus:
                     "evidence schema and action contract."
                 ),
             ),
+            EvaluatedAdapter(
+                adapter=FULL_V1B_ADAPTER,
+                training_dataset=FULL_V1B_DATASET,
+                training_job="69f66f889d85bec4d76f0be0",
+                status="published_guarded_runtime",
+                eval_scope="hf_corpus_simsat_gold_eval_full_22",
+                eval_cases=22,
+                train_rows=30858,
+                eval_rows=3421,
+                eval_loss_start=3.0021,
+                eval_loss_final=0.3273,
+                score=full_v1b_eval,
+                failure_summary=(
+                    "Good enough for guarded analyst narration: valid JSON is stable, but "
+                    "action quality is not strong enough to control alert emission."
+                ),
+            ),
         ],
-        latest_training_job="69f0ac8bd70108f37ace0f4d",
-        training_eval_loss_start=2.9309,
-        training_eval_loss_final=1.2123,
+        latest_training_job="69f66f889d85bec4d76f0be0",
+        training_eval_loss_start=3.0021,
+        training_eval_loss_final=0.3273,
     )

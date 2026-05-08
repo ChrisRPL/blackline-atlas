@@ -31,12 +31,13 @@ def test_region_conflict_question_focuses_live_gaza_marker(monkeypatch) -> None:
 
     assert response.status_code == 200
     payload = response.json()
-    assert payload["tool"] == "search_live_leads"
+    assert payload["tool"] == "site_compare"
     assert payload["status"] == "ok"
     assert payload["resolved"]["area"] == "Gaza"
-    assert payload["focus_lead_id"]
-    assert all("Gaza" in lead["region"] or "Gaza" in lead["title"] for lead in payload["leads"])
-    assert payload["camera"]["mode"] == "focus_lead"
+    assert payload["resolved"]["selected_lead_id"]
+    assert payload["focus_asset_id"]
+    assert payload["compare"] is not None
+    assert payload["camera"]["mode"] == "focus_asset"
 
 
 def test_nearest_conflict_question_uses_user_location_after_planner_selects_search(

@@ -171,6 +171,15 @@ def stub_sentinel_health_probe(
     monkeypatch.setattr("app.services.sentinel_client.urlopen", fake_urlopen)
 
 
+def stub_http_dependency_probe(monkeypatch, *, status: int = 200) -> None:
+    def fake_urlopen(request, timeout: float):
+        assert timeout == 0.25
+        _ = request
+        return _FakeHTTPResponse(body=b'{"ok":true}', status=status)
+
+    monkeypatch.setattr("app.services.stub.urlopen", fake_urlopen)
+
+
 def test_health_endpoint() -> None:
     response = client.get("/health")
 
@@ -193,35 +202,36 @@ def test_model_status_endpoint_exposes_adapter_gate() -> None:
     assert payload["base_model"] == "LiquidAI/LFM2.5-VL-450M"
     assert (
         payload["candidate_adapter"]
-        == "ChrisRPL/blackline-atlas-lfm25-vl-sft-train-hf-aux-v10-adapter"
+        == "ChrisRPL/blackline-atlas-lfm25-vl-sft-hf-corpus-full-v1b-adapter"
     )
-    assert payload["training_dataset"] == "ChrisRPL/satellite-disruption-triage-aux-v2-2"
+    assert payload["training_dataset"] == "ChrisRPL/blackline-atlas-training-corpus-v1"
     assert payload["adapter_signal_role"] == "optional_non_authoritative"
-    assert payload["runtime_authority"] == "deterministic_replay"
+    assert payload["runtime_authority"] == "source_led_sam3_liquid_guarded"
     assert payload["can_affect_alerts"] is False
-    assert payload["decision"] == "replay_safe_adapter_rejected"
-    assert payload["recommended_runtime"] == "deterministic_replay"
-    assert payload["frozen_gold_cases"] == 51
-    assert payload["reported_eval_cases"] == 3
-    assert payload["reported_eval_scope"] == "v2_2_eval_gold_three_case_schema_smoke"
+    assert payload["decision"] == "evidence_adapter_guarded_runtime"
+    assert payload["recommended_runtime"] == "source_led_sam3_liquid_guarded"
+    assert payload["frozen_gold_cases"] == 22
+    assert payload["reported_eval_cases"] == 22
+    assert payload["reported_eval_scope"] == "hf_corpus_simsat_gold_eval_full_22"
     assert payload["base_eval"]["action_match"] == 0
     assert payload["base_eval"]["schema_valid"] == 0
-    assert payload["adapter_eval"]["action_match"] == 0
-    assert payload["adapter_eval"]["schema_valid"] == 0
-    assert payload["adapter_eval"]["false_positives"] == 0
-    assert payload["latest_training_job"] == "69f0ac8bd70108f37ace0f4d"
-    assert payload["training_eval_loss_start"] == 2.9309
-    assert payload["training_eval_loss_final"] == 1.2123
+    assert payload["adapter_eval"]["action_match"] == 9
+    assert payload["adapter_eval"]["schema_valid"] == 19
+    assert payload["adapter_eval"]["false_positives"] == 3
+    assert payload["latest_training_job"] == "69f66f889d85bec4d76f0be0"
+    assert payload["training_eval_loss_start"] == 3.0021
+    assert payload["training_eval_loss_final"] == 0.3273
     assert payload["acceptance_failures"] == [
-        "v10 evidence schema valid count is 0/3 on eval-gold smoke",
-        "v10 action match is 0/3 on positive eval-gold smoke",
-        "v10 predicted zero downlink_now rows on positive smoke cases",
-        "full 51-case frozen eval remains blocked until schema smoke passes",
+        "full-v1b action match is 9/22 on corpus-native SimSat gold eval",
+        "full-v1b downlink recall is 3/12 on positive SimSat gold cases",
+        "full-v1b produced 3 false-positive downlink_now predictions on negative cases",
+        "runtime must keep parser repair, source-led context, and SAM3 guardrails active",
     ]
     assert [item["status"] for item in payload["evaluated_adapters"]] == [
         "superseded_rejected",
         "superseded_rejected",
         "published_rejected",
+        "published_guarded_runtime",
     ]
 
 
@@ -594,6 +604,9 @@ def test_health_endpoint_exposes_machine_readable_config_flags(monkeypatch) -> N
         "sam3_http_enabled": True,
         "sam3_required": True,
         "analyst_model_version": "LiquidAI/LFM2.5-VL-450M",
+        "analyst_adapter_ref": (
+            "ChrisRPL/blackline-atlas-lfm25-vl-sft-hf-corpus-full-v1b-adapter"
+        ),
         "analyst_http_enabled": False,
         "analyst_provider": "atlas_json_http",
     }
@@ -624,6 +637,9 @@ def test_health_endpoint_exposes_default_config_flags(tmp_path, monkeypatch) -> 
         "sam3_http_enabled": True,
         "sam3_required": True,
         "analyst_model_version": "LiquidAI/LFM2.5-VL-450M",
+        "analyst_adapter_ref": (
+            "ChrisRPL/blackline-atlas-lfm25-vl-sft-hf-corpus-full-v1b-adapter"
+        ),
         "analyst_http_enabled": False,
         "analyst_provider": "atlas_json_http",
     }
@@ -657,6 +673,9 @@ def test_health_endpoint_exposes_disabled_mapbox_config_flags(tmp_path, monkeypa
         "sam3_http_enabled": True,
         "sam3_required": True,
         "analyst_model_version": "LiquidAI/LFM2.5-VL-450M",
+        "analyst_adapter_ref": (
+            "ChrisRPL/blackline-atlas-lfm25-vl-sft-hf-corpus-full-v1b-adapter"
+        ),
         "analyst_http_enabled": False,
         "analyst_provider": "atlas_json_http",
     }
@@ -693,6 +712,9 @@ def test_health_endpoint_exposes_mixed_transport_config_flags(tmp_path, monkeypa
         "sam3_http_enabled": True,
         "sam3_required": True,
         "analyst_model_version": "LiquidAI/LFM2.5-VL-450M",
+        "analyst_adapter_ref": (
+            "ChrisRPL/blackline-atlas-lfm25-vl-sft-hf-corpus-full-v1b-adapter"
+        ),
         "analyst_http_enabled": False,
         "analyst_provider": "atlas_json_http",
     }
@@ -730,6 +752,9 @@ def test_health_endpoint_exposes_baseline_only_transport_config_flags(
         "sam3_http_enabled": True,
         "sam3_required": True,
         "analyst_model_version": "LiquidAI/LFM2.5-VL-450M",
+        "analyst_adapter_ref": (
+            "ChrisRPL/blackline-atlas-lfm25-vl-sft-hf-corpus-full-v1b-adapter"
+        ),
         "analyst_http_enabled": False,
         "analyst_provider": "atlas_json_http",
     }
@@ -764,6 +789,7 @@ def test_health_endpoint_reflects_default_identity(tmp_path, monkeypatch) -> Non
 
 def test_health_endpoint_exposes_model_http_config_and_backend_mode(tmp_path, monkeypatch) -> None:
     monkeypatch.chdir(tmp_path)
+    stub_http_dependency_probe(monkeypatch)
     model_client = build_api_client(
         monkeypatch,
         simsat_current_endpoint=None,
@@ -786,6 +812,7 @@ def test_health_endpoint_exposes_model_http_config_and_backend_mode(tmp_path, mo
 
 def test_health_endpoint_exposes_agent_http_config_and_backend_mode(tmp_path, monkeypatch) -> None:
     monkeypatch.chdir(tmp_path)
+    stub_http_dependency_probe(monkeypatch)
     agent_client = build_api_client(
         monkeypatch,
         simsat_current_endpoint=None,
@@ -808,8 +835,27 @@ def test_health_endpoint_exposes_agent_http_config_and_backend_mode(tmp_path, mo
     get_settings.cache_clear()
 
 
+def test_health_endpoint_marks_unreachable_http_planner_degraded(tmp_path, monkeypatch) -> None:
+    monkeypatch.chdir(tmp_path)
+    agent_client = build_api_client(
+        monkeypatch,
+        simsat_current_endpoint=None,
+        simsat_baseline_endpoint=None,
+        agent_endpoint="http://127.0.0.1:9/v1/chat/completions",
+        agent_http_enabled=True,
+        agent_provider="openai_chat_completions_http",
+    )
+    agent_response = agent_client.get("/health")
+
+    assert agent_response.status_code == 200
+    assert agent_response.json()["agent_backend"]["status"] == "degraded"
+    assert "configured but unreachable" in agent_response.json()["agent_backend"]["detail"]
+    get_settings.cache_clear()
+
+
 def test_health_endpoint_exposes_sam3_http_config_and_backend_mode(tmp_path, monkeypatch) -> None:
     monkeypatch.chdir(tmp_path)
+    stub_http_dependency_probe(monkeypatch)
     sam3_client = build_api_client(
         monkeypatch,
         simsat_current_endpoint=None,
@@ -893,6 +939,7 @@ def test_health_endpoint_marks_missing_agent_endpoint_not_configured(tmp_path, m
 
 def test_health_endpoint_exposes_openai_chat_planner_backend_mode(tmp_path, monkeypatch) -> None:
     monkeypatch.chdir(tmp_path)
+    stub_http_dependency_probe(monkeypatch)
     agent_client = build_api_client(
         monkeypatch,
         simsat_current_endpoint=None,
@@ -932,6 +979,7 @@ def test_health_endpoint_marks_missing_model_endpoint_not_configured(tmp_path, m
 
 def test_health_endpoint_exposes_openai_provider_backend_mode(tmp_path, monkeypatch) -> None:
     monkeypatch.chdir(tmp_path)
+    stub_http_dependency_probe(monkeypatch)
     model_client = build_api_client(
         monkeypatch,
         simsat_current_endpoint=None,
@@ -953,6 +1001,7 @@ def test_health_endpoint_exposes_openai_provider_backend_mode(tmp_path, monkeypa
 
 def test_health_endpoint_exposes_openai_chat_candidate_backend_mode(tmp_path, monkeypatch) -> None:
     monkeypatch.chdir(tmp_path)
+    stub_http_dependency_probe(monkeypatch)
     model_client = build_api_client(
         monkeypatch,
         simsat_current_endpoint=None,

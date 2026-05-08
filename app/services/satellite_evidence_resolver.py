@@ -385,21 +385,21 @@ def _evidence_candidates(latitude: float, longitude: float) -> list[_EvidenceCan
             scope="exact_aoi",
             latitude=latitude,
             longitude=longitude,
-            size_km=0.75,
+            size_km=3.0,
             window_seconds=_LIVE_SHORT_WINDOW_SECONDS,
         ),
         _EvidenceCandidate(
             scope="exact_aoi",
             latitude=latitude,
             longitude=longitude,
-            size_km=1.5,
+            size_km=5.0,
             window_seconds=_LIVE_MEDIUM_WINDOW_SECONDS,
         ),
         _EvidenceCandidate(
             scope="exact_aoi",
             latitude=latitude,
             longitude=longitude,
-            size_km=2.5,
+            size_km=1.5,
             window_seconds=_LIVE_MEDIUM_WINDOW_SECONDS,
         ),
     ]
@@ -413,7 +413,7 @@ def _evidence_candidates(latitude: float, longitude: float) -> list[_EvidenceCan
                 longitude,
                 north_km,
                 east_km,
-                size_km=1.5,
+                size_km=3.0,
                 window_seconds=_LIVE_MEDIUM_WINDOW_SECONDS,
             )
         )

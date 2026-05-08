@@ -7,9 +7,9 @@ from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from threading import Lock
 from typing import Literal, cast
-from urllib.error import URLError
+from urllib.error import HTTPError, URLError
 from urllib.parse import urlencode
-from urllib.request import urlopen
+from urllib.request import Request, urlopen
 
 from app.core.config import Settings
 from app.schemas.agent import (
@@ -108,10 +108,29 @@ _SIMSAT_LIVE_FALLBACK_WINDOW_SECONDS = 730 * 24 * 60 * 60
 _MAPBOX_CONTEXT_ZOOM = 18.0
 _MAPBOX_CONTEXT_SIZE = "1024x576@2x"
 _MAPBOX_CONTEXT_WIDTH = 1024
+_HTTP_DEPENDENCY_TIMEOUT_SECONDS = 0.25
 
 
 def utc_now() -> str:
     return datetime.now(tz=UTC).isoformat().replace("+00:00", "Z")
+
+
+def _http_dependency_state(
+    *,
+    endpoint: str,
+    ready_detail: str,
+    degraded_detail: str,
+) -> HealthDependency:
+    try:
+        request = Request(endpoint, method="GET")
+        with urlopen(request, timeout=_HTTP_DEPENDENCY_TIMEOUT_SECONDS):
+            return HealthDependency(status="ready", detail=ready_detail)
+    except HTTPError as exc:
+        if 200 <= exc.code < 500:
+            return HealthDependency(status="ready", detail=ready_detail)
+    except (OSError, TimeoutError, URLError):
+        pass
+    return HealthDependency(status="degraded", detail=degraded_detail)
 
 
 def _mapbox_context_size_km(latitude: float) -> float:
@@ -378,6 +397,7 @@ class StubAtlasService:
         self.liquid_analyst = LiquidAnalystService(
             model_version=self.settings.analyst_model_version,
             backend=self._analyst_backend(),
+            adapter_ref=self.settings.analyst_adapter_ref,
         )
         self.scenario_evaluator = ScenarioEvaluator(
             comparator=self.baseline_comparator,
@@ -438,6 +458,7 @@ class StubAtlasService:
                 sam3_http_enabled=self.settings.sam3_http_enabled,
                 sam3_required=self.settings.sam3_required,
                 analyst_model_version=self.settings.analyst_model_version,
+                analyst_adapter_ref=self.settings.analyst_adapter_ref,
                 analyst_http_enabled=self.settings.analyst_http_enabled,
                 analyst_provider=self.settings.analyst_provider,
             ),
@@ -662,6 +683,27 @@ class StubAtlasService:
                 trust=trust,
             )
         if tool == "search_live_leads":
+            chained_compare_lead = self._single_linked_search_match(resolved)
+            if chained_compare_lead is not None:
+                compare_request = resolved_request.model_copy(
+                    update={
+                        "tool": "site_compare",
+                        "selected_lead_id": chained_compare_lead.lead_id,
+                        "selected_asset_id": chained_compare_lead.linked_asset_id,
+                        "site_id": chained_compare_lead.linked_asset_id,
+                    }
+                )
+                compare_resolved = self._resolved_agent_request(
+                    request=compare_request,
+                    tool="site_compare",
+                )
+                return self._site_compare_response(
+                    request=compare_request,
+                    watchlist=[],
+                    planner=planner,
+                    resolved=compare_resolved,
+                    trust=trust,
+                )
             return self._search_live_leads_response(
                 query=resolved_request.query or request.query or "",
                 planner=planner,
@@ -1062,6 +1104,16 @@ class StubAtlasService:
             trust=trust,
             replay=self.get_replay_state(),
         )
+
+    def _single_linked_search_match(self, resolved: AtlasAgentResolvedRequest) -> Lead | None:
+        matches = [
+            self._lead_with_runtime_link(lead)
+            for lead in self._lead_matches_for_request(resolved)
+        ]
+        linked = [lead for lead in matches if lead.linked_asset_id]
+        if len(linked) != 1:
+            return None
+        return linked[0]
 
     def _refresh_live_leads_response(
         self,
@@ -1515,9 +1567,13 @@ class StubAtlasService:
                 status="degraded",
                 detail=f"{self.settings.model_provider} unsupported; fixture backend active",
             )
-        return HealthDependency(
-            status="ready",
-            detail=f"{self.settings.model_version} ({provider.provider_id} http backend)",
+        return _http_dependency_state(
+            endpoint=self.settings.model_endpoint,
+            ready_detail=f"{self.settings.model_version} ({provider.provider_id} http backend)",
+            degraded_detail=(
+                f"{self.settings.model_version} ({provider.provider_id} http backend "
+                "configured but unreachable)"
+            ),
         )
 
     def _agent_backend_dependency(self) -> HealthDependency:
@@ -1537,10 +1593,14 @@ class StubAtlasService:
                 status="degraded",
                 detail=f"{self.settings.agent_provider} unsupported; fixture planner active",
             )
-        return HealthDependency(
-            status="ready",
-            detail=(
-                f"{self.settings.agent_model_version} " f"({provider.provider_id} http planner)"
+        return _http_dependency_state(
+            endpoint=self.settings.agent_endpoint,
+            ready_detail=(
+                f"{self.settings.agent_model_version} ({provider.provider_id} http planner)"
+            ),
+            degraded_detail=(
+                f"{self.settings.agent_model_version} ({provider.provider_id} http planner "
+                "configured but unreachable)"
             ),
         )
 
@@ -1571,9 +1631,13 @@ class StubAtlasService:
                     else "SAM3 endpoint not configured yet"
                 ),
             )
-        return HealthDependency(
-            status="ready",
-            detail=f"{self.settings.sam3_model_version} (sam3_http segmentation)",
+        return _http_dependency_state(
+            endpoint=self.settings.sam3_endpoint,
+            ready_detail=f"{self.settings.sam3_model_version} (sam3_http segmentation)",
+            degraded_detail=(
+                f"{self.settings.sam3_model_version} (sam3_http segmentation configured "
+                "but unreachable)"
+            ),
         )
 
     def _analyst_backend_dependency(self) -> HealthDependency:
@@ -1581,7 +1645,7 @@ class StubAtlasService:
             return HealthDependency(
                 status="ready",
                 detail=(
-                    f"{self.settings.analyst_model_version} "
+                    f"{self._analyst_model_detail()} "
                     "(reference-only fixture; live selected points require HTTP endpoint)"
                 ),
             )
@@ -1596,10 +1660,19 @@ class StubAtlasService:
                 status="degraded",
                 detail=f"{self.settings.analyst_provider} unsupported; fixture analyst active",
             )
-        return HealthDependency(
-            status="ready",
-            detail=f"{self.settings.analyst_model_version} ({provider.provider_id} analyst)",
+        return _http_dependency_state(
+            endpoint=self.settings.analyst_endpoint,
+            ready_detail=f"{self._analyst_model_detail()} ({provider.provider_id} analyst)",
+            degraded_detail=(
+                f"{self._analyst_model_detail()} ({provider.provider_id} analyst "
+                "configured but unreachable)"
+            ),
         )
+
+    def _analyst_model_detail(self) -> str:
+        if not self.settings.analyst_adapter_ref:
+            return self.settings.analyst_model_version
+        return f"{self.settings.analyst_model_version} + {self.settings.analyst_adapter_ref}"
 
     def _attach_mapbox_context(self, alert: Alert) -> Alert:
         context_path = self._mapbox_context_path(alert)
@@ -1976,7 +2049,11 @@ class StubAtlasService:
                 endpoint=self.settings.analyst_endpoint,
                 provider=provider,
                 api_key=self.settings.analyst_api_key,
-                gateway=ModelGateway(telemetry_sink=self._analyst_gateway_events),
+                timeout_seconds=self.settings.analyst_timeout_seconds,
+                gateway=ModelGateway(
+                    timeout_seconds=self.settings.analyst_timeout_seconds,
+                    telemetry_sink=self._analyst_gateway_events,
+                ),
             )
         return FixtureLiquidAnalystBackend()
 
@@ -2162,7 +2239,7 @@ class StubAtlasService:
     def _compare_usable_for_model_evidence(self, compare: AtlasAgentCompare) -> bool:
         if compare.satellite_evidence is None:
             return True
-        return compare.satellite_evidence.usability == "direct_clear"
+        return compare.satellite_evidence.usability in {"direct_clear", "cloud_limited"}
 
     def _live_model_evidence_backend_ready(self) -> bool:
         return self.sam3_evidence.backend.backend_id != "fixture"
@@ -2473,7 +2550,7 @@ class StubAtlasService:
             decision = self.agent_planner.plan(
                 query=query,
                 assets=self._runtime_assets(),
-                leads=self.list_leads(),
+                leads=[self._lead_with_runtime_link(lead) for lead in self.list_leads()],
                 selected_asset=selected_asset,
                 selected_lead=selected_lead,
                 fallback_plan=fallback_plan,

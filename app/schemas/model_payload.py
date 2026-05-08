@@ -19,6 +19,7 @@ class CandidateImageInput(BaseModel):
 
 class CandidateRequestPayload(BaseModel):
     model_version: str
+    adapter_ref: str | None = None
     asset_id: str
     scenario_id: str
     inputs: list[CandidateTextInput | CandidateImageInput]

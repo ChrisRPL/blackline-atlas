@@ -41,6 +41,122 @@ def test_liquid_analyst_parser_accepts_strict_civilian_json() -> None:
     assert report.civilian_disruption_evidence == ["damaged_port_or_logistics_apron"]
 
 
+def test_liquid_analyst_parser_repairs_full_v1b_action_alias() -> None:
+    report = parse_liquid_analyst_report(
+        json.dumps(
+            {
+                "visible_change_summary": "Visible warehouse roof disruption.",
+                "civilian_disruption_evidence": ["collapsed_building"],
+                "negative_evidence": [],
+                "uncertainty_factors": [],
+                "severity_hint": "moderate",
+                "recommended_action": "downlink_only",
+                "confidence": 0.72,
+                "short_rationale": "The current frame shows new building damage.",
+            }
+        ),
+        asset=_asset(),
+        current=_current_frame(),
+        baseline=_baseline_frame(),
+        evidence=_evidence(),
+        model_version="LiquidAI/LFM2.5-VL-450M",
+        backend="liquid_vlm_http",
+    )
+
+    assert report is not None
+    assert report.recommended_action == "downlink_now"
+
+
+def test_liquid_analyst_parser_accepts_evidence_first_adapter_schema() -> None:
+    report = parse_liquid_analyst_report(
+        json.dumps(
+            {
+                "visual_evidence_tags": ["debris_field", "collapsed_building"],
+                "evidence_strength": "moderate",
+                "damage_mechanism": "explosion_blast",
+                "visibility_quality": "fair",
+                "negative_type": "none",
+                "bbox_norm": [0.1, 0.2, 0.6, 0.7],
+                "bbox_quality": "coarse",
+                "change_confidence": 0.64,
+                "civilian_infrastructure_type": "medical_aid_node",
+                "rationale": "Visible debris and roof damage are present in the current image.",
+                "triage_action": "defer",
+            }
+        ),
+        asset=_asset(),
+        current=_current_frame(),
+        baseline=_baseline_frame(),
+        evidence=_evidence(),
+        model_version="LiquidAI/LFM2.5-VL-450M",
+        backend="liquid_vlm_http",
+    )
+
+    assert report is not None
+    assert report.status == "ready"
+    assert report.civilian_disruption_evidence == ["debris_field", "collapsed_building"]
+    assert report.recommended_action == "defer"
+    assert report.confidence == 0.64
+    assert report.short_rationale == (
+        "Visible debris and roof damage are present in the current image."
+    )
+
+
+def test_liquid_analyst_parser_accepts_runtime_adapter_aliases() -> None:
+    report = parse_liquid_analyst_report(
+        json.dumps(
+            {
+                "visible_change_summary": "No defensible visual change in the current pair.",
+                "evidence_tags": ["burnt_scar", "road_or_access_span"],
+                "confidence_score": 0.18,
+                "triage_action": "discard",
+                "visibility_quality": "low",
+            }
+        ),
+        asset=_asset(),
+        current=_current_frame(),
+        baseline=_baseline_frame(),
+        evidence=_evidence(),
+        model_version="LiquidAI/LFM2.5-VL-450M",
+        backend="liquid_vlm_http",
+    )
+
+    assert report is not None
+    assert report.recommended_action == "discard"
+    assert report.confidence == 0.18
+    assert report.civilian_disruption_evidence == [
+        "burn_scar",
+        "damaged_bridge_or_access_span",
+    ]
+    assert report.short_rationale == "No defensible visual change in the current pair."
+
+
+def test_liquid_analyst_parser_repairs_partial_low_confidence_adapter_output() -> None:
+    report = parse_liquid_analyst_report(
+        (
+            '{"confidence_score": 0.0, "triage_action": "discard", '
+            '"visibility_quality": "low", '
+            '"visible_change_summary": "Significant damage is visible.", '
+            '"evidence_tags": ["collapsed_building", "debris_field", '
+            '"tornado_site_type_source_log", "tornado_site'
+        ),
+        asset=_asset(),
+        current=_current_frame(),
+        baseline=_baseline_frame(),
+        evidence=_evidence(),
+        model_version="LiquidAI/LFM2.5-VL-450M",
+        backend="liquid_vlm_http",
+    )
+
+    assert report is not None
+    assert report.status == "ready"
+    assert report.recommended_action == "discard"
+    assert report.confidence == 0.0
+    assert report.civilian_disruption_evidence == []
+    assert report.negative_evidence == ["low_visibility"]
+    assert "does not support a defensible" in report.visible_change_summary
+
+
 def test_liquid_analyst_parser_rejects_tactical_language() -> None:
     report = parse_liquid_analyst_report(
         json.dumps(
@@ -144,6 +260,27 @@ def test_liquid_analyst_payload_is_schema_first_not_input_dump() -> None:
         "baseline",
         "current",
     ]
+
+
+def test_liquid_analyst_payload_carries_guarded_adapter_ref() -> None:
+    payload = _build_payload(
+        asset=_asset(),
+        current=_current_frame(),
+        baseline=_baseline_frame(),
+        evidence=None,
+        model_version="LiquidAI/LFM2.5-VL-450M",
+        adapter_ref="ChrisRPL/blackline-atlas-lfm25-vl-sft-hf-corpus-full-v1b-adapter",
+    )
+
+    system_text = next(
+        item.text for item in payload.inputs if item.type == "input_text" and item.role == "system"
+    )
+
+    assert payload.model_version == "LiquidAI/LFM2.5-VL-450M"
+    assert payload.adapter_ref == (
+        "ChrisRPL/blackline-atlas-lfm25-vl-sft-hf-corpus-full-v1b-adapter"
+    )
+    assert "use it only as the tuned analyst behavior profile" in system_text
 
 
 def test_liquid_analyst_payload_uses_source_context_as_visual_brief() -> None:

@@ -49,6 +49,8 @@ def test_agent_prompt_builder_targets_tool_plan_only() -> None:
     assert "site_id must be one listed asset id or null." in prompt.system
     assert "use site_compare" in prompt.system
     assert "tool must be search_live_leads" in prompt.system
+    assert "This overrides search_live_leads" in prompt.system
+    assert "loads satellite/SAM3/VLM evidence" in prompt.system
     assert "use refresh_live_leads" in prompt.system
     assert "If a selected_lead exists" in prompt.system
     assert "Inspect the selected marker" in prompt.system
@@ -79,6 +81,31 @@ def test_agent_prompt_builder_marks_linked_leads_as_inspectable() -> None:
     assert "lead_qasmiyeh_bridge_202604:" in prompt.user
     assert "selected_lead: lead_qasmiyeh_bridge_202604" in prompt.user
     assert "linked_asset_id=live_lead_qasmiyeh" in prompt.user
+
+
+def test_agent_prompt_builder_includes_query_relevant_linked_lead() -> None:
+    assets = load_watchlist_assets(None)
+    lead = Lead(
+        lead_id="gdelt_port_au_prince",
+        title="Port-Au-Prince armed conflict",
+        region="Port-au-Prince, Haiti",
+        latitude=18.5392,
+        longitude=-72.335,
+        category_guess="container_port",
+        status="lead_only",
+        linked_asset_id="live_gdelt_port_au_prince",
+    )
+
+    prompt = AgentPlannerPromptBuilder().build(
+        query="What is the current situation in Port-au-Prince?",
+        assets=assets,
+        leads=[lead],
+        selected_asset=None,
+        selected_lead=None,
+    )
+
+    assert "gdelt_port_au_prince:" in prompt.user
+    assert "linked_asset_id=live_gdelt_port_au_prince" in prompt.user
 
 
 def test_agent_prompt_builder_keeps_live_registry_context_compact() -> None:
@@ -127,6 +154,25 @@ def test_prompted_agent_planner_builds_text_only_payload() -> None:
 
     assert payload.model_version == "lfm2.5-1.2b-instruct"
     assert [item.role for item in payload.inputs] == ["system", "user"]
+
+
+def test_agent_planner_parser_uses_first_balanced_json_object() -> None:
+    planner = PromptedAtlasAgentPlanner(
+        model_version="lfm2.5-1.2b-instruct",
+        backend=_RecordingPlannerBackend(raw_text='{"tool":"latest_alerts"}'),
+    )
+
+    plan = planner.parse_plan(
+        raw_text=(
+            '{\n  "tool": "search_live_leads",\n  "area": "Port-au-Prince",\n'
+            '  "category": null,\n  "site_id": null,\n  "alert_id": null,\n'
+            '  "camera": null\n}\n'
+            'Example output: {"tool":"search_live_leads","area":"Iran"}'
+        ),
+        fallback_plan=AtlasAgentPlan(tool="answer"),
+    )
+
+    assert plan == AtlasAgentPlan(tool="search_live_leads", area="Port-au-Prince")
 
 
 def test_prompted_agent_planner_falls_back_on_invalid_json() -> None:
@@ -321,7 +367,7 @@ def test_openai_chat_completions_agent_planner_provider_builds_request() -> None
     assert body["messages"][0]["role"] == "system"
     assert body["messages"][1]["role"] == "user"
     assert body["temperature"] == 0
-    assert body["max_tokens"] == 64
+    assert body["max_tokens"] == 256
     assert body["response_format"] == {"type": "json_object"}
 
 

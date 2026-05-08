@@ -217,6 +217,7 @@ def _json_blobs(raw_text: str) -> list[str]:
         return []
 
     blobs = [text]
+    blobs.extend(_balanced_json_object_blobs(text))
     if text.startswith("```"):
         lines = text.splitlines()
         if lines and lines[0].startswith("```"):
@@ -226,6 +227,9 @@ def _json_blobs(raw_text: str) -> list[str]:
         stripped = "\n".join(lines).strip()
         if stripped and stripped not in blobs:
             blobs.append(stripped)
+            blobs.extend(
+                blob for blob in _balanced_json_object_blobs(stripped) if blob not in blobs
+            )
 
     first_brace = text.find("{")
     last_brace = text.rfind("}")
@@ -234,6 +238,41 @@ def _json_blobs(raw_text: str) -> list[str]:
         if excerpt not in blobs:
             blobs.append(excerpt)
 
+    return blobs
+
+
+def _balanced_json_object_blobs(text: str) -> list[str]:
+    blobs: list[str] = []
+    start: int | None = None
+    depth = 0
+    in_string = False
+    escape = False
+
+    for index, char in enumerate(text):
+        if in_string:
+            if escape:
+                escape = False
+            elif char == "\\":
+                escape = True
+            elif char == '"':
+                in_string = False
+            continue
+
+        if char == '"':
+            in_string = True
+            continue
+        if char == "{":
+            if depth == 0:
+                start = index
+            depth += 1
+            continue
+        if char != "}" or depth == 0:
+            continue
+
+        depth -= 1
+        if depth == 0 and start is not None:
+            blobs.append(text[start : index + 1])
+            start = None
     return blobs
 
 

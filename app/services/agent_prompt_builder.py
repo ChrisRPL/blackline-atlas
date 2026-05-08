@@ -27,7 +27,7 @@ class AgentPlannerPromptBuilder:
             f"{asset.asset_id}={asset.asset_name}|{asset.region}|{asset.asset_type}"
             for asset in assets[:24]
         )
-        lead_context = _lead_context(leads=leads, selected_lead=selected_lead)
+        lead_context = _lead_context(query=query, leads=leads, selected_lead=selected_lead)
         lead_index = "\n".join(
             f"- {lead.lead_id}: {lead.title} / {lead.region} / "
             f"{lead.category_guess or 'unknown'} / {lead.status} / "
@@ -59,9 +59,14 @@ class AgentPlannerPromptBuilder:
                 "Category must be null unless the user explicitly names one allowed category. "
                 "Do not infer category from event topic. Never use generic category words like "
                 "disruption, conflict, report, marker, or news.\n"
-                "If the user asks about recent/current conflict, disruption, news, reports, "
-                "markers, nearest/near me, countries, cities, or regions, tool must be "
-                "search_live_leads. If the user named a place, area must be that place; "
+                "If exactly one listed lead matches a user question about a specific city, "
+                "town, or point situation and that lead has linked_asset_id, use site_compare "
+                "with site_id equal to linked_asset_id so the app loads satellite/SAM3/VLM "
+                "evidence. This overrides search_live_leads. Do not do this for broad country "
+                "or multi-lead questions.\n"
+                "Otherwise, if the user asks about recent/current conflict, disruption, news, "
+                "reports, markers, nearest/near me, countries, cities, or regions, tool must "
+                "be search_live_leads. If the user named a place, area must be that place; "
                 "otherwise area null.\n"
                 "If the user asks refresh/reload/update/sync/fetch, use refresh_live_leads.\n"
                 "If a selected_lead exists and the user asks to inspect, watch, review, open, "
@@ -83,6 +88,10 @@ class AgentPlannerPromptBuilder:
                 "Example user: What happened recently in Iran?\n"
                 'Example output: {"tool":"search_live_leads","area":"Iran",'
                 '"category":null,"site_id":null,"alert_id":null,"camera":null}\n'
+                "Example user: What is the current situation in Port-au-Prince?\n"
+                'Example output when one relevant linked lead is listed: {"tool":"site_compare",'
+                '"area":"Port-au-Prince","category":null,'
+                '"site_id":"live_gdelt_1302052052_dee44890","alert_id":null,"camera":null}\n'
                 "Example user: Refresh live conflicts near Ukraine.\n"
                 'Example output: {"tool":"refresh_live_leads","area":"Ukraine",'
                 '"category":null,"site_id":null,"alert_id":null,"camera":null}\n'
@@ -105,8 +114,35 @@ class AgentPlannerPromptBuilder:
         )
 
 
-def _lead_context(*, leads: list[Lead], selected_lead: Lead | None) -> list[Lead]:
-    _ = leads
+def _lead_context(
+    *,
+    query: str,
+    leads: list[Lead],
+    selected_lead: Lead | None,
+) -> list[Lead]:
     if selected_lead is not None:
         return [selected_lead]
-    return []
+    normalized_query = _normalized_match_text(query)
+    if not normalized_query:
+        return []
+    return [
+        lead
+        for lead in leads
+        if _lead_matches_query_context(lead=lead, normalized_query=normalized_query)
+    ][:12]
+
+
+def _lead_matches_query_context(*, lead: Lead, normalized_query: str) -> bool:
+    candidates = [lead.region, lead.title]
+    candidates.extend(part.strip() for part in lead.region.split(","))
+    for candidate in candidates:
+        normalized = _normalized_match_text(candidate)
+        if len(normalized) < 3:
+            continue
+        if normalized in normalized_query:
+            return True
+    return False
+
+
+def _normalized_match_text(value: str) -> str:
+    return " ".join(value.lower().replace("-", " ").split())

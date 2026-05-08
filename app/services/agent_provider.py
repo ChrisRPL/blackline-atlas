@@ -120,7 +120,7 @@ class OpenAIChatCompletionsAgentPlannerProvider:
                         for item in payload.inputs
                     ],
                     "temperature": 0,
-                    "max_tokens": 64,
+                    "max_tokens": 256,
                     "response_format": {"type": "json_object"},
                 }
             ).encode("utf-8"),
