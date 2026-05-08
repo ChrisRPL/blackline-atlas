@@ -101,3 +101,29 @@ Guidance:
 - keep benchmark compare as a separate explicit step
 - treat the trainer's `test_size` split as diagnostics only
 - keep authoritative Blackline eval on the frozen held-out slices
+
+## Full-v1b Guarded Runtime Adapter
+
+Current completed run:
+
+- dataset: `ChrisRPL/blackline-atlas-training-corpus-v1`
+- adapter: `ChrisRPL/blackline-atlas-lfm25-vl-sft-hf-corpus-full-v1b-adapter`
+- job: `69f66f889d85bec4d76f0be0`
+- train records: `30,858`
+- eval records: `3,421`
+- eval loss: `3.0021 -> 0.3273`
+
+Corpus-native SimSat gold eval:
+
+- JSON valid: `22 / 22`
+- analyst schema valid: `19 / 22`
+- action match: `9 / 22`
+- downlink recall: `3 / 12`
+- false-positive `downlink_now`: `3`
+
+Runtime decision:
+
+- promote as guarded paired-image analyst narration
+- do not promote as autonomous alert authority
+- keep source-led context, real SimSat/Sentinel imagery, SAM3 evidence support,
+  parser repair, and deterministic final action guardrails active

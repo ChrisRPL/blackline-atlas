@@ -224,14 +224,23 @@ Rule:
 
 ## SAM3 evidence lane
 
-SAM3 is the preferred visual evidence tool, not the rejected fine-tuned VLM adapter.
+SAM3 is the preferred segmentation evidence tool. The fine-tuned Liquid VLM
+adapter is a guarded paired-image analyst, not the final alert authority.
 The runtime seam is:
 
+- source/API lead registry provides the event context, location, and source
+  summary
+- Liquid text planner chooses the UI/tool action and derives situation-specific
+  SAM3 prompts from the lead context
 - selected lead or watchlist asset
 - current/baseline satellite pair
 - prompt set such as `bridge span`, `container yard`, `rubble pile`, `debris field`, or `burn scar`
 - SAM3/SAM3.1 concept segmentation masks
-- optional Liquid analyst summary over the same pair and evidence tags
+- optional Liquid analyst summary over the same pair, source context, and SAM3
+  evidence tags
+- malformed or looping Liquid analyst JSON is repaired only when the action and
+  confidence are recoverable; low-confidence `discard` outputs suppress positive
+  damage claims and keep the source report as context, not imagery proof
 - evidence tags, bbox, score, and area ratio
 - deterministic rule layer emits `discard | defer | downlink_now`
 

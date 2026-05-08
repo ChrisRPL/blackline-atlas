@@ -4,10 +4,31 @@
 
 Run the app and open `/ui`. The intended review path is one operator workflow: live disruption leads, chat-driven globe focus, selected-point current-versus-baseline evidence, structured alert, and metrics.
 
+## Judging Criteria Fit
+
+Liquid Track rubric from the provided judging document:
+
+- Satellite imagery, 10%: SimSat/DPhi-style current and historical satellite
+  imagery is the core evidence source for selected sites.
+- Innovation and fit, 35%: the product focuses on civilian lifeline disruption
+  triage, where live source leads plus before/after imagery plus Liquid VLM
+  analyst summaries create a practical operator workflow.
+- Technical implementation, 35%: the app must run without debugging; preflight
+  is SimSat, SAM3 bridge, optional local Liquid adapter bridge, GDELT key, then
+  `/ui`.
+- Fine-tuning reward: LFM2.5-VL was fine-tuned on domain-specific satellite
+  data, public weights are published, training/eval code is in `training/`, and
+  the measured improvement is documented in `/model/status` and `docs/HF_JOBS.md`.
+- Demo and communication, 20%: show one end-to-end question-to-evidence flow and
+  explain why final alerts stay guarded instead of pretending the adapter is an
+  autonomous detector.
+
 ## Live Mode Preflight
 
 - Start SimSat on `localhost:9005` before the app if judging live imagery.
 - Set `SIMSAT_REQUIRED=true`, `SIMSAT_CURRENT_HTTP_ENABLED=true`, and `SIMSAT_BASELINE_HTTP_ENABLED=true`.
+- Start the local Liquid analyst bridge with the full-v1b adapter if paired-image
+  summaries are part of the demo.
 - Set `GDELT_API_KEY` or `GDELT_CLOUD_API_KEY` for Cloud-first live leads; without it, the app falls back to public GDELT Project exports.
 - Open `/ui` and verify the topbar before promising imagery. If SimSat is degraded, show source-lead routing and disclose that selected-point evidence may be unavailable.
 
@@ -36,25 +57,35 @@ Recommended prompts:
 ## Model Status
 
 - Base VLM: `LiquidAI/LFM2.5-VL-450M`
-- Latest adapter: `ChrisRPL/blackline-atlas-lfm25-vl-sft-train-hf-aux-v10-adapter`
-- Dataset lane: `ChrisRPL/satellite-disruption-triage-aux-v2-2`
-- Latest HF job: `69f0ac8bd70108f37ace0f4d`
-- Training loss improved from `2.9309` to `1.2123`
-- Smoke eval still failed: `0/3` evidence-schema valid, `0/3` action match
+- Latest adapter: `ChrisRPL/blackline-atlas-lfm25-vl-sft-hf-corpus-full-v1b-adapter`
+- Dataset lane: `ChrisRPL/blackline-atlas-training-corpus-v1`
+- Latest HF job: `69f66f889d85bec4d76f0be0`
+- Training loss improved from `3.0021` to `0.3273`
+- Corpus-native SimSat gold eval: `22/22` JSON valid, `19/22` schema valid,
+  `9/22` action match
 
-Decision: the adapter is not promoted. The runtime is live tool routing plus deterministic guardrails, and the adapter is documented as a research artifact.
+Decision: the adapter is promoted only as a guarded paired-image analyst lane.
+It does not autonomously emit alerts. Alerts remain source-led, SAM3-supported,
+parser-guarded, and deterministic at the final action boundary.
 
 ## Architecture Pivot
 
-The VLM fine-tune did not become reliable enough for runtime-critical alerting, so the runtime architecture pivots to tool-based evidence:
+The VLM fine-tune is useful for analyst narration, but not reliable enough for
+runtime-critical alerting, so the runtime architecture uses tool-based evidence:
 
 - Liquid text model for agent planning and source/lead routing.
 - LiquidAI/LFM2.5-VL paired-image analyst lane for selected current-baseline evidence summaries.
 - Public lead registry for conflict/disruption map points.
 - SimSat/Sentinel current and baseline imagery for selected sites.
+- Selected-site imagery uses an AOI ladder tuned for model visibility: exact
+  `1.5km -> 3km -> 5km`, then nearby `3km`, then regional context.
 - Required real SAM3-compatible concept segmentation for visible evidence masks.
   Fixture segmentation is reserved for tests/evals and is not treated as live
   model evidence.
+- Lead context drives SAM3 prompt selection, and the Liquid VLM analyst receives
+  the same source context plus SAM3 report. Mapbox-only context is blocked from
+  model evidence; real cloud-limited SimSat pairs still receive a visibility
+  caveat report.
 - Deterministic rule layer for `discard | defer | downlink_now`.
 
 Real SAM3 v2 smoke result: current-only and temporal checks both kept the hard

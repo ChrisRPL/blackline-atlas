@@ -235,6 +235,7 @@ training/eval_runs/
 training/corpus/
 training/internal_benchmarks/local/
 training/external_benchmarks/local/
+training/scripts/local/
 uv.lock
 training/replay_pack/local/
 
