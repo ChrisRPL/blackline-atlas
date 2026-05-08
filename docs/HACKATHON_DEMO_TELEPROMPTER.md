@@ -1,202 +1,146 @@
-# Blackline Atlas Demo Teleprompter
+# Blackline Atlas Demo Script
 
-Target length: 100-120 seconds.
+## 0:00
 
-Style: calm, operational, cinematic. Let the UI breathe. Do not rush the
-satellite frames; the proof is that the system refuses to overclaim.
+This is Blackline Atlas.
 
-## Setup Before Recording
+It is source-led satellite triage for civilian disruption.
 
-- Browser: `http://127.0.0.1:8000/ui`
-- Window: desktop width, 1440 px or wider
-- Zoom: 100%
-- App view: left command rail, globe/map, and right evidence tray all visible
-- Services: SimSat ready, Liquid VLM bridge running, final adapter loaded
-- Hide: terminal, devtools, notifications, unrelated tabs
+It turns live public reports into Sentinel-grounded visual site briefs.
 
-## Shot 1: Opening Frame, 0-8s
+The goal is not to create another general AI dashboard.
 
-Show:
+The goal is one reliable operational workflow:
 
-- Full app
-- Top chips
-- Map markers
-- Right evidence tray
+public lead,
 
-Say:
+satellite evidence,
 
-> This is Blackline Atlas: source-led satellite triage for civilian disruption.
-> It turns live public reports into Sentinel-grounded visual site briefs.
+Liquid visual brief,
 
-Pause half a second on the full interface.
+and deterministic guardrails.
 
-## Shot 2: The Live Feed, 8-20s
+## 0:15
 
-Show:
+The workflow starts with public geolocated source leads.
 
-- Live lead count
-- Inspectable site count
-- `Refresh live leads`
+The model is not inventing incidents.
 
-Action:
+Atlas uses the source feed to decide where satellite evidence should be
+requested.
 
-- Click `Refresh live leads`, unless the feed is already fresh.
+Here I can refresh live leads, or ask a plain-language question like:
 
-Say:
-
-> The workflow starts with public, geolocated source leads. The model is not
-> inventing incidents. Atlas uses the source feed to decide where satellite
-> evidence should be requested.
-
-## Shot 3: Ask A Natural Question, 20-32s
-
-Action:
-
-- Type:
-
-```text
 What happened around Ukraine?
-```
 
-- Press `Run`.
+## 0:30
 
-Say:
+Atlas focuses the map and selects the newest reviewable lead.
 
-> An operator can ask a plain-language question. The planner routes it into
-> live lead search, map focus, and evidence review.
+This source report tells the system where to look.
 
-## Shot 4: Auto-Selected Lead, 32-45s
+It does not become visual proof by itself.
 
-Show:
+That separation is important:
 
-- The selected live marker
-- The lead title in the tray or popover
-- Source summary
+source facts are source facts,
 
-Say:
+and satellite-visible facts have to come from imagery.
 
-> Atlas auto-selects the newest reviewable lead. This source report tells the
-> system where to look. It does not become visual proof by itself.
+## 0:45
 
-Pause on the selected lead title.
+Now Atlas requests Sentinel evidence for the selected coordinate.
 
-## Shot 5: Sentinel Evidence Loads, 45-65s
+It loads a dated current image and a historical baseline.
 
-Show:
+The product is deliberately narrow here.
 
-- Current image
-- Baseline image
-- Capture dates
-- Evidence quality/AOI metric
+It is looking for macro-scale civilian disruption,
 
-Say:
+not tiny objects,
 
-> Now Atlas asks SimSat and Sentinel for a dated current image and a historical
-> baseline at the selected coordinate. The evidence lane is deliberately narrow:
-> before and after imagery, quality checks, and clear caveats.
+not tactical movement,
 
-If the images are cloudy or limited, say:
+and not military asset ranking.
 
-> Here, visibility is limited. That is important: Atlas does not turn cloudy
-> imagery into a confident claim.
+## 1:00
 
-## Shot 6: Contact Sheet, 65-78s
+If the imagery is cloudy, stale, blank, or context-only,
 
-Show:
+Atlas says that clearly.
 
-- Orientation sheet if visible
-- Label: orientation only / not evidence
+It does not turn bad imagery into a confident claim.
 
-Say:
+When the contact sheet appears, it is only orientation.
 
-> The contact sheet gives orientation at three scales: three, five, and eight
-> kilometers. It is context only. The primary evidence remains the best dated
-> current-baseline pair.
+The primary evidence remains the best dated current and baseline pair.
 
-## Shot 7: Liquid Visual Brief, 78-98s
+## 1:15
 
-Show:
+Next, the fine-tuned Liquid VLM writes a visual site brief.
 
-- Liquid VLM analyst card
+The brief explains what is visible,
 
-If a valid brief appears, say:
+what likely changed,
 
-> The fine-tuned Liquid VLM writes the visual site brief: what is visible, what
-> likely changed, what the limitations are, and how the imagery relates to the
-> source report.
+what the limitations are,
 
-Then read one short sentence from the brief.
+and how the imagery relates to the source report.
 
-If the card says the visual brief is withheld, say:
+If the model output is invalid or not visually grounded,
 
-> If the model output is invalid or not visually grounded, Atlas withholds the
-> brief. That fail-closed behavior is part of the product.
+Atlas withholds the brief instead of pretending analysis happened.
 
-## Shot 8: Guardrails And Metrics, 98-112s
+## 1:35
 
-Show:
+The final action is bounded.
 
-- Decision card
-- Metrics card
-- Evidence status
+Atlas can discard,
 
-Say:
+defer,
 
-> The final action is bounded to discard, defer, or downlink now. The system is
-> civilian-scope only: no targeting, no strike support, no military asset
-> ranking, and no source-only casualty claims as visual facts.
+or recommend downlink now.
 
-## Shot 9: Closing Line, 112-120s
+It stays inside civilian resilience and humanitarian transparency.
 
-Show:
+No targeting.
 
-- Full app again
-- Map and evidence tray together
+No strike support.
 
-Say:
+No military asset ranking.
 
-> Blackline Atlas connects public leads, Sentinel evidence, and a guarded
-> Liquid VLM analyst into one operational workflow for civilian resilience.
+No source-only casualty claims presented as visual facts.
 
-Hold the final frame for one second.
+## 1:50
 
-## If Live Retrieval Is Slow
+The fine-tuned Liquid adapter and the training corpus are published on
+Hugging Face.
 
-Say:
+The demo path is intentionally simple:
 
-> Live satellite coverage can be sparse. Atlas keeps source-only reports labeled
-> as source-only and shows why visual review did not run.
+live public lead,
 
-Then:
+Sentinel evidence,
 
-- Click another inspectable marker, or
-- Use a cached/replay-ready lead.
+Liquid visual brief,
 
-Do not apologize. Treat this as honesty, not failure.
+deterministic guardrails.
 
-## Lines To Avoid
+That is Blackline Atlas.
 
-Do not say:
+## Backup Line
 
-- real-time surveillance
-- target
-- strike planning
-- military asset
-- troop movement
-- SAM confirmed damage
-- Mapbox evidence
-- verified casualties from imagery
+If live satellite retrieval is slow:
 
-## Submission Links To Mention Only If Needed
+Live satellite coverage can be sparse.
 
-- Model:
-  `ChrisRPL/blackline-atlas-lfm25-vl-sft-hf-corpus-full-v1b-adapter`
-- Dataset:
-  `ChrisRPL/blackline-atlas-training-corpus-v1`
-- DPhi endpoints:
-  `/data/image/sentinel`, `/data/current/image/sentinel`
+Atlas keeps source-only reports labeled as source-only,
 
-## One-Sentence Pitch
+and shows why visual review did not run.
+
+That is honesty, not a failure.
+
+## One-Line Pitch
 
 Source-led satellite triage that turns live conflict reports into
 Sentinel-grounded Liquid VLM site briefs.
