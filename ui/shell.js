@@ -2169,7 +2169,9 @@ function renderLiquidAnalystCard(report, selected, compare) {
 
   if (report && report.status !== "ready") {
     dom.liquidAnalystTitle.textContent = "Visual brief withheld";
-    dom.liquidAnalystSummary.textContent = report.visible_change_summary;
+    dom.liquidAnalystSummary.textContent = analystEndpointReady()
+      ? report.visible_change_summary
+      : "Local Liquid VLM bridge is not attached; Atlas keeps the Sentinel evidence visible and withholds the visual brief.";
     dom.liquidAnalystModel.textContent = report.model_version;
     dom.liquidAnalystAction.textContent = "not model-scored";
     dom.liquidAnalystConfidence.textContent = analystEndpointReady()
