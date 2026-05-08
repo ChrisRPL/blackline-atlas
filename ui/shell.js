@@ -843,10 +843,23 @@ function topStatus() {
   const statuses = simsatStatuses();
   const simsatRequired = state.health.config.simsat_required;
   const simsatMissing = statuses.includes("not_configured");
+  const simsatAnyReady = statuses.includes("ready");
+  const simsatAllUnavailable = statuses.length > 0
+    && statuses.every((status) => status === "degraded" || status === "not_configured");
   const degraded =
-    statuses.includes("degraded")
-    || state.health.mapbox.status === "degraded"
-    || (simsatRequired && simsatMissing);
+    state.health.mapbox.status === "degraded"
+    || (simsatRequired && (simsatAllUnavailable || (simsatMissing && !simsatAnyReady)));
+
+  if (liveCount > 0 && simsatAnyReady) {
+    return {
+      healthText: "live",
+      healthClass: "chip live",
+      modeText: simsatLiveReady()
+        ? `SimSat imagery live${leadModeSuffix()}`
+        : `SimSat imagery live / some AOIs limited${leadModeSuffix()}`,
+      modeClass: "chip neutral",
+    };
+  }
 
   if (degraded) {
     return {
@@ -855,15 +868,6 @@ function topStatus() {
       modeText: simsatRequired
         ? `SimSat evidence limited${leadModeSuffix()}`
         : `source feed${leadModeSuffix()}`,
-      modeClass: "chip neutral",
-    };
-  }
-
-  if (liveCount > 0 && simsatLiveReady()) {
-    return {
-      healthText: "live",
-      healthClass: "chip live",
-      modeText: `SimSat imagery live${leadModeSuffix()}`,
       modeClass: "chip neutral",
     };
   }
