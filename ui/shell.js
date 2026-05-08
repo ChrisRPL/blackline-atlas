@@ -850,9 +850,11 @@ function topStatus() {
 
   if (degraded) {
     return {
-      healthText: simsatRequired ? "simsat offline" : "degraded",
+      healthText: simsatRequired ? "sentinel degraded" : "degraded",
       healthClass: "chip degraded",
-      modeText: simsatRequired ? `start SimSat :9005${leadModeSuffix()}` : `source feed${leadModeSuffix()}`,
+      modeText: simsatRequired
+        ? `SimSat evidence limited${leadModeSuffix()}`
+        : `source feed${leadModeSuffix()}`,
       modeClass: "chip neutral",
     };
   }
@@ -951,6 +953,10 @@ function applyPlannerTelemetry(planner) {
   }
 
   if (planner.mode === "fallback") {
+    if (planner.reason === "planner_not_configured" || planner.reason === "fixture_planner") {
+      state.plannerFallbackActive = false;
+      return "Command routed through Atlas typed workflow.";
+    }
     state.plannerFallbackActive = true;
     return "Planner degraded. Atlas routed this through typed live-context tools.";
   }
@@ -1908,7 +1914,12 @@ async function loadSelectedVisualAnalysis(assetId, options = {}) {
     return;
   }
 
-  setStageReport("Sentinel pair loaded", "Liquid VLM site brief running.");
+  setStageReport(
+    "Sentinel pair loaded",
+    analystEndpointReady()
+      ? "Liquid VLM site brief running."
+      : "Liquid VLM brief withheld in demo runtime.",
+  );
   renderDrawer();
 
   try {
@@ -1955,8 +1966,17 @@ async function loadSelectedSiteContext(assetId, leadId = state.selectedLeadId, o
         appendMessage("assistant", response.summary);
       }
       if (response.compare?.asset_id === assetId && compareUsableForVisualAnalysis(response.compare)) {
-        setChannelNote("Sentinel pair loaded. Liquid VLM is running in the background.");
-        void loadSelectedVisualAnalysis(assetId, { announce });
+        if (analystEndpointReady()) {
+          setChannelNote("Sentinel pair loaded. Liquid VLM is running in the background.");
+          void loadSelectedVisualAnalysis(assetId, { announce });
+        } else {
+          state.selectedAnalyst = withheldAnalystReport(assetId);
+          setStageReport("Sentinel pair loaded", "Liquid VLM brief withheld in demo runtime.");
+          setChannelNote(
+            "Sentinel pair loaded. The local Liquid VLM bridge is not attached; visual brief withheld.",
+          );
+          renderDrawer();
+        }
       } else if (response.status === "no_result") {
         setChannelNote("Source lead only. No dated Sentinel pair resolved for visual analysis.");
       }
@@ -2148,11 +2168,13 @@ function renderLiquidAnalystCard(report, selected, compare) {
   }
 
   if (report && report.status !== "ready") {
-    dom.liquidAnalystTitle.textContent = "Liquid VLM unavailable";
+    dom.liquidAnalystTitle.textContent = "Visual brief withheld";
     dom.liquidAnalystSummary.textContent = report.visible_change_summary;
     dom.liquidAnalystModel.textContent = report.model_version;
     dom.liquidAnalystAction.textContent = "not model-scored";
-    dom.liquidAnalystConfidence.textContent = "endpoint unavailable";
+    dom.liquidAnalystConfidence.textContent = analystEndpointReady()
+      ? "model output invalid"
+      : "bridge not attached";
     return;
   }
 

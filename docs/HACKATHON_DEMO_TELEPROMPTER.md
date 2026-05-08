@@ -53,7 +53,10 @@ Atlas turns that into an operator action: search live leads, focus the map, or
 inspect a selected site.
 
 Under the hood, the planner returns a structured tool plan, not free-form UI
-instructions, so the app can keep the workflow deterministic.
+instructions, so the app can keep the workflow deterministic. The live planner
+lane is designed for `LiquidAI/LFM2.5-1.2B-Instruct-GGUF` through an
+OpenAI-compatible local endpoint, and the demo runtime can fall back to the
+same typed planner contract when that local bridge is not running.
 
 ## 1:20 - Auto-Selected Reviewable Lead
 
@@ -128,9 +131,12 @@ Next is the Liquid visual analyst.
 The model writes a short site brief: what is visible, what likely changed, what
 the limitations are, and how the imagery relates to the source report.
 
-Under the hood, this uses `LiquidAI/LFM2.5-VL-450M` with a PEFT adapter I
-fine-tuned for source-led satellite triage. The prompt asks for structured JSON
-and explicitly separates source context from visual evidence.
+Under the hood, this uses `LiquidAI/LFM2.5-VL-450M` as the base
+vision-language model. I fine-tuned a PEFT adapter called
+`ChrisRPL/blackline-atlas-lfm25-vl-sft-hf-corpus-full-v1b-adapter` for guarded
+source-led satellite site briefs. The local serving path is an
+OpenAI-compatible bridge on `/v1/chat/completions`, and the prompt asks for
+structured JSON that explicitly separates source context from visual evidence.
 
 ## 3:55 - Fail-Closed Model Handling
 
@@ -171,9 +177,13 @@ corpus on Hugging Face.
 
 The adapter is for guarded visual site briefs, not autonomous decisions.
 
-Under the hood, the training corpus contains planner examples, paired satellite
-image brief examples, hard negatives, and safety examples for separating source
-facts from visual facts.
+Under the hood, the final adapter is
+`ChrisRPL/blackline-atlas-lfm25-vl-sft-hf-corpus-full-v1b-adapter`, trained on
+`ChrisRPL/blackline-atlas-training-corpus-v1`. The corpus contains planner
+examples, paired Sentinel/SimSat image brief examples, hard negatives, and
+safety examples for separating source facts from visual facts. The older SAM3
+work is kept outside the judge runtime path because low-resolution Sentinel
+masks are not defensible enough for this demo.
 
 ## 5:25 - Closing
 
