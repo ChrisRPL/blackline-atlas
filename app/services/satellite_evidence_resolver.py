@@ -3,6 +3,8 @@ from __future__ import annotations
 import math
 import time
 from dataclasses import dataclass, replace
+from datetime import datetime, timedelta
+from pathlib import Path
 
 from app.schemas.asset import Asset
 from app.schemas.frame import FrameEnvelope
@@ -20,7 +22,8 @@ _LIVE_SHORT_WINDOW_SECONDS = 120 * 24 * 60 * 60
 _LIVE_MEDIUM_WINDOW_SECONDS = 365 * 24 * 60 * 60
 _LIVE_CONTEXT_WINDOW_SECONDS = 730 * 24 * 60 * 60
 _LIVE_SEARCH_DEADLINE_SECONDS = 35.0
-_LIVE_MAX_CANDIDATE_ATTEMPTS = 8
+_LIVE_MAX_CANDIDATE_ATTEMPTS = 12
+_MAX_MODEL_AOI_SIZE_KM = 8.0
 _CLOUD_WARNING_THRESHOLD = 0.35
 
 
@@ -31,6 +34,8 @@ class _EvidenceCandidate:
     longitude: float
     size_km: float
     window_seconds: float
+    current_shift_days: int = 0
+    baseline_shift_days: int = 0
 
 
 @dataclass(frozen=True)
@@ -63,13 +68,21 @@ def resolve_live_lead_satellite_evidence(
         ):
             break
 
+        current_timestamp = _shift_timestamp(
+            requested_timestamp,
+            days=-candidate.current_shift_days,
+        )
+        candidate_baseline_timestamp = _shift_timestamp(
+            baseline_timestamp,
+            days=-candidate.baseline_shift_days,
+        )
         request = FrameRequest(
             asset_id=asset.asset_id,
             scenario_id=f"live_{lead.lead_id}",
             latitude=candidate.latitude,
             longitude=candidate.longitude,
-            requested_timestamp=requested_timestamp,
-            baseline_timestamp=baseline_timestamp,
+            requested_timestamp=current_timestamp,
+            baseline_timestamp=candidate_baseline_timestamp,
             size_km=candidate.size_km,
             window_seconds=candidate.window_seconds,
         )
@@ -77,6 +90,11 @@ def resolve_live_lead_satellite_evidence(
             frame_client=frame_client,
             request=request,
         )
+        if current is not None:
+            low_info_status = _low_visual_information_status(current)
+            if low_info_status is not None:
+                current = None
+                current_status = low_info_status
         if current is None:
             baseline, baseline_status = None, "skipped because current missing"
         else:
@@ -84,6 +102,11 @@ def resolve_live_lead_satellite_evidence(
                 frame_client=frame_client,
                 request=request,
             )
+            if baseline is not None:
+                low_info_status = _low_visual_information_status(baseline)
+                if low_info_status is not None:
+                    baseline = None
+                    baseline_status = low_info_status
         attempts.append(
             SatelliteEvidenceAttempt(
                 scope=candidate.scope,
@@ -117,6 +140,7 @@ def resolve_live_lead_satellite_evidence(
                 baseline=baseline,
                 scope=candidate.scope,
                 offset_km=offset,
+                size_km=candidate.size_km,
             ),
         )
         best_ready = _better_ready_evidence(best_ready, ready)
@@ -207,6 +231,8 @@ def _ready_bundle(
 def _ready_usability(ready: _ReadyEvidence) -> SatelliteEvidenceUsability:
     if ready.candidate.scope not in {"exact_aoi", "nearby_aoi"}:
         return "context_only"
+    if ready.candidate.size_km > _MAX_MODEL_AOI_SIZE_KM:
+        return "context_only"
     if _has_cloud_warning(ready.quality_warnings):
         return "cloud_limited"
     return "direct_clear"
@@ -227,11 +253,11 @@ def _ready_quality_score(ready: _ReadyEvidence) -> float:
 
 def _ready_quality_summary(usability: SatelliteEvidenceUsability) -> str:
     if usability == "direct_clear":
-        return "Dated Sentinel before/after pair is clear enough for model evidence."
+        return "Dated Sentinel before/after pair is clear enough for a source-led visual brief."
     if usability == "cloud_limited":
         return (
-            "Clouds or low detail hide enough of the ground that Atlas is not running visual "
-            "scoring. Treat these images as context until a clearer pass is available."
+            "Clouds or low detail limit the read. Atlas can describe visible context, but will "
+            "not claim visual confirmation from these frames."
         )
     if usability == "context_only":
         return "Satellite imagery is regional/contextual and not direct model evidence."
@@ -266,9 +292,15 @@ def _ready_evidence_score(ready: _ReadyEvidence) -> tuple[float, float, float, f
     return (
         cloud_penalty + scope_penalty,
         ready.offset_km / 20.0,
-        ready.candidate.size_km / 100.0,
+        _size_context_penalty(ready.candidate.size_km),
         ready.candidate.window_seconds,
     )
+
+
+def _size_context_penalty(size_km: float) -> float:
+    if size_km < 5.0:
+        return (5.0 - size_km) / 20.0
+    return (size_km - 5.0) / 100.0
 
 
 def _ready_evidence_is_clear(ready: _ReadyEvidence) -> bool:
@@ -328,6 +360,36 @@ def _resolve_baseline_frame(
         return None, "missing image"
 
 
+def _low_visual_information_status(frame: FrameEnvelope) -> str | None:
+    image_ref = frame.frame.image_ref
+    if not image_ref or image_ref.startswith(("http://", "https://", "data:")):
+        return None
+    image_path = Path(image_ref)
+    if not image_path.exists():
+        return None
+    try:
+        from PIL import Image
+
+        with Image.open(image_path) as image:
+            sample = image.convert("RGB").resize((64, 64))
+            pixels = sample.tobytes()
+    except (OSError, ValueError):
+        return None
+    if not pixels:
+        return "blank/no-data satellite tile"
+    no_data = 0
+    total_pixels = len(pixels) // 3
+    for index in range(0, len(pixels), 3):
+        red, green, blue = pixels[index], pixels[index + 1], pixels[index + 2]
+        near_black = red <= 3 and green <= 3 and blue <= 3
+        near_white = red >= 252 and green >= 252 and blue >= 252
+        if near_black or near_white:
+            no_data += 1
+    if no_data / total_pixels >= 0.92:
+        return "blank/no-data satellite tile"
+    return None
+
+
 def _attempt_reason(*, current: FrameEnvelope | None, baseline: FrameEnvelope | None) -> str:
     if current is not None and baseline is not None:
         return "current and baseline resolved"
@@ -350,6 +412,7 @@ def _quality_warnings(
     baseline: FrameEnvelope,
     scope: SatelliteEvidenceScope,
     offset_km: float,
+    size_km: float,
 ) -> list[str]:
     warnings: list[str] = []
     current_cloud = _normalized_cloud_cover(current.frame.cloud_cover)
@@ -360,6 +423,8 @@ def _quality_warnings(
         warnings.append(f"baseline_cloud_{round(baseline_cloud * 100)}pct")
     if scope == "nearby_aoi":
         warnings.append(f"nearby_offset_{offset_km:.1f}km")
+    if size_km > _MAX_MODEL_AOI_SIZE_KM:
+        warnings.append("aoi_too_wide_for_model_read")
     if scope == "regional_aoi":
         warnings.append("regional_context_not_direct_evidence")
     if _source_family(current.frame.source) != _source_family(baseline.frame.source):
@@ -385,47 +450,94 @@ def _evidence_candidates(latitude: float, longitude: float) -> list[_EvidenceCan
             scope="exact_aoi",
             latitude=latitude,
             longitude=longitude,
-            size_km=3.0,
-            window_seconds=_LIVE_SHORT_WINDOW_SECONDS,
+            size_km=5.0,
+            window_seconds=14 * 24 * 60 * 60,
+            current_shift_days=0,
+            baseline_shift_days=0,
         ),
         _EvidenceCandidate(
             scope="exact_aoi",
             latitude=latitude,
             longitude=longitude,
             size_km=5.0,
+            window_seconds=14 * 24 * 60 * 60,
+            current_shift_days=0,
+            baseline_shift_days=14,
+        ),
+        _EvidenceCandidate(
+            scope="exact_aoi",
+            latitude=latitude,
+            longitude=longitude,
+            size_km=5.0,
+            window_seconds=14 * 24 * 60 * 60,
+            current_shift_days=0,
+            baseline_shift_days=28,
+        ),
+        _EvidenceCandidate(
+            scope="exact_aoi",
+            latitude=latitude,
+            longitude=longitude,
+            size_km=5.0,
+            window_seconds=14 * 24 * 60 * 60,
+            current_shift_days=14,
+            baseline_shift_days=0,
+        ),
+        _EvidenceCandidate(
+            scope="exact_aoi",
+            latitude=latitude,
+            longitude=longitude,
+            size_km=5.0,
+            window_seconds=14 * 24 * 60 * 60,
+            current_shift_days=28,
+            baseline_shift_days=0,
+        ),
+        _EvidenceCandidate(
+            scope="exact_aoi",
+            latitude=latitude,
+            longitude=longitude,
+            size_km=5.0,
+            window_seconds=14 * 24 * 60 * 60,
+            current_shift_days=14,
+            baseline_shift_days=14,
+        ),
+        _EvidenceCandidate(
+            scope="exact_aoi",
+            latitude=latitude,
+            longitude=longitude,
+            size_km=8.0,
             window_seconds=_LIVE_MEDIUM_WINDOW_SECONDS,
         ),
         _EvidenceCandidate(
             scope="exact_aoi",
             latitude=latitude,
             longitude=longitude,
-            size_km=1.5,
+            size_km=3.0,
             window_seconds=_LIVE_MEDIUM_WINDOW_SECONDS,
         ),
     ]
 
     # SimSat/Sentinel availability can be sparse at exact event coordinates.
     # Keep nearby searches close enough for evidence review before context fallback.
-    for north_km, east_km in ((-3.0, 0.0), (3.0, 0.0), (0.0, -3.0), (0.0, 3.0)):
+    for north_km, east_km in ((-5.0, 0.0), (5.0, 0.0), (0.0, -5.0), (0.0, 5.0)):
         candidates.append(
             _km_offset_candidate(
                 latitude,
                 longitude,
                 north_km,
                 east_km,
-                size_km=3.0,
+                size_km=5.0,
                 window_seconds=_LIVE_MEDIUM_WINDOW_SECONDS,
             )
         )
 
-    for north_km, east_km in ((-7.0, 0.0), (7.0, 0.0), (0.0, -7.0), (0.0, 7.0)):
+    for north_km, east_km in ((-9.0, 0.0), (9.0, 0.0), (0.0, -9.0), (0.0, 9.0)):
         candidates.append(
             _km_offset_candidate(
                 latitude,
                 longitude,
                 north_km,
                 east_km,
-                size_km=8.0,
+                size_km=10.0,
                 window_seconds=_LIVE_CONTEXT_WINDOW_SECONDS,
             )
         )
@@ -435,11 +547,24 @@ def _evidence_candidates(latitude: float, longitude: float) -> list[_EvidenceCan
             scope="regional_aoi",
             latitude=latitude,
             longitude=longitude,
-            size_km=12.0,
+            size_km=18.0,
             window_seconds=_LIVE_CONTEXT_WINDOW_SECONDS,
         )
     )
     return candidates
+
+
+def _shift_timestamp(timestamp: str, *, days: int) -> str:
+    if days == 0:
+        return timestamp
+    normalized = timestamp.strip()
+    if normalized.endswith("Z"):
+        normalized = normalized[:-1] + "+00:00"
+    try:
+        shifted = datetime.fromisoformat(normalized) + timedelta(days=days)
+    except ValueError:
+        return timestamp
+    return shifted.replace(microsecond=0).isoformat().replace("+00:00", "Z")
 
 
 def _km_offset_candidate(

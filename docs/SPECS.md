@@ -43,7 +43,7 @@
 
 ## Alert schema
 
-Runtime alerts remain compact, but the VLM prompt and v2 training rows should be evidence-first:
+Runtime alerts remain compact, but the VLM prompt and v2 training rows should be evidence-first. In live inspection, the Liquid VLM output is a source-led visual site brief first and a triage hint second; it should describe visible context and imagery limits even when it cannot visually confirm the source-reported event.
 
 ```json
 {
@@ -164,6 +164,10 @@ Single page only.
   - baseline
   - alert
   - metrics
+- evidence quality:
+  - SimSat/Sentinel tiles that are mostly blank/no-data pixels are rejected
+    before SAM3 or Liquid VLM analysis
+  - wide/context imagery can orient the user, but it is not model evidence
 - optional inspection context only after selection; no dashboard-first layout
 
 ## First interaction rules

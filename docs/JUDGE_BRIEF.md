@@ -2,7 +2,7 @@
 
 ## What To Open
 
-Run the app and open `/ui`. The intended review path is one operator workflow: live disruption leads, chat-driven globe focus, selected-point current-versus-baseline evidence, structured alert, and metrics.
+Run the app and open `/ui`. The intended review path is one operator workflow: live disruption leads, chat-driven globe focus, selected-point current-versus-baseline imagery, SAM3 evidence, Liquid visual site brief, and guarded metrics.
 
 ## Judging Criteria Fit
 
@@ -20,8 +20,8 @@ Liquid Track rubric from the provided judging document:
   data, public weights are published, training/eval code is in `training/`, and
   the measured improvement is documented in `/model/status` and `docs/HF_JOBS.md`.
 - Demo and communication, 20%: show one end-to-end question-to-evidence flow and
-  explain why final alerts stay guarded instead of pretending the adapter is an
-  autonomous detector.
+  explain why source leads provide event context while Liquid/SAM3 provide the
+  visual site brief, not an autonomous targeting or alerting oracle.
 
 ## Live Mode Preflight
 
@@ -52,6 +52,9 @@ Recommended prompts:
 - `/replay/snapshot` remains available as a fallback payload for regression and reliability checks.
 - `/evidence/current` and `/evidence/assets/{asset_id}` expose the SAM3-compatible segmentation evidence seam.
 - Real SAM3 is treated as selected-site supporting evidence, not as an autonomous alert gate.
+- The right-side inspection tray must show both SAM3 segment notes and Liquid VLM
+  visual-site-brief output when the model lane returns a report, including
+  cloud/quality caveats instead of blank “no useful data” states.
 - The parser accepts messy model JSON but fails closed when outputs are malformed, low-confidence, or negative/artifact-only.
 
 ## Model Status
@@ -77,8 +80,12 @@ runtime-critical alerting, so the runtime architecture uses tool-based evidence:
 - LiquidAI/LFM2.5-VL paired-image analyst lane for selected current-baseline evidence summaries.
 - Public lead registry for conflict/disruption map points.
 - SimSat/Sentinel current and baseline imagery for selected sites.
-- Selected-site imagery uses an AOI ladder tuned for model visibility: exact
-  `1.5km -> 3km -> 5km`, then nearby `3km`, then regional context.
+- Selected-site imagery uses an AOI ladder tuned for model visibility and site
+  context: exact `5km -> 8km -> 3km`, then nearby `5km`, then broader regional
+  context.
+- SimSat PNGs that are mostly black/white no-data pixels are rejected before
+  SAM3 or Liquid VLM analysis; the resolver keeps searching or falls back to
+  labeled context imagery instead of presenting blank tiles as evidence.
 - Required real SAM3-compatible concept segmentation for visible evidence masks.
   Fixture segmentation is reserved for tests/evals and is not treated as live
   model evidence.

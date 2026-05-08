@@ -39,6 +39,7 @@ def test_ui_shell_serves_same_origin_dashboard() -> None:
     assert 'id="chat-form"' in response.text
     assert 'id="lead-refresh"' in response.text
     assert 'id="map-stage"' in response.text
+    assert "live leads loading" in response.text
     assert 'id="model-chip"' in response.text
     assert 'id="model-gate-decision"' in response.text
     assert 'id="lead-popover"' in response.text
@@ -53,11 +54,17 @@ def test_ui_shell_serves_same_origin_dashboard() -> None:
     assert "planner degraded" in response.text
     assert "local command mode" not in response.text
     assert "Using local command parsing" not in static_response.text
-    assert "Thinking. Parsing request" in static_response.text
+    assert "Thinking. Routing the request" in static_response.text
     assert "thinking-dots" in static_response.text
     assert "renderPlannerChip" in static_response.text
     assert "renderModelGate" in static_response.text
-    assert "Impact read:" in static_response.text
+    assert "Segment read:" in static_response.text
+    assert "live leads loading" in static_response.text
+    assert "liveLeadCount" in static_response.text
+    assert "inspectableLeadCount" in static_response.text
+    assert "site reviews" not in static_response.text
+    assert "noisy frames filtered" not in static_response.text
+    assert "evidence sent" not in static_response.text
     assert "Liquid VLM analyst" in response.text
     assert "Liquid VLM live" in static_response.text
     assert "send evidence now" in static_response.text

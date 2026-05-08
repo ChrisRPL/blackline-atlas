@@ -41,7 +41,7 @@ from app.schemas.liquid_analyst import LiquidAnalystReport
 from app.schemas.metrics import Metrics
 from app.schemas.model_status import ModelStatus
 from app.schemas.replay import ReplaySnapshot, ReplayStartRequest, ReplayState
-from app.schemas.sam3_evidence import Sam3EvidenceReport
+from app.schemas.sam3_evidence import Sam3EvidenceReport, Sam3SourceContext
 from app.schemas.satellite_evidence import SatelliteEvidenceAttempt, SatelliteEvidenceBundle
 from app.services.acled_lead_source import DEFAULT_ACLED_COUNTRIES, parse_acled_csv_list
 from app.services.agent_planner import (
@@ -354,6 +354,14 @@ _SOURCE_ONLY_EVENT_TERMS = (
     "troop",
     "wounded",
 )
+_SOURCE_ONLY_CASUALTY_RE = re.compile(
+    r"\b(?:casualt(?:y|ies)|fatalities|injur(?:y|ies|ed)|kill(?:ed|s)?|wounded|deaths?)\b",
+    flags=re.IGNORECASE,
+)
+
+
+def _contains_source_only_casualty_term(text: str) -> bool:
+    return bool(_SOURCE_ONLY_CASUALTY_RE.search(text))
 
 
 class StubAtlasService:
@@ -399,6 +407,18 @@ class StubAtlasService:
             backend=self._analyst_backend(),
             adapter_ref=self.settings.analyst_adapter_ref,
         )
+        self._sam3_report_cache: dict[
+            tuple[str, str, str, str],
+            Sam3EvidenceReport,
+        ] = {}
+        self._analyst_report_cache: dict[
+            tuple[str, str, str, str],
+            LiquidAnalystReport,
+        ] = {}
+        self._live_compare_cache: dict[
+            tuple[str, str, str, str],
+            AtlasAgentCompare | None,
+        ] = {}
         self.scenario_evaluator = ScenarioEvaluator(
             comparator=self.baseline_comparator,
             frame_filter_policy=self.frame_filter_policy,
@@ -852,10 +872,9 @@ class StubAtlasService:
             asset = self._find_asset(asset_id)
             if asset is None:
                 return None
-            return self.sam3_evidence.analyze(
+            return self._sam3_report_for_compare(
                 asset=asset,
-                current=compare.current_frame,
-                baseline=compare.baseline_frame,
+                compare=compare,
                 alert=None,
                 source_context=source_context_for_lead(lead),
             )
@@ -1311,9 +1330,9 @@ class StubAtlasService:
                     status="no_result",
                     tool="site_compare",
                     summary=(
-                        f"{lead.title}: SimSat/Sentinel imagery did not resolve within the "
-                        "live timeout for this source point. The source marker stays selected; "
-                        "refresh or try a broader regional lead."
+                        f"{lead.title}: No dated Sentinel pair resolved; source lead remains "
+                        "live but visual analysis was not run. Mapbox remains orientation-only "
+                        "map context, not current/baseline evidence."
                     ),
                     resolved=resolved,
                     camera=self._camera_intent(
@@ -1331,7 +1350,8 @@ class StubAtlasService:
                             tool="site_compare",
                             status="no_result",
                             summary=(
-                                "Live satellite evidence timed out before both frames resolved."
+                                "No dated SimSat/Sentinel current-baseline pair resolved for "
+                                "the selected source lead."
                             ),
                         )
                     ],
@@ -1388,8 +1408,9 @@ class StubAtlasService:
             baseline_timestamp = format_agent_timestamp(compare.baseline_frame.frame.captured_at)
             overlay_state = "Overlay ready." if current.overlay_ref else "Overlay held."
             summary = (
-                f"{asset.asset_name}: current {format_agent_timestamp(current.frame.captured_at)} "
-                f"versus baseline {baseline_timestamp}. "
+                f"{asset.asset_name}: Sentinel evidence loaded. Current "
+                f"{format_agent_timestamp(current.frame.captured_at)} versus baseline "
+                f"{baseline_timestamp}. "
                 f"{overlay_state}"
             )
         return AtlasAgentQueryResponse(
@@ -1406,11 +1427,7 @@ class StubAtlasService:
             focus_alert_id=alerts[0].alert_id if alerts else None,
             alerts=alerts,
             compare=compare,
-            analyst_report=self._analyst_report_for_compare(
-                asset_id=asset.asset_id,
-                compare=compare,
-                alerts=alerts,
-            ),
+            analyst_report=None,
             planner=planner,
             trust=trust,
             replay=self.get_replay_state(),
@@ -1851,6 +1868,14 @@ class StubAtlasService:
         asset = self._asset_from_lead(lead)
         requested_timestamp = self._lead_current_timestamp(lead)
         baseline_timestamp = self._lead_baseline_timestamp(lead)
+        cache_key = (
+            asset.asset_id,
+            requested_timestamp,
+            baseline_timestamp,
+            self._frame_cache_namespace(),
+        )
+        if cache_key in self._live_compare_cache:
+            return self._live_compare_cache[cache_key]
         bundle = resolve_live_lead_satellite_evidence(
             asset=asset,
             lead=lead,
@@ -1859,20 +1884,17 @@ class StubAtlasService:
             baseline_timestamp=baseline_timestamp,
         )
         if bundle.current_frame is None or bundle.baseline_frame is None:
-            return self._mapbox_context_compare(
-                asset=asset,
-                lead=lead,
-                requested_timestamp=requested_timestamp,
-                baseline_timestamp=baseline_timestamp,
-                attempts=bundle.attempts,
-            )
-        return AtlasAgentCompare(
+            self._live_compare_cache[cache_key] = None
+            return None
+        compare = AtlasAgentCompare(
             asset_id=asset.asset_id,
             asset_name=asset.asset_name,
             current_frame=bundle.current_frame,
             baseline_frame=bundle.baseline_frame,
             satellite_evidence=bundle,
         )
+        self._live_compare_cache[cache_key] = compare
+        return compare
 
     def _mapbox_context_compare(
         self,
@@ -1989,7 +2011,8 @@ class StubAtlasService:
 
     def _lead_current_timestamp(self, lead: Lead) -> str:
         source_date = lead.source_date or datetime.now(tz=UTC).date()
-        return f"{source_date.isoformat()}T12:00:00Z"
+        current_date = max(source_date, datetime.now(tz=UTC).date())
+        return f"{current_date.isoformat()}T12:00:00Z"
 
     def _lead_baseline_timestamp(self, lead: Lead) -> str:
         source_date = lead.source_date or datetime.now(tz=UTC).date()
@@ -2221,19 +2244,153 @@ class StubAtlasService:
         alert = alerts[0] if alerts else None
         source_lead = self._lead_for_asset_id(asset_id)
         source_context = source_context_for_lead(source_lead) if source_lead else None
-        evidence = self.sam3_evidence.analyze(
+        evidence = self._sam3_report_for_compare(
+            asset=asset,
+            compare=compare,
+            alert=alert,
+            source_context=source_context,
+        )
+        cache_key = self._analyst_cache_key(asset=asset, compare=compare)
+        cached = self._analyst_report_cache.get(cache_key)
+        if cached is not None:
+            return cached
+        report = self.liquid_analyst.analyze(
+            asset=asset,
+            current=compare.current_frame,
+            baseline=compare.baseline_frame,
+            evidence=evidence,
+            alert=alert,
+        )
+        report = self._source_safe_analyst_report(report)
+        report = self._calibrated_analyst_report(
+            report=report,
+            compare=compare,
+            evidence=evidence,
+            source_context=source_context,
+        )
+        self._analyst_report_cache[cache_key] = report
+        return report
+
+    def _source_safe_analyst_report(
+        self,
+        report: LiquidAnalystReport,
+    ) -> LiquidAnalystReport:
+        summary = self._without_source_only_casualty_clause(report.visible_change_summary)
+        rationale = self._without_source_only_casualty_clause(report.short_rationale)
+        if summary == report.visible_change_summary and rationale == report.short_rationale:
+            return report
+        return report.model_copy(
+            update={
+                "visible_change_summary": summary,
+                "short_rationale": rationale,
+                "confidence": min(report.confidence, 0.45),
+            }
+        )
+
+    def _without_source_only_casualty_clause(self, text: str) -> str:
+        if not _contains_source_only_casualty_term(text):
+            return text
+        cleaned = re.sub(
+            r",?\s+(?:including|with|where|after)\s+[^.]*?"
+            r"\b(?:casualt(?:y|ies)|fatalities|injur(?:y|ies|ed)|kill(?:ed|s)?|wounded|deaths?)\b"
+            r"[^.]*",
+            "",
+            text,
+            flags=re.IGNORECASE,
+        )
+        cleaned = " ".join(cleaned.replace(" ,", ",").split()).strip(" ,.;")
+        if cleaned and not _contains_source_only_casualty_term(cleaned):
+            return cleaned + "."
+        return (
+            "Liquid VLM returned source-only casualty language, so Atlas withholds that "
+            "claim from the visual site brief."
+        )
+
+    def _calibrated_analyst_report(
+        self,
+        *,
+        report: LiquidAnalystReport,
+        compare: AtlasAgentCompare,
+        evidence: Sam3EvidenceReport,
+        source_context: Sam3SourceContext | None,
+    ) -> LiquidAnalystReport:
+        if (
+            compare.satellite_evidence is None
+            or compare.satellite_evidence.usability != "cloud_limited"
+        ):
+            return report
+        if report.civilian_disruption_evidence or evidence.visual_evidence_tags:
+            return report
+
+        negative_evidence = list(dict.fromkeys([*report.negative_evidence, "low_visibility"]))
+        model_summary = " ".join(report.visible_change_summary.split())
+        summary = (
+            f"Liquid VLM visual read: {model_summary} "
+            f"Caveat: the {compare.satellite_evidence.size_km:g} km Sentinel pair is "
+            "cloud-limited, so treat this as a low-confidence site brief, not visual "
+            "confirmation of the source report."
+        )
+        return report.model_copy(
+            update={
+                "visible_change_summary": summary,
+                "negative_evidence": negative_evidence,
+                "severity_hint": "none",
+                "recommended_action": "discard",
+                "confidence": min(report.confidence, 0.25),
+                "short_rationale": (
+                    "SAM3 returned no visual evidence tags and clouds limit the image pair."
+                ),
+            }
+        )
+
+    def _sam3_report_for_compare(
+        self,
+        *,
+        asset: Asset,
+        compare: AtlasAgentCompare,
+        alert: Alert | None,
+        source_context: Sam3SourceContext | None,
+    ) -> Sam3EvidenceReport:
+        cache_key = self._sam3_cache_key(asset=asset, compare=compare)
+        cached = self._sam3_report_cache.get(cache_key)
+        if cached is not None:
+            return cached
+        report = self.sam3_evidence.analyze(
             asset=asset,
             current=compare.current_frame,
             baseline=compare.baseline_frame,
             alert=alert,
             source_context=source_context,
         )
-        return self.liquid_analyst.analyze(
-            asset=asset,
-            current=compare.current_frame,
-            baseline=compare.baseline_frame,
-            evidence=evidence,
-            alert=alert,
+        self._sam3_report_cache[cache_key] = report
+        return report
+
+    def _sam3_cache_key(
+        self,
+        *,
+        asset: Asset,
+        compare: AtlasAgentCompare,
+    ) -> tuple[str, str, str, str]:
+        baseline_id = compare.baseline_frame.frame.frame_id if compare.baseline_frame else ""
+        return (
+            asset.asset_id,
+            compare.current_frame.frame.frame_id,
+            baseline_id,
+            self.sam3_evidence.backend.backend_id,
+        )
+
+    def _analyst_cache_key(
+        self,
+        *,
+        asset: Asset,
+        compare: AtlasAgentCompare,
+    ) -> tuple[str, str, str, str]:
+        baseline_id = compare.baseline_frame.frame.frame_id if compare.baseline_frame else ""
+        return (
+            asset.asset_id,
+            compare.current_frame.frame.frame_id,
+            baseline_id,
+            self.liquid_analyst.backend.backend_id,
         )
 
     def _compare_usable_for_model_evidence(self, compare: AtlasAgentCompare) -> bool:

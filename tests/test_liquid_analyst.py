@@ -102,6 +102,33 @@ def test_liquid_analyst_parser_accepts_evidence_first_adapter_schema() -> None:
     )
 
 
+def test_liquid_analyst_parser_does_not_surface_unsupported_tags_as_summary() -> None:
+    report = parse_liquid_analyst_report(
+        json.dumps(
+            {
+                "visual_evidence_tags": ["drone_snapshot", "conflict_site"],
+                "negative_evidence": ["low_visibility"],
+                "uncertainty_factors": ["cloud"],
+                "severity_hint": "none",
+                "recommended_action": "discard",
+                "confidence": 0.0,
+                "short_rationale": "The image is too limited for a defensible visual read.",
+            }
+        ),
+        asset=_asset(),
+        current=_current_frame(),
+        baseline=_baseline_frame(),
+        evidence=None,
+        model_version="LiquidAI/LFM2.5-VL-450M",
+        backend="liquid_vlm_http",
+    )
+
+    assert report is not None
+    assert report.civilian_disruption_evidence == []
+    assert "drone_snapshot" not in report.visible_change_summary
+    assert "valid visual scene description" in report.visible_change_summary
+
+
 def test_liquid_analyst_parser_accepts_runtime_adapter_aliases() -> None:
     report = parse_liquid_analyst_report(
         json.dumps(
@@ -154,7 +181,7 @@ def test_liquid_analyst_parser_repairs_partial_low_confidence_adapter_output() -
     assert report.confidence == 0.0
     assert report.civilian_disruption_evidence == []
     assert report.negative_evidence == ["low_visibility"]
-    assert "does not support a defensible" in report.visible_change_summary
+    assert "use it for visible site context" in report.visible_change_summary
 
 
 def test_liquid_analyst_parser_rejects_tactical_language() -> None:
@@ -280,7 +307,7 @@ def test_liquid_analyst_payload_carries_guarded_adapter_ref() -> None:
     assert payload.adapter_ref == (
         "ChrisRPL/blackline-atlas-lfm25-vl-sft-hf-corpus-full-v1b-adapter"
     )
-    assert "use it only as the tuned analyst behavior profile" in system_text
+    assert "use it only as tuned behavior" in system_text
 
 
 def test_liquid_analyst_payload_uses_source_context_as_visual_brief() -> None:
@@ -309,12 +336,13 @@ def test_liquid_analyst_payload_uses_source_context_as_visual_brief() -> None:
         item.text for item in payload.inputs if item.type == "input_text" and item.role == "system"
     )
 
-    assert "The source report is context, not something to validate from imagery" in system_text
+    assert "Use the source report as context for what to inspect, not proof" in system_text
     assert "Source event: Strike damages shops" in user_text
     assert (
         "Dynamic SAM3 prompts: ['apartment block', 'commercial building', 'rubble pile']"
         in user_text
     )
+    assert "source-led visual site brief" in user_text
     assert "Do not say the source report is proven by imagery" in user_text
 
 

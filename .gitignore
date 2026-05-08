@@ -219,6 +219,12 @@ work/
 session_logs/
 output/
 .playwright-mcp/
+blackline-audit-ui.png
+recordings/
+submission-recordings/
+*.mov
+*.mp4
+*.webm
 satellite-disruption-triage-aux-v2/
 satellite-disruption-triage-aux-v2-1/
 var/

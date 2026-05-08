@@ -143,7 +143,7 @@ def test_named_site_evidence_request_loads_reference_image_pair(monkeypatch) -> 
     assert payload["focus_asset_id"] == "beirut_port_01"
     assert payload["compare"]["current_frame"]["frame"]["asset_id"] == "beirut_port_01"
     assert payload["compare"]["baseline_frame"]["frame"]["asset_id"] == "beirut_port_01"
-    assert payload["analyst_report"] is not None
+    assert payload["analyst_report"] is None
 
 
 def test_explain_selected_site_routes_to_evidence_summary(monkeypatch) -> None:

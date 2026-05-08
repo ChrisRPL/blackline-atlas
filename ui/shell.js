@@ -26,6 +26,7 @@ const state = {
   selectedLeadId: null,
   selectedSiteContext: null,
   selectedEvidence: null,
+  selectedAnalyst: null,
   selectedSiteLoading: false,
   transcriptSeeded: false,
   map: null,
@@ -130,7 +131,7 @@ function actionLabel(value) {
   const labels = {
     downlink_now: "send evidence now",
     defer: "review next",
-    discard: "no alert",
+    discard: "no visual confirmation",
     watch: "watch",
     unconfirmed: "unconfirmed",
   };
@@ -213,10 +214,10 @@ function isContextOnlyCompare(compare) {
 }
 
 function isModelGatedCompare(compare) {
-  return Boolean(
-    compare?.satellite_evidence
-      && satelliteUsability(compare.satellite_evidence) !== "direct_clear",
-  );
+  if (!compare?.satellite_evidence) {
+    return false;
+  }
+  return ["context_only", "unavailable"].includes(satelliteUsability(compare.satellite_evidence));
 }
 
 function analystEndpointReady() {
@@ -224,7 +225,7 @@ function analystEndpointReady() {
 }
 
 function satelliteSweepText() {
-  return "Satellite sweep running: close exact AOIs, 3 km grid, 7 km ring, then regional/context imagery.";
+  return "Satellite sweep running: tight 5 km AOIs first, nearby 5 km grid next, and context only if evidence imagery cannot resolve.";
 }
 
 function sam3EvidenceNote(report) {
@@ -232,13 +233,13 @@ function sam3EvidenceNote(report) {
     return "";
   }
   if (!report.masks?.length) {
-    return ` Impact read: ${humanizeSlug(report.decision)}.`;
+    return ` Segment read: ${humanizeSlug(report.decision)}.`;
   }
   const maxChangeScore = Math.max(
     ...report.masks.map((mask) => mask.temporal_change_score ?? mask.score ?? 0),
   );
   const scoreNote = maxChangeScore ? `, max change ${Math.round(maxChangeScore * 100)}%` : "";
-  return ` Impact read: ${report.masks.length} region${report.masks.length === 1 ? "" : "s"}${scoreNote}; ${report.visual_evidence_tags.join(", ")}.`;
+  return ` Segment read: ${report.masks.length} region${report.masks.length === 1 ? "" : "s"}${scoreNote}; ${report.visual_evidence_tags.join(", ")}.`;
 }
 
 function frameImageSrc(imageRef) {
@@ -446,6 +447,50 @@ function liveAlertForAsset(assetId) {
   return state.liveAlerts.find((alert) => alert.asset_id === assetId) || null;
 }
 
+function liveLeadCount() {
+  return state.leads.length;
+}
+
+function inspectableLeadCount() {
+  return state.leads.filter((lead) => Boolean(lead.linked_asset_id)).length;
+}
+
+function topLeadMetricText() {
+  const count = liveLeadCount();
+  if (count) {
+    return `${count} live ${count === 1 ? "lead" : "leads"}`;
+  }
+  const alertCount = state.liveAlerts.length;
+  if (alertCount) {
+    return `${alertCount} model ${alertCount === 1 ? "alert" : "alerts"}`;
+  }
+  return "live leads loading";
+}
+
+function leadMetricText() {
+  const count = liveLeadCount();
+  return count ? `${count} live ${count === 1 ? "lead" : "leads"}` : "waiting for live leads";
+}
+
+function inspectableMetricText() {
+  const count = inspectableLeadCount();
+  return count ? `${count} inspectable ${count === 1 ? "site" : "sites"}` : "source-only map";
+}
+
+function evidenceMetricText(compare, selected) {
+  if (compare?.asset_id === selected?.asset_id && compare.satellite_evidence) {
+    const label = satelliteUsabilityLabel(compare.satellite_evidence);
+    const size = compare.satellite_evidence.size_km
+      ? ` / ${Number(compare.satellite_evidence.size_km).toFixed(1).replace(/\.0$/, "")} km AOI`
+      : "";
+    return `${label}${size}`;
+  }
+  if (selected) {
+    return "evidence loading";
+  }
+  return "select a marker";
+}
+
 function selectedSiteContext() {
   if (!state.selectedSiteContext) {
     return null;
@@ -471,11 +516,19 @@ function selectedEvidenceReport() {
 }
 
 function selectedAnalystReport() {
+  if (state.selectedAnalyst && state.selectedAnalyst.asset_id === state.selectedAssetId) {
+    return state.selectedAnalyst;
+  }
   const report = selectedSiteContext()?.analyst_report;
   if (!report || report.asset_id !== state.selectedAssetId) {
     return null;
   }
   return report;
+}
+
+function compareUsableForVisualAnalysis(compare) {
+  const usability = satelliteUsability(compare?.satellite_evidence);
+  return usability === "direct_clear" || usability === "cloud_limited";
 }
 
 function selectedSiteAlerts() {
@@ -956,6 +1009,7 @@ function selectAsset(assetId) {
   state.selectedAssetId = assetId;
   state.selectedLeadId = null;
   const asset = state.assets.find((entry) => entry.asset_id === assetId);
+  state.selectedAnalyst = null;
   if (asset) {
     setStageReport(
       `Reviewing ${asset.asset_name}`,
@@ -981,6 +1035,7 @@ function selectLead(leadId) {
   state.selectedAssetId = reviewAsset?.asset_id || null;
   state.selectedSiteContext = null;
   state.selectedEvidence = null;
+  state.selectedAnalyst = null;
   state.selectedSiteLoading = false;
   if (lead) {
     setStageReport(
@@ -1203,7 +1258,7 @@ function leadZoneFeatureCollection() {
     type: "FeatureCollection",
     features: visibleLeads.map((lead, index) => {
       const linkedAssetId = lead.linked_asset_id || null;
-      const selected = (
+      const selected = Boolean(
         state.selectedLeadId === lead.lead_id
         || (linkedAssetId && state.selectedAssetId === linkedAssetId)
       );
@@ -1785,6 +1840,53 @@ async function queryAssetEvidence(assetId) {
   return response.json();
 }
 
+async function queryAssetAnalyst(assetId) {
+  const response = await fetch(new URL(`/analyst/assets/${assetId}`, window.location.origin));
+  if (!response.ok) {
+    throw new Error(`/analyst/assets/${assetId} returned ${response.status}`);
+  }
+  return response.json();
+}
+
+async function loadSelectedVisualAnalysis(assetId, options = {}) {
+  const announce = Boolean(options.announce);
+  const compare = selectedCompare();
+  if (!assetId || compare?.asset_id !== assetId || !compareUsableForVisualAnalysis(compare)) {
+    return;
+  }
+
+  setStageReport("Sentinel pair loaded", "SAM3 segmentation and Liquid VLM site brief running.");
+  renderDrawer();
+
+  try {
+    const evidence = await queryAssetEvidence(assetId);
+    if (state.selectedAssetId === assetId && evidence?.asset_id === assetId) {
+      state.selectedEvidence = evidence;
+      renderDrawer();
+    }
+  } catch (error) {
+    if (state.selectedAssetId === assetId) {
+      setChannelNote("SAM3 evidence endpoint unavailable for this site.");
+    }
+  }
+
+  try {
+    const report = await queryAssetAnalyst(assetId);
+    if (state.selectedAssetId === assetId && report?.asset_id === assetId) {
+      state.selectedAnalyst = report;
+      setStageReport("Visual analysis complete", report.visible_change_summary);
+      if (announce) {
+        appendMessage("assistant", `Visual analysis complete: ${report.visible_change_summary}`);
+      }
+      renderDrawer();
+    }
+  } catch (error) {
+    if (state.selectedAssetId === assetId) {
+      setChannelNote("Liquid VLM site brief endpoint unavailable for this site.");
+    }
+  }
+}
+
 async function loadSelectedSiteContext(assetId, leadId = state.selectedLeadId, options = {}) {
   if (!assetId) {
     return;
@@ -1800,15 +1902,23 @@ async function loadSelectedSiteContext(assetId, leadId = state.selectedLeadId, o
     if (state.selectedAssetId === assetId) {
       applyAgentResponse(response);
       state.selectedEvidence = null;
+      state.selectedAnalyst = null;
       runMissionSequence(["evidence", "summarize"], ["focus", "evidence", "summarize"]);
       if (announce) {
         appendMessage("assistant", response.summary);
+      }
+      if (response.compare?.asset_id === assetId && compareUsableForVisualAnalysis(response.compare)) {
+        setChannelNote("Sentinel pair loaded. SAM3 and Liquid VLM are running in the background.");
+        void loadSelectedVisualAnalysis(assetId, { announce });
+      } else if (response.status === "no_result") {
+        setChannelNote("Source lead only. No dated Sentinel pair resolved for visual analysis.");
       }
     }
   } catch (error) {
     if (state.selectedAssetId === assetId) {
       state.selectedSiteContext = null;
       state.selectedEvidence = null;
+      state.selectedAnalyst = null;
       setMissionStep(null, ["focus"]);
     }
   } finally {
@@ -1829,12 +1939,15 @@ async function handleCommand(rawText) {
   appendMessage("user", text);
   const thinkingMessage = appendMessage(
     "assistant",
-    "Thinking. Parsing request, checking live sources, and preparing map action.",
+    "Thinking. Routing the request, checking live source leads, resolving satellite context, and preparing a visual site brief.",
     { thinking: true },
   );
   runMissionSequence(["parse", "fetch"], ["parse"]);
-  setStageReport("Atlas parsing request", "Routing command into lead search, camera focus, and evidence tools.");
-  setChannelNote("Parsing request. Fetching current lead and evidence context.");
+  setStageReport(
+    "Atlas parsing request",
+    "Routing command into live-source search, camera focus, SAM3 segmentation, and Liquid VLM briefing.",
+  );
+  setChannelNote("Parsing request. Satellite and model analysis can take a moment on first run.");
 
   try {
     const response = await queryAgent(text);
@@ -1864,10 +1977,8 @@ function renderTopbar() {
   dom.healthChip.className = summary.healthClass;
   dom.modeChip.textContent = summary.modeText;
   dom.modeChip.className = summary.modeClass;
-  dom.alertChip.textContent = `${state.liveAlerts.length} confirmed ${
-    state.liveAlerts.length === 1 ? "alert" : "alerts"
-  }`;
-  dom.alertChip.className = state.liveAlerts.length ? "chip degraded" : "chip neutral";
+  dom.alertChip.textContent = topLeadMetricText();
+  dom.alertChip.className = liveLeadCount() ? "chip degraded" : "chip neutral";
   renderLeadRefreshButton();
   renderModelGate();
   renderPlannerChip();
@@ -1933,7 +2044,9 @@ function renderLeadPopover() {
     dom.leadPopoverLink.removeAttribute("href");
   }
 
-  dom.leadPopoverInspect.hidden = !reviewAsset;
+  dom.leadPopoverInspect.hidden = false;
+  dom.leadPopoverInspect.disabled = !reviewAsset;
+  dom.leadPopoverInspect.textContent = reviewAsset ? "Inspect site" : "Source report only";
 
   let left = "50%";
   let top = "50%";
@@ -1978,32 +2091,25 @@ function renderLiquidAnalystCard(report, selected, compare) {
 
   dom.liquidAnalystCard.hidden = false;
   if (isModelGatedCompare(compare)) {
-    const usability = satelliteUsability(compare.satellite_evidence);
-    dom.liquidAnalystTitle.textContent = usability === "cloud_limited"
-      ? "Visual read limited"
-      : "Analysis gated";
+    dom.liquidAnalystTitle.textContent = "Context-only imagery";
     dom.liquidAnalystSummary.textContent = compare.satellite_evidence?.quality_summary
-      || "Satellite imagery is loaded, but it is not clear enough for a reliable before/after read.";
-    dom.liquidAnalystModel.textContent = usability === "cloud_limited"
-      ? "cloud / visibility limit"
-      : "context imagery";
-    dom.liquidAnalystAction.textContent = "not scored";
-    dom.liquidAnalystConfidence.textContent = usability === "cloud_limited"
-      ? "visibility limited"
-      : "no before/after confidence";
+      || "Atlas loaded context imagery for orientation, but this is not a dated before/after pair.";
+    dom.liquidAnalystModel.textContent = "context imagery";
+    dom.liquidAnalystAction.textContent = "source-led only";
+    dom.liquidAnalystConfidence.textContent = "no before/after confidence";
     return;
   }
 
   if (!report) {
     dom.liquidAnalystTitle.textContent = analystEndpointReady()
-      ? "Image pair queued"
+      ? "Visual site brief queued"
       : "Liquid VLM not attached";
     dom.liquidAnalystSummary.textContent = analystEndpointReady()
-      ? "Current and baseline frames are loaded. Image-pair analysis is waiting for the analyst endpoint."
+      ? "Current and baseline frames are loaded. Waiting for SAM3 segmentation and Liquid VLM visual description."
       : "Current and baseline frames are loaded, but the real paired-image Liquid VLM endpoint is not configured. Atlas shows the imagery and rule gates without pretending a model reviewed it.";
     dom.liquidAnalystModel.textContent = "LiquidAI/LFM2.5-VL";
     dom.liquidAnalystAction.textContent = analystEndpointReady()
-      ? "action pending"
+      ? "brief pending"
       : "not model-scored";
     dom.liquidAnalystConfidence.textContent = analystEndpointReady()
       ? "confidence pending"
@@ -2014,7 +2120,7 @@ function renderLiquidAnalystCard(report, selected, compare) {
   dom.liquidAnalystTitle.textContent = analystBackendLabel(report);
   dom.liquidAnalystSummary.textContent = report.visible_change_summary;
   dom.liquidAnalystModel.textContent = report.model_version;
-  dom.liquidAnalystAction.textContent = `recommends ${actionLabel(report.recommended_action)}`;
+  dom.liquidAnalystAction.textContent = `triage ${actionLabel(report.recommended_action)}`;
   dom.liquidAnalystConfidence.textContent = `${Math.round(report.confidence * 100)}% confidence`;
 }
 
@@ -2134,8 +2240,8 @@ function renderDrawer() {
     dom.signalAction.textContent = actionLabel("unconfirmed");
     dom.signalSeverity.textContent = "source lead";
     dom.signalConfidence.textContent = "needs evidence";
-    dom.metricsAlerts.textContent = `${state.leads.length} live leads`;
-    dom.metricsSuppressed.textContent = `${state.liveAlerts.length} confirmed alerts`;
+    dom.metricsAlerts.textContent = leadMetricText();
+    dom.metricsSuppressed.textContent = inspectableMetricText();
     dom.metricsDownlink.textContent = reviewAsset ? "inspect available" : "lead only";
     return;
   }
@@ -2156,9 +2262,9 @@ function renderDrawer() {
     dom.signalAction.textContent = actionLabel("watch");
     dom.signalSeverity.textContent = "-";
     dom.signalConfidence.textContent = "-";
-    dom.metricsAlerts.textContent = "waiting for data";
-    dom.metricsSuppressed.textContent = "-";
-    dom.metricsDownlink.textContent = "-";
+    dom.metricsAlerts.textContent = leadMetricText();
+    dom.metricsSuppressed.textContent = inspectableMetricText();
+    dom.metricsDownlink.textContent = "select a marker";
     return;
   }
 
@@ -2269,7 +2375,7 @@ function renderDrawer() {
         ? "Trying dated baseline, nearby AOIs, and context fallback. This can take longer for sparse coordinates."
         : "Baseline appears after a site is selected.";
     dom.baselineCaptured.textContent = state.selectedSiteLoading
-      ? "3-7 km grid"
+      ? "5-9 km grid"
       : noResult ? "unavailable" : "n/a";
     dom.baselineSource.textContent = noResult ? "try another marker or refresh leads" : "n/a";
   }
@@ -2278,7 +2384,7 @@ function renderDrawer() {
     ? actionLabel(alert.action)
     : compare?.asset_id === selected.asset_id
       ? isModelGatedCompare(compare)
-        ? "not scored"
+        ? "source-led only"
         : compare.current_frame.accepted_for_alerting === false
         ? actionLabel("discard")
         : compare.current_frame.accepted_for_alerting === true
@@ -2304,15 +2410,9 @@ function renderDrawer() {
         : compactLabel(humanizeSlug(compare.current_frame.filter_reason), "no confidence")
       : "no evidence";
 
-  if (metrics) {
-    dom.metricsAlerts.textContent = `${metrics.alerts_emitted} site reviews`;
-    dom.metricsSuppressed.textContent = `${metrics.raw_frames_suppressed} noisy frames filtered`;
-    dom.metricsDownlink.textContent = `${Math.round(metrics.downlink_rate * 100)}% evidence sent`;
-  } else {
-    dom.metricsAlerts.textContent = "waiting for data";
-    dom.metricsSuppressed.textContent = "-";
-    dom.metricsDownlink.textContent = "-";
-  }
+  dom.metricsAlerts.textContent = leadMetricText();
+  dom.metricsSuppressed.textContent = inspectableMetricText();
+  dom.metricsDownlink.textContent = evidenceMetricText(compare, selected);
 }
 
 function renderHealthFallback() {
@@ -2457,6 +2557,7 @@ function bindEvents() {
     state.selectedLeadId = lead.lead_id;
     state.selectedSiteContext = null;
     state.selectedEvidence = null;
+    state.selectedAnalyst = null;
     state.selectedSiteLoading = true;
     renderMap();
     renderDrawer();

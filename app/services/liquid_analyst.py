@@ -286,12 +286,11 @@ def _parse_partial_adapter_payload(raw_text: str) -> dict[str, object] | None:
             "low_visibility" if visibility == "low" else "no_visible_change"
         ]
         payload["visible_change_summary"] = (
-            "The imagery does not support a defensible visible disruption read "
-            "for this lead."
+            "The image pair is low-confidence; use it for visible site context, "
+            "not confirmation."
         )
         payload["short_rationale"] = (
-            "The Liquid VLM output was low-confidence; the source report remains "
-            "context, not imagery proof."
+            "The source report explains the event; imagery only supports a cautious visual brief."
         )
 
     return payload
@@ -352,9 +351,14 @@ def _normalize_adapter_schema_payload(payload: dict[str, object]) -> dict[str, o
         "visible_change_summary" not in normalized
         and "visual_evidence_tags" in normalized
     ):
-        tags = normalized.get("visual_evidence_tags")
-        tag_text = ", ".join(tags) if isinstance(tags, list) else str(tags)
-        normalized["visible_change_summary"] = f"Visible evidence tags: {tag_text}."
+        tags = _normalize_visual_tags(normalized.get("visual_evidence_tags"))
+        if tags:
+            tag_text = ", ".join(tag.replace("_", " ") for tag in tags)
+            normalized["visible_change_summary"] = f"Visible evidence tags: {tag_text}."
+        else:
+            normalized["visible_change_summary"] = (
+                "Liquid VLM did not return a valid visual scene description for this pair."
+            )
     return normalized
 
 
@@ -368,13 +372,15 @@ def _build_payload(
     adapter_ref: str | None = None,
 ) -> CandidateRequestPayload:
     system = (
-        "You are a civilian satellite before/after analyst. Compare the baseline image and "
-        "current image. The source report is context, not something to validate from imagery. "
-        "If an adapter_ref is present, use it only as the tuned analyst behavior profile; "
-        "still obey this schema and safety contract. "
-        "Report only visible macro-scale civilian infrastructure impact and imagery limits. "
-        "Do not mention tactical targets, troops, weapons, bases, convoys, or strike support. "
-        "Do not repeat the input. Return one compact JSON object only, with no markdown."
+        "You are a civilian satellite site-brief analyst. Compare baseline then current. "
+        "Use the source report as context for what to inspect, not proof. "
+        "If adapter_ref is present, use it only as tuned behavior; obey this schema. "
+        "Write a useful visual description even when no visual confirmation is available: "
+        "site context, visible changes, and limits. Keep triage secondary. "
+        "Never mention casualties, fatalities, injuries, people killed, or other source-only "
+        "human impact as visual evidence; those are source facts, not satellite-visible facts. "
+        "No tactical targets, troops, weapons, bases, convoys, or strike support. "
+        "Return one compact JSON object only, no markdown."
     )
     user = _analyst_user_prompt(asset=asset, current=current, baseline=baseline, evidence=evidence)
     inputs: list[CandidateTextInput | CandidateImageInput] = [
@@ -436,7 +442,8 @@ def _analyst_user_prompt(
     )
     return "\n".join(
         [
-            "Compare the two images in this order: baseline first, current second.",
+            "Task: produce a source-led visual site brief, not an alert verdict.",
+            "Compare images in this order: baseline first, current second.",
             f"Site: {asset.asset_name}",
             f"Region: {asset.region}",
             f"Civilian infrastructure type: {asset.asset_type}",
@@ -446,20 +453,26 @@ def _analyst_user_prompt(
             evidence_hint,
             "Allowed evidence tags:",
             allowed_tags,
+            "Do not include casualties, deaths, injuries, or people in the visual brief. "
+            "Only describe satellite-visible terrain, buildings, roads, smoke, debris, water, "
+            "burn scars, access blockage, clouds, and image limits.",
+            "The summary must name what is visibly present in the image pair and what cannot be "
+            "confirmed. Do not answer only 'no visual confirmation' or 'no change' unless you "
+            "also describe the visible scene and limits.",
             "Return exactly this JSON shape:",
             "{",
-            '  "visible_change_summary": "one short sentence",',
+            '  "visible_change_summary": "one concise site brief sentence",',
             '  "civilian_disruption_evidence": ["one or more allowed tags, or empty list"],',
             '  "negative_evidence": ["allowed tags such as no_visible_change or low_visibility"],',
             '  "uncertainty_factors": ["short non-tactical uncertainty flags"],',
             '  "severity_hint": "none | low | moderate | severe",',
             '  "recommended_action": "discard | defer | downlink_now",',
             '  "confidence": 0.0,',
-            '  "short_rationale": "one short sentence"',
+            '  "short_rationale": "brief source-to-visual reasoning"',
             "}",
             "If cloud, blur, SAR artifacts, or low resolution prevent a defensible read, use "
             "recommended_action=discard, severity_hint=none, confidence below 0.3, and include "
-            "low_visibility in negative_evidence.",
+            "low_visibility in negative_evidence, but still describe the visible context.",
             "Do not say the source report is proven by imagery unless visible before/after change "
             "is clear. Use the source context to decide what visual objects to inspect.",
         ]

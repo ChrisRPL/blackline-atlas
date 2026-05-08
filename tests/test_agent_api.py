@@ -154,12 +154,7 @@ def test_agent_query_site_compare_returns_selected_site_frames() -> None:
     assert payload["resolved"]["tool"] == "site_compare"
     assert payload["camera"]["mode"] == "focus_asset"
     assert payload["camera"]["asset_id"] == "demo_bridge_01"
-    assert payload["analyst_report"]["asset_id"] == "demo_bridge_01"
-    assert payload["analyst_report"]["recommended_action"] in {
-        "defer",
-        "downlink_now",
-        "discard",
-    }
+    assert payload["analyst_report"] is None
 
 
 def test_agent_query_site_compare_requires_selected_live_context() -> None:
