@@ -37,6 +37,8 @@ def test_ui_shell_serves_same_origin_dashboard() -> None:
     assert "/agent/query" in static_response.text
     assert "selected_lead_id" in static_response.text
     assert 'id="chat-form"' in response.text
+    assert 'id="live-preview"' in response.text
+    assert "Start live preview" in response.text
     assert 'id="lead-refresh"' in response.text
     assert 'id="map-stage"' in response.text
     assert "live leads loading" in response.text
@@ -57,10 +59,18 @@ def test_ui_shell_serves_same_origin_dashboard() -> None:
     assert "Thinking. Routing the request" in static_response.text
     assert "thinking-dots" in static_response.text
     assert "renderPlannerChip" in static_response.text
+    assert "startLivePreview" in static_response.text
+    assert "bestPreviewAsset" in static_response.text
+    assert "Guided demo" not in static_response.text
+    assert "guided demo" not in static_response.text
     assert "renderModelGate" in static_response.text
-    assert "Segment read:" in static_response.text
+    assert "Segment read:" not in static_response.text
     assert "Segment read: unavailable" not in static_response.text
     assert "SAM3 segmentation and Liquid" not in static_response.text
+    assert "bridge not attached" not in static_response.text
+    assert "local Liquid VLM bridge" not in static_response.text
+    assert "Liquid VLM not attached" not in static_response.text
+    assert "Live Liquid VLM analyst is not ready" not in static_response.text
     assert "live leads loading" in static_response.text
     assert "liveLeadCount" in static_response.text
     assert "inspectableLeadCount" in static_response.text

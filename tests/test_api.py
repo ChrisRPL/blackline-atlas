@@ -187,10 +187,13 @@ def test_health_endpoint() -> None:
     payload = response.json()
     assert payload["status"] == "ok"
     assert payload["model_backend"]["status"] == "ready"
+    assert payload["model_backend"]["mode"] == "fixture_reference"
     assert payload["model_backend"]["detail"] == "lfm2.5-vl-450m-prompted (fixture backend)"
     assert payload["agent_backend"]["status"] == "ready"
+    assert payload["agent_backend"]["mode"] == "fixture_reference"
     assert payload["agent_backend"]["detail"] == "lfm2.5-1.2b-instruct (fixture planner)"
     assert payload["sam3_backend"]["status"] == "degraded"
+    assert payload["sam3_backend"]["mode"] == "not_configured"
     assert "real SAM3 HTTP segmentation is required" in payload["sam3_backend"]["detail"]
 
 
@@ -802,6 +805,7 @@ def test_health_endpoint_exposes_model_http_config_and_backend_mode(tmp_path, mo
 
     assert model_response.status_code == 200
     assert model_response.json()["model_backend"]["status"] == "ready"
+    assert model_response.json()["model_backend"]["mode"] == "live_http"
     assert model_response.json()["model_backend"]["detail"] == (
         "lfm2.5-vl-450m-prompted (atlas_json_http http backend)"
     )
@@ -826,6 +830,7 @@ def test_health_endpoint_exposes_agent_http_config_and_backend_mode(tmp_path, mo
 
     assert agent_response.status_code == 200
     assert agent_response.json()["agent_backend"]["status"] == "ready"
+    assert agent_response.json()["agent_backend"]["mode"] == "live_http"
     assert agent_response.json()["agent_backend"]["detail"] == (
         "lfm2.5-1.2b-instruct (atlas_json_http http planner)"
     )
@@ -849,6 +854,7 @@ def test_health_endpoint_marks_unreachable_http_planner_degraded(tmp_path, monke
 
     assert agent_response.status_code == 200
     assert agent_response.json()["agent_backend"]["status"] == "degraded"
+    assert agent_response.json()["agent_backend"]["mode"] == "unreachable"
     assert "configured but unreachable" in agent_response.json()["agent_backend"]["detail"]
     get_settings.cache_clear()
 
@@ -910,8 +916,9 @@ def test_health_endpoint_allows_explicit_offline_sam3_fixture_mode(
     sam3_response = sam3_client.get("/health")
 
     assert sam3_response.status_code == 200
-    assert sam3_response.json()["sam3_backend"]["status"] == "ready"
-    assert "reference-only fixture" in sam3_response.json()["sam3_backend"]["detail"]
+    assert sam3_response.json()["sam3_backend"]["status"] == "not_configured"
+    assert sam3_response.json()["sam3_backend"]["mode"] == "not_configured"
+    assert "outside the judge runtime path" in sam3_response.json()["sam3_backend"]["detail"]
     assert sam3_response.json()["config"]["sam3_http_enabled"] is False
     assert sam3_response.json()["config"]["sam3_required"] is False
     get_settings.cache_clear()
@@ -957,6 +964,55 @@ def test_health_endpoint_exposes_openai_chat_planner_backend_mode(tmp_path, monk
     )
     assert agent_response.json()["config"]["agent_provider"] == "openai_chat_completions_http"
     get_settings.cache_clear()
+
+
+def test_health_endpoint_exposes_live_http_analyst_mode(tmp_path, monkeypatch) -> None:
+    monkeypatch.chdir(tmp_path)
+    stub_http_dependency_probe(monkeypatch)
+    analyst_client = build_api_client(
+        monkeypatch,
+        simsat_current_endpoint=None,
+        simsat_baseline_endpoint=None,
+        analyst_endpoint="https://liquid.example/v1/chat/completions",
+        analyst_http_enabled=True,
+        analyst_provider="openai_chat_completions_http",
+    )
+    analyst_response = analyst_client.get("/health")
+
+    assert analyst_response.status_code == 200
+    assert analyst_response.json()["analyst_backend"]["status"] == "ready"
+    assert analyst_response.json()["analyst_backend"]["mode"] == "live_http"
+    assert "openai_chat_completions_http" in analyst_response.json()["analyst_backend"]["detail"]
+    get_settings.cache_clear()
+
+
+def test_production_demo_mode_fails_when_live_analyst_unreachable(
+    tmp_path,
+    monkeypatch,
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setenv("PRODUCTION_DEMO_MODE", "true")
+
+    try:
+        build_api_client(
+            monkeypatch,
+            simsat_current_endpoint=None,
+            simsat_baseline_endpoint=None,
+            agent_endpoint="http://127.0.0.1:9/v1/chat/completions",
+            agent_http_enabled=True,
+            agent_provider="openai_chat_completions_http",
+            analyst_endpoint="http://127.0.0.1:9/v1/chat/completions",
+            analyst_http_enabled=True,
+            analyst_provider="openai_chat_completions_http",
+        )
+    except RuntimeError as exc:
+        assert "production demo mode requires live planner and analyst HTTP" in str(exc)
+        assert "unreachable" in str(exc)
+    else:
+        raise AssertionError("production demo mode accepted unreachable live endpoints")
+    finally:
+        monkeypatch.delenv("PRODUCTION_DEMO_MODE", raising=False)
+        get_settings.cache_clear()
 
 
 def test_health_endpoint_marks_missing_model_endpoint_not_configured(tmp_path, monkeypatch) -> None:

@@ -332,6 +332,14 @@ body::after {
   text-transform: uppercase;
 }
 
+.panel-actions {
+  display: flex;
+  flex: 0 0 auto;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.38rem;
+}
+
 .panel-kicker {
   color: var(--accent);
   font-family: "IBM Plex Mono", monospace;

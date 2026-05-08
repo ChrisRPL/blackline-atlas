@@ -246,6 +246,17 @@ training/scripts/local/
 uv.lock
 training/replay_pack/local/
 
+# Generated graph/DAG artifacts
+dags/
+dag/
+.dagger/
+*.dag
+*.dag.json
+*dag*.dot
+*dag*.gv
+*dag*.svg
+*dag*.png
+
 # Marimo
 marimo/_static/
 marimo/_lsp/

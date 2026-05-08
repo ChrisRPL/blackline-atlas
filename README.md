@@ -12,15 +12,92 @@ Built for the Liquid AI x DPhi Space hackathon.
 
 Blackline Atlas is not a general chatbot or targeting system. It is a structured
 alert component for macro-scale civilian disruption triage. The product is
-optimized for one reliable demo path: a public source lead becomes a bounded
+optimized for one reliable live preview path: a public source lead becomes a bounded
 satellite review, then the UI shows what the imagery can and cannot support.
+
+## Run The App
+
+Use Python `3.11+`.
+
+### App-Only Preview
+
+This starts the UI and API with local fallback data. It is the fastest way to
+inspect the product shape.
+
+```bash
+git clone https://github.com/ChrisRPL/blackline-atlas.git
+cd blackline-atlas
+cp .env.example .env
+python3 -m pip install -e ".[dev]"
+make dev
+```
+
+Open `http://127.0.0.1:8000/ui`.
+
+### Full Live Preview
+
+This is the intended judge path: live SimSat/Sentinel, live Liquid planner,
+and live Liquid VLM analyst.
+
+1. Start SimSat:
+
+```bash
+git clone https://github.com/DPhi-Space/SimSat.git ~/Projects/oss/SimSat
+cd ~/Projects/oss/SimSat
+export MAPBOX_ACCESS_TOKEN=...
+docker compose up -d
+```
+
+2. Start the Liquid planner with Ollama:
+
+```bash
+# If Ollama is not already running, leave this command open in its own terminal:
+ollama serve
+
+# In another terminal:
+ollama pull hf.co/LiquidAI/LFM2.5-1.2B-Instruct-GGUF:latest
+```
+
+3. Start the Liquid VLM analyst:
+
+```bash
+cd /path/to/blackline-atlas
+python3 -m pip install -e ".[dev,vlm]"
+python3 training/scripts/serve_liquid_vl_openai.py \
+  --port 8014 \
+  --backend transformers \
+  --model-id LiquidAI/LFM2.5-VL-450M \
+  --adapter-ref ChrisRPL/blackline-atlas-lfm25-vl-sft-hf-corpus-full-v1b-adapter
+```
+
+4. In another terminal, start Blackline Atlas:
+
+```bash
+cd /path/to/blackline-atlas
+cp .env.example .env
+make dev
+```
+
+5. Check readiness and open the UI:
+
+```bash
+make preflight
+```
+
+Open `http://127.0.0.1:8000/ui`, click `Start live preview`, then use
+`Refresh live leads` for current GDELT discovery.
+
+Expected `make preflight` result: SimSat current, SimSat baseline, planner, and
+analyst all show `ready/live_http`. SAM should be `not_configured`; it is not in
+the judge path.
 
 ## Judge Path
 
 1. Start the local services in [Runtime Services](#runtime-services).
-2. Open `http://127.0.0.1:8000/ui`.
-3. Click `Refresh live leads`, or ask `What happened recently in Iran?`.
-4. The UI auto-selects the newest satellite-reviewable source lead.
+2. Run `make preflight`.
+3. Open `http://127.0.0.1:8000/ui`.
+4. Click `Start live preview` for the stable evidence path, then use
+   `Refresh live leads` for current GDELT discovery.
 5. Review the source lead, Sentinel pair, optional exact-coordinate contact
    sheet, Liquid visual brief, decision, and metrics.
 
@@ -28,7 +105,7 @@ The important claim: **the source lead gives event context; the VLM only writes
 a guarded visual brief over imagery.** Casualty/source facts are not visual
 facts. Mapbox is orientation context only. SAM/SAM3 is not in the judge runtime
 path because low-resolution Sentinel masks are not defensible enough for the
-demo claim.
+live preview claim.
 
 If SimSat, GDELT, or Liquid is unavailable, the app should say so and degrade
 cleanly. It should not present source-only reports, Mapbox context, or invalid
@@ -49,6 +126,8 @@ model output as evidence.
 | Hardest part | Being honest under low-resolution/cloudy Sentinel imagery: rejecting no-data tiles, avoiding source-only claims, removing unreliable SAM masks from the judge path, and withholding invalid VLM output. |
 
 ## Screenshots
+
+![Blackline Atlas live preview](ui/assets/blackline-atlas-live-preview.png)
 
 ![Blackline Atlas app](ui/assets/blackline-atlas-app.png)
 
@@ -128,6 +207,16 @@ For a minimal local UI without live services, `make dev` starts the FastAPI app
 with fixture/fallback behavior. For the hackathon path, configure the runtime
 services below before judging or recording.
 
+Strict live-preview readiness check:
+
+```bash
+make preflight
+```
+
+The preflight requires `/health` to report `mode=live_http` and `status=ready`
+for SimSat current, SimSat baseline, the planner, and the Liquid VLM analyst.
+SAM must remain disabled and outside the judge path.
+
 Open:
 
 - UI: `http://127.0.0.1:8000/ui`
@@ -154,6 +243,7 @@ curl http://localhost:9005/
 Required app env:
 
 ```bash
+PRODUCTION_DEMO_MODE=true
 SIMSAT_REQUIRED=true
 SIMSAT_CURRENT_ENDPOINT=http://localhost:9005/data/current/image/sentinel
 SIMSAT_BASELINE_ENDPOINT=http://localhost:9005/data/image/sentinel
@@ -170,7 +260,7 @@ grade before/after imagery.
 Use a local OpenAI-compatible Liquid LLM endpoint:
 
 ```bash
-AGENT_MODEL_VERSION=LiquidAI/LFM2.5-1.2B-Instruct-GGUF
+AGENT_MODEL_VERSION=hf.co/LiquidAI/LFM2.5-1.2B-Instruct-GGUF:latest
 AGENT_ENDPOINT=http://127.0.0.1:11434/v1/chat/completions
 AGENT_HTTP_ENABLED=true
 AGENT_PROVIDER=openai_chat_completions_http
@@ -290,7 +380,7 @@ Bulk local artifacts are ignored: `work/`, `var/`, `training/eval_runs/`,
 
 ## Contributing
 
-Good contributions improve demo stability, evidence honesty, or structured
+Good contributions improve live-preview stability, evidence honesty, or structured
 runtime contracts.
 
 Before opening a PR:
@@ -321,14 +411,14 @@ Contribution rules:
   [`ChrisRPL/blackline-atlas-training-corpus-v1`](https://huggingface.co/datasets/ChrisRPL/blackline-atlas-training-corpus-v1)
 
 Older adapters are retained only for reproducibility and marked deprecated.
-Use the final adapter/corpus links above in submissions, READMEs, and demos.
+Use the final adapter/corpus links above in submissions and READMEs.
 
 ## Deeper Docs
 
 - [Judge brief](docs/JUDGE_BRIEF.md)
 - [Technical specs](docs/SPECS.md)
-- [Demo recording scenario](docs/DEMO_RECORDING_SCENARIO.md)
-- [Demo teleprompter](docs/HACKATHON_DEMO_TELEPROMPTER.md)
+- [Live preview recording scenario](docs/LIVE_PREVIEW_RECORDING_SCENARIO.md)
+- [Live preview teleprompter](docs/HACKATHON_LIVE_PREVIEW_TELEPROMPTER.md)
 - [Dataset research notes](docs/DATASET_RESEARCH.md)
 - [Training blueprint](docs/TRAINING_BLUEPRINT.md)
 - [HF Jobs plan](docs/HF_JOBS.md)

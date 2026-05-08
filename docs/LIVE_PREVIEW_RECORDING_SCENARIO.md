@@ -1,4 +1,4 @@
-# Hackathon Demo Recording Scenario
+# Hackathon Live Preview Recording Scenario
 
 ## Goal
 
@@ -14,6 +14,8 @@ civilian guardrails.
 - Start the Liquid VLM bridge with:
   `ChrisRPL/blackline-atlas-lfm25-vl-sft-hf-corpus-full-v1b-adapter`.
 - Start the app with the submission `.env`.
+- Run `make preflight` and confirm SimSat current/baseline, planner, and
+  analyst all report `ready/live_http`.
 - Open `http://127.0.0.1:8000/ui`.
 - Keep the browser at desktop width, ideally 1440 px or wider.
 - Close devtools, extra tabs, and local notifications.
@@ -41,6 +43,7 @@ operational immediately.
 ### 0-10s: Open With The Product
 
 Show `/ui`.
+Click `Start live preview`.
 
 Say:
 
@@ -134,7 +137,7 @@ Say:
 Say:
 
 > The fine-tuned Liquid adapter and training corpus are published on Hugging
-> Face. The demo path is intentionally narrow: public lead, Sentinel evidence,
+> Face. The preview path is intentionally narrow: public lead, Sentinel evidence,
 > Liquid brief, deterministic guardrails.
 
 ## Fallback If Live Imagery Is Slow

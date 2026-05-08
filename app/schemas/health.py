@@ -6,11 +6,13 @@ from typing import Literal
 from pydantic import BaseModel
 
 ServiceState = Literal["ready", "not_configured", "degraded"]
+ServiceMode = Literal["live_http", "fixture_reference", "not_configured", "unreachable"]
 
 
 class HealthDependency(BaseModel):
     status: ServiceState
     detail: str
+    mode: ServiceMode
 
 
 class HealthConfig(BaseModel):

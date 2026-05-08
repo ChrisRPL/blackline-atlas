@@ -33,6 +33,7 @@ class Settings:
     mapbox_token_present: bool
     watchlist_path: str | None
     mapbox_token: str | None = None
+    production_demo_mode: bool = False
     simsat_required: bool = False
     lead_registry_path: str | None = None
     simsat_current_http_enabled: bool = False
@@ -82,6 +83,8 @@ def get_settings() -> Settings:
     return Settings(
         app_env=os.getenv("APP_ENV", "development"),
         app_port=int(os.getenv("APP_PORT", "8000")),
+        production_demo_mode=env_flag("PRODUCTION_DEMO_MODE")
+        or os.getenv("APP_ENV", "").strip().lower() in {"production_demo", "demo"},
         model_version=os.getenv("MODEL_VERSION", "lfm2.5-vl-450m-prompted"),
         simsat_current_endpoint=os.getenv("SIMSAT_CURRENT_ENDPOINT") or None,
         simsat_baseline_endpoint=os.getenv("SIMSAT_BASELINE_ENDPOINT") or None,

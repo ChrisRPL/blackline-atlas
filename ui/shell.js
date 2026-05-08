@@ -65,6 +65,7 @@ const dom = {
   leadPopoverStatus: document.querySelector("#lead-popover-status"),
   leadPopoverLink: document.querySelector("#lead-popover-link"),
   leadPopoverInspect: document.querySelector("#lead-popover-inspect"),
+  livePreview: document.querySelector("#live-preview"),
   leadRefresh: document.querySelector("#lead-refresh"),
   channelPanel: document.querySelector(".channel-panel"),
   drawerPanel: document.querySelector(".drawer-panel"),
@@ -236,7 +237,11 @@ function isModelGatedCompare(compare) {
 }
 
 function analystEndpointReady() {
-  return Boolean(state.health?.config?.analyst_http_enabled);
+  return Boolean(
+    state.health?.config?.analyst_http_enabled
+      && state.health?.analyst_backend?.status === "ready"
+      && state.health?.analyst_backend?.mode === "live_http",
+  );
 }
 
 function satelliteSweepText() {
@@ -244,17 +249,7 @@ function satelliteSweepText() {
 }
 
 function sam3EvidenceNote(report) {
-  if (!report) {
-    return "";
-  }
-  if (report.decision !== "segmentation_ready" || !report.masks?.length) {
-    return "";
-  }
-  const maxChangeScore = Math.max(
-    ...report.masks.map((mask) => mask.temporal_change_score ?? mask.score ?? 0),
-  );
-  const scoreNote = maxChangeScore ? `, max change ${Math.round(maxChangeScore * 100)}%` : "";
-  return ` Segment read: ${report.masks.length} region${report.masks.length === 1 ? "" : "s"}${scoreNote}; ${report.visual_evidence_tags.join(", ")}.`;
+  return "";
 }
 
 function frameImageSrc(imageRef) {
@@ -810,6 +805,13 @@ function simsatLiveReady() {
   return statuses.length === 2 && statuses.every((status) => status === "ready");
 }
 
+function enabledDependencyUnavailable(configKey, dependencyKey) {
+  return Boolean(
+    state.health?.config?.[configKey]
+      && state.health?.[dependencyKey]?.status !== "ready",
+  );
+}
+
 function simsatFallbackNote(compare) {
   if (
     !state.health?.config?.simsat_required
@@ -839,6 +841,8 @@ function topStatus() {
   const liveCount = [
     state.health.config.simsat_current_http_enabled,
     state.health.config.simsat_baseline_http_enabled,
+    state.health.config.agent_http_enabled,
+    state.health.config.analyst_http_enabled,
   ].filter(Boolean).length;
   const statuses = simsatStatuses();
   const simsatRequired = state.health.config.simsat_required;
@@ -846,11 +850,15 @@ function topStatus() {
   const simsatAnyReady = statuses.includes("ready");
   const simsatAllUnavailable = statuses.length > 0
     && statuses.every((status) => status === "degraded" || status === "not_configured");
+  const modelServiceDegraded =
+    enabledDependencyUnavailable("agent_http_enabled", "agent_backend")
+    || enabledDependencyUnavailable("analyst_http_enabled", "analyst_backend");
   const degraded =
     state.health.mapbox.status === "degraded"
-    || (simsatRequired && (simsatAllUnavailable || (simsatMissing && !simsatAnyReady)));
+    || (simsatRequired && (simsatAllUnavailable || (simsatMissing && !simsatAnyReady)))
+    || modelServiceDegraded;
 
-  if (liveCount > 0 && simsatAnyReady) {
+  if (!degraded && liveCount > 0 && simsatAnyReady) {
     return {
       healthText: "live",
       healthClass: "chip live",
@@ -863,9 +871,13 @@ function topStatus() {
 
   if (degraded) {
     return {
-      healthText: simsatRequired ? "sentinel degraded" : "degraded",
+      healthText: modelServiceDegraded
+        ? "model degraded"
+        : simsatRequired ? "sentinel degraded" : "degraded",
       healthClass: "chip degraded",
-      modeText: simsatRequired
+      modeText: modelServiceDegraded
+        ? `live model service unavailable${leadModeSuffix()}`
+        : simsatRequired
         ? `SimSat evidence limited${leadModeSuffix()}`
         : `source feed${leadModeSuffix()}`,
       modeClass: "chip neutral",
@@ -1922,7 +1934,7 @@ async function loadSelectedVisualAnalysis(assetId, options = {}) {
     "Sentinel pair loaded",
     analystEndpointReady()
       ? "Liquid VLM site brief running."
-      : "Liquid VLM brief withheld in demo runtime.",
+      : "Liquid VLM brief withheld in current runtime.",
   );
   renderDrawer();
 
@@ -1974,11 +1986,8 @@ async function loadSelectedSiteContext(assetId, leadId = state.selectedLeadId, o
           setChannelNote("Sentinel pair loaded. Liquid VLM is running in the background.");
           void loadSelectedVisualAnalysis(assetId, { announce });
         } else {
-          state.selectedAnalyst = withheldAnalystReport(assetId);
-          setStageReport("Sentinel pair loaded", "Liquid VLM brief withheld in demo runtime.");
-          setChannelNote(
-            "Sentinel pair loaded. The local Liquid VLM bridge is not attached; visual brief withheld.",
-          );
+          setStageReport("Sentinel pair loaded", "Source and Sentinel evidence ready.");
+          setChannelNote("");
           renderDrawer();
         }
       } else if (response.status === "no_result") {
@@ -2173,31 +2182,24 @@ function renderLiquidAnalystCard(report, selected, compare) {
 
   if (report && report.status !== "ready") {
     dom.liquidAnalystTitle.textContent = "Visual brief withheld";
-    dom.liquidAnalystSummary.textContent = analystEndpointReady()
-      ? report.visible_change_summary
-      : "Local Liquid VLM bridge is not attached; Atlas keeps the Sentinel evidence visible and withholds the visual brief.";
+    dom.liquidAnalystSummary.textContent = report.visible_change_summary;
     dom.liquidAnalystModel.textContent = report.model_version;
     dom.liquidAnalystAction.textContent = "not model-scored";
-    dom.liquidAnalystConfidence.textContent = analystEndpointReady()
-      ? "model output invalid"
-      : "bridge not attached";
+    dom.liquidAnalystConfidence.textContent = "model output invalid";
     return;
   }
 
   if (!report) {
-    dom.liquidAnalystTitle.textContent = analystEndpointReady()
-      ? "Visual site brief queued"
-      : "Liquid VLM not attached";
-    dom.liquidAnalystSummary.textContent = analystEndpointReady()
-      ? "Current and baseline frames are loaded. Waiting for the Liquid VLM visual description."
-      : "Current and baseline frames are loaded, but the real paired-image Liquid VLM endpoint is not configured. Atlas shows the imagery and rule gates without pretending a model reviewed it.";
+    if (!analystEndpointReady()) {
+      dom.liquidAnalystCard.hidden = true;
+      return;
+    }
+    dom.liquidAnalystTitle.textContent = "Visual site brief queued";
+    dom.liquidAnalystSummary.textContent =
+      "Current and baseline frames are loaded. Waiting for the Liquid VLM visual description.";
     dom.liquidAnalystModel.textContent = "LiquidAI/LFM2.5-VL";
-    dom.liquidAnalystAction.textContent = analystEndpointReady()
-      ? "brief pending"
-      : "not model-scored";
-    dom.liquidAnalystConfidence.textContent = analystEndpointReady()
-      ? "confidence pending"
-      : "endpoint offline";
+    dom.liquidAnalystAction.textContent = "brief pending";
+    dom.liquidAnalystConfidence.textContent = "confidence pending";
     return;
   }
 
@@ -2729,7 +2731,50 @@ async function autoSelectLeadForAnalysis({ announce = false, force = false } = {
   return true;
 }
 
+function bestPreviewAsset() {
+  return (
+    state.assets.find((asset) => asset.evidence_state === "reference_event")
+    || state.assets.find((asset) => asset.evidence_available && asset.evidence_state !== "live_demo")
+    || state.assets.find((asset) => asset.hero && asset.evidence_state === "live_demo")
+    || state.assets.find((asset) => asset.evidence_state === "live_demo")
+    || state.assets.find((asset) => asset.evidence_available)
+    || null
+  );
+}
+
+async function startLivePreview() {
+  const asset = bestPreviewAsset();
+  if (!asset) {
+    return;
+  }
+
+  state.selectedAssetId = asset.asset_id;
+  state.selectedLeadId = null;
+  state.selectedSiteContext = null;
+  state.selectedEvidence = null;
+  state.selectedAnalyst = null;
+  state.selectedSiteLoading = true;
+  renderMap();
+  renderDrawer();
+  focusMapOnAsset(asset);
+  runMissionSequence(["focus", "evidence", "summarize"], ["focus"]);
+  setStageReport(
+    `Live preview: ${asset.asset_name}`,
+    "Loading stable Sentinel current/baseline evidence first.",
+  );
+  setChannelNote("Live preview starts with a stable reviewable site. Refresh live leads afterward for discovery.");
+  appendMessage(
+    "assistant",
+    `Live preview started with ${asset.asset_name}. Loading current and baseline Sentinel evidence first; live GDELT discovery stays available separately.`,
+  );
+  await loadSelectedSiteContext(asset.asset_id, null, { announce: false });
+}
+
 function bindEvents() {
+  dom.livePreview?.addEventListener("click", () => {
+    void startLivePreview();
+  });
+
   dom.leadRefresh?.addEventListener("click", () => {
     void refreshLiveLeads();
   });

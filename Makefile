@@ -2,7 +2,10 @@ install:
 	python3 -m pip install -e ".[dev]"
 
 dev:
-	python3 -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+	set -a; [ ! -f .env ] || . ./.env; set +a; python3 -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+
+preflight:
+	python3 scripts/local_preflight.py
 
 test:
 	pytest -q
@@ -20,4 +23,3 @@ train-local:
 
 eval-local:
 	python3 training/scripts/eval_structured_outputs.py
-

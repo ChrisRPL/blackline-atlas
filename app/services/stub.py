@@ -120,13 +120,13 @@ def _http_dependency_state(
     try:
         request = Request(endpoint, method="GET")
         with urlopen(request, timeout=_HTTP_DEPENDENCY_TIMEOUT_SECONDS):
-            return HealthDependency(status="ready", detail=ready_detail)
+            return HealthDependency(status="ready", detail=ready_detail, mode="live_http")
     except HTTPError as exc:
         if 200 <= exc.code < 500:
-            return HealthDependency(status="ready", detail=ready_detail)
+            return HealthDependency(status="ready", detail=ready_detail, mode="live_http")
     except (OSError, TimeoutError, URLError):
         pass
-    return HealthDependency(status="degraded", detail=degraded_detail)
+    return HealthDependency(status="degraded", detail=degraded_detail, mode="unreachable")
 
 
 def _query_is_scope_refusal(lowered: str) -> bool:
@@ -425,6 +425,7 @@ class StubAtlasService:
             scenario_id=None,
             last_transition_at=utc_now(),
         )
+        self._assert_production_demo_backends()
 
     @property
     def hero_asset(self) -> Asset:
@@ -478,6 +479,29 @@ class StubAtlasService:
             ),
             debug=self._health_debug(),
         )
+
+    def _assert_production_demo_backends(self) -> None:
+        if not self.settings.production_demo_mode:
+            return
+
+        failures: list[str] = []
+        if not self.settings.agent_http_enabled:
+            failures.append("AGENT_HTTP_ENABLED must be true")
+        agent = self._agent_backend_dependency()
+        if self.settings.agent_http_enabled and agent.status != "ready":
+            failures.append(f"agent planner {agent.mode}: {agent.detail}")
+
+        if not self.settings.analyst_http_enabled:
+            failures.append("ANALYST_HTTP_ENABLED must be true")
+        analyst = self._analyst_backend_dependency()
+        if self.settings.analyst_http_enabled and analyst.status != "ready":
+            failures.append(f"Liquid analyst {analyst.mode}: {analyst.detail}")
+
+        if failures:
+            raise RuntimeError(
+                "Blackline Atlas production demo mode requires live planner and analyst HTTP: "
+                + "; ".join(failures)
+            )
 
     def get_model_status(self) -> ModelStatus:
         return build_model_status()
@@ -1541,6 +1565,7 @@ class StubAtlasService:
                     return HealthDependency(
                         status="ready",
                         detail=f"{endpoint} (http transport enabled)",
+                        mode="live_http",
                     )
                 return HealthDependency(
                     status="degraded",
@@ -1548,30 +1573,43 @@ class StubAtlasService:
                         f"{endpoint} (http transport failed"
                         f"{'; live SimSat required' if required else '; fixture fallback active'})"
                     ),
+                    mode="unreachable",
                 )
             transport_mode = "http transport enabled" if http_enabled else "fixture transport"
-            return HealthDependency(status="ready", detail=f"{endpoint} ({transport_mode})")
+            return HealthDependency(
+                status="ready",
+                detail=f"{endpoint} ({transport_mode})",
+                mode="live_http" if http_enabled else "fixture_reference",
+            )
         if required:
             return HealthDependency(
                 status="degraded",
                 detail=f"{missing_detail}; live SimSat required",
+                mode="not_configured",
             )
-        return HealthDependency(status="not_configured", detail=missing_detail)
+        return HealthDependency(
+            status="not_configured",
+            detail=missing_detail,
+            mode="not_configured",
+        )
 
     def _mapbox_dependency_state(self) -> HealthDependency:
         if not self.settings.mapbox_token_present:
             return HealthDependency(
                 status="not_configured",
                 detail="token missing; inspection context disabled",
+                mode="not_configured",
             )
         if self.settings.mapbox_context_enabled:
             return HealthDependency(
                 status="ready",
                 detail="token present; inspection context enabled",
+                mode="live_http",
             )
         return HealthDependency(
             status="ready",
             detail="token present; inspection context disabled by config",
+            mode="not_configured",
         )
 
     def _model_backend_dependency(self) -> HealthDependency:
@@ -1579,17 +1617,20 @@ class StubAtlasService:
             return HealthDependency(
                 status="ready",
                 detail=f"{self.settings.model_version} (fixture backend)",
+                mode="fixture_reference",
             )
         if not self.settings.model_endpoint:
             return HealthDependency(
                 status="not_configured",
                 detail="model endpoint not configured yet",
+                mode="not_configured",
             )
         provider = resolve_http_candidate_provider(self.settings.model_provider)
         if provider is None:
             return HealthDependency(
                 status="degraded",
                 detail=f"{self.settings.model_provider} unsupported; fixture backend active",
+                mode="not_configured",
             )
         return _http_dependency_state(
             endpoint=self.settings.model_endpoint,
@@ -1605,17 +1646,20 @@ class StubAtlasService:
             return HealthDependency(
                 status="ready",
                 detail=f"{self.settings.agent_model_version} (fixture planner)",
+                mode="fixture_reference",
             )
         if not self.settings.agent_endpoint:
             return HealthDependency(
                 status="not_configured",
                 detail="agent planner endpoint not configured yet",
+                mode="not_configured",
             )
         provider = resolve_http_agent_planner_provider(self.settings.agent_provider)
         if provider is None:
             return HealthDependency(
                 status="degraded",
                 detail=f"{self.settings.agent_provider} unsupported; fixture planner active",
+                mode="not_configured",
             )
         return _http_dependency_state(
             endpoint=self.settings.agent_endpoint,
@@ -1637,13 +1681,15 @@ class StubAtlasService:
                         f"{self.settings.sam3_model_version} real HTTP segmentation "
                         "is required, but SAM3_HTTP_ENABLED is false"
                     ),
+                    mode="not_configured",
                 )
             return HealthDependency(
-                status="ready",
+                status="not_configured",
                 detail=(
                     f"{self.settings.sam3_model_version} "
-                    "(reference-only fixture; live selected points are not mask-scored)"
+                    "(offline; SAM is outside the judge runtime path)"
                 ),
+                mode="not_configured",
             )
         if not self.settings.sam3_endpoint:
             return HealthDependency(
@@ -1654,6 +1700,7 @@ class StubAtlasService:
                     if self.settings.sam3_required
                     else "SAM3 endpoint not configured yet"
                 ),
+                mode="not_configured",
             )
         return _http_dependency_state(
             endpoint=self.settings.sam3_endpoint,
@@ -1667,22 +1714,25 @@ class StubAtlasService:
     def _analyst_backend_dependency(self) -> HealthDependency:
         if not self.settings.analyst_http_enabled:
             return HealthDependency(
-                status="ready",
+                status="not_configured",
                 detail=(
                     f"{self._analyst_model_detail()} "
-                    "(reference-only fixture; live selected points require HTTP endpoint)"
+                    "(not configured; no visual brief is claimed)"
                 ),
+                mode="not_configured",
             )
         if not self.settings.analyst_endpoint:
             return HealthDependency(
                 status="not_configured",
                 detail="Liquid analyst endpoint not configured yet",
+                mode="not_configured",
             )
         provider = resolve_http_candidate_provider(self.settings.analyst_provider)
         if provider is None:
             return HealthDependency(
                 status="degraded",
                 detail=f"{self.settings.analyst_provider} unsupported; fixture analyst active",
+                mode="not_configured",
             )
         return _http_dependency_state(
             endpoint=self.settings.analyst_endpoint,
@@ -3128,8 +3178,7 @@ class StubAtlasService:
         if "degraded" in {
             health.simsat_current.status,
             health.simsat_baseline.status,
-            health.model_backend.status,
-            health.sam3_backend.status,
+            health.agent_backend.status,
             health.analyst_backend.status,
         }:
             return AtlasAgentTrust(
