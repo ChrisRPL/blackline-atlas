@@ -1,0 +1,16 @@
+{
+  "pack_version": "sam3-eval-v1",
+  "source_dataset": "/Users/krzysztof/blackline-atlas/training/replay_pack/non_demo_eval.jsonl",
+  "capture_manifest": null,
+  "case_count": 22,
+  "action_counts": {
+    "discard": 10,
+    "defer": 0,
+    "downlink_now": 12
+  },
+  "image_counts": {
+    "current": 0,
+    "baseline": 0,
+    "pairs": 0
+  }
+}
