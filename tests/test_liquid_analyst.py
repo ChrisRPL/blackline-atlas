@@ -289,6 +289,29 @@ def test_liquid_analyst_payload_is_schema_first_not_input_dump() -> None:
     ]
 
 
+def test_liquid_analyst_payload_accepts_contact_sheet_as_context_only() -> None:
+    payload = _build_payload(
+        asset=_asset(),
+        current=_current_frame(),
+        baseline=_baseline_frame(),
+        evidence=None,
+        model_version="LiquidAI/LFM2.5-VL-450M",
+        contact_sheet_image_ref="var/contact_sheets/demo_port_01/contact.png",
+    )
+
+    user_text = next(
+        item.text for item in payload.inputs if item.type == "input_text" and item.role == "user"
+    )
+
+    assert [item.role for item in payload.inputs if item.type == "input_image"] == [
+        "baseline",
+        "current",
+        "contact_sheet",
+    ]
+    assert "use it only for orientation" in user_text
+    assert "the evidence image pair" in user_text
+
+
 def test_liquid_analyst_payload_carries_guarded_adapter_ref() -> None:
     payload = _build_payload(
         asset=_asset(),

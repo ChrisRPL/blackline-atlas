@@ -138,6 +138,7 @@ class AtlasAgentQueryResponse(BaseModel):
     leads: list[Lead] = Field(default_factory=list)
     observations: list[AtlasAgentToolObservation] = Field(default_factory=list)
     compare: AtlasAgentCompare | None = None
+    satellite_evidence: SatelliteEvidenceBundle | None = None
     analyst_report: LiquidAnalystReport | None = None
     planner: AtlasAgentPlannerTelemetry
     trust: AtlasAgentTrust

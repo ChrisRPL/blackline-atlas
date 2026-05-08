@@ -29,6 +29,7 @@ const state = {
   selectedAnalyst: null,
   selectedSiteLoading: false,
   transcriptSeeded: false,
+  autoSelectedLeadId: null,
   map: null,
   mapMarkers: [],
   mapReady: false,
@@ -82,6 +83,12 @@ const dom = {
   liquidAnalystModel: document.querySelector("#liquid-analyst-model"),
   liquidAnalystAction: document.querySelector("#liquid-analyst-action"),
   liquidAnalystConfidence: document.querySelector("#liquid-analyst-confidence"),
+  contactSheetCard: document.querySelector("#contact-sheet-card"),
+  contactSheetTitle: document.querySelector("#contact-sheet-title"),
+  contactSheetNote: document.querySelector("#contact-sheet-note"),
+  contactSheetFrame: document.querySelector("#contact-sheet-frame"),
+  contactSheetImage: document.querySelector("#contact-sheet-image"),
+  contactSheetCaption: document.querySelector("#contact-sheet-caption"),
   currentTitle: document.querySelector("#current-title"),
   currentNote: document.querySelector("#current-note"),
   currentStatus: document.querySelector("#current-status"),
@@ -113,6 +120,14 @@ const missionStepOrder = ["parse", "fetch", "focus", "evidence", "summarize"];
 
 function compactLabel(value, fallback = "none") {
   return value === null || value === undefined || value === "" ? fallback : value;
+}
+
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
 }
 
 function humanizeSlug(value) {
@@ -289,6 +304,16 @@ function setEvidenceFrame(frameNode, imageNode, captionNode, imageRef, caption) 
 function clearEvidenceFrames() {
   setEvidenceFrame(dom.currentFrame, dom.currentImage, dom.currentImageCaption, null, "");
   setEvidenceFrame(dom.baselineFrame, dom.baselineImage, dom.baselineImageCaption, null, "");
+  setEvidenceFrame(
+    dom.contactSheetFrame,
+    dom.contactSheetImage,
+    dom.contactSheetCaption,
+    null,
+    "",
+  );
+  if (dom.contactSheetCard) {
+    dom.contactSheetCard.hidden = true;
+  }
 }
 
 function formatTimestamp(value) {
@@ -524,6 +549,17 @@ function selectedAnalystReport() {
     return null;
   }
   return report;
+}
+
+function withheldAnalystReport(assetId) {
+  return {
+    asset_id: assetId,
+    status: "unavailable",
+    model_version: "LiquidAI/LFM2.5-VL",
+    visible_change_summary: "Visual brief withheld: Liquid returned no valid civilian site brief.",
+    recommended_action: "discard",
+    confidence: 0,
+  };
 }
 
 function compareUsableForVisualAnalysis(compare) {
@@ -1885,12 +1921,15 @@ async function loadSelectedVisualAnalysis(assetId, options = {}) {
       }
       renderDrawer();
     } else if (state.selectedAssetId === assetId) {
+      state.selectedAnalyst = withheldAnalystReport(assetId);
       setChannelNote("Liquid VLM visual brief withheld because model-readable images or a valid model report are unavailable.");
       renderDrawer();
     }
   } catch (error) {
     if (state.selectedAssetId === assetId) {
+      state.selectedAnalyst = withheldAnalystReport(assetId);
       setChannelNote("Liquid VLM site brief endpoint unavailable for this site.");
+      renderDrawer();
     }
   }
 }
@@ -2141,6 +2180,40 @@ function renderLiquidAnalystCard(report, selected, compare) {
   dom.liquidAnalystConfidence.textContent = `${Math.round(report.confidence * 100)}% confidence`;
 }
 
+function renderContactSheetCard(compare) {
+  if (
+    !dom.contactSheetCard
+    || !dom.contactSheetFrame
+    || !dom.contactSheetImage
+    || !dom.contactSheetCaption
+  ) {
+    return;
+  }
+  const imageRef = compare?.satellite_evidence?.contact_sheet_image_ref;
+  if (!imageRef) {
+    dom.contactSheetCard.hidden = true;
+    setEvidenceFrame(
+      dom.contactSheetFrame,
+      dom.contactSheetImage,
+      dom.contactSheetCaption,
+      null,
+      "",
+    );
+    return;
+  }
+  dom.contactSheetCard.hidden = false;
+  dom.contactSheetTitle.textContent = "Exact-coordinate context";
+  dom.contactSheetNote.textContent = compare.satellite_evidence.contact_sheet_summary
+    || "Orientation only / not evidence.";
+  setEvidenceFrame(
+    dom.contactSheetFrame,
+    dom.contactSheetImage,
+    dom.contactSheetCaption,
+    imageRef,
+    "3 km, 5 km, 8 km baseline/current context. Orientation only / not evidence.",
+  );
+}
+
 function renderMap() {
   const points = markerItems();
   const bounds = computeBounds(points);
@@ -2155,8 +2228,6 @@ function renderMap() {
   if (state.mapReady) {
     dom.mapMarkers.innerHTML = "";
     syncLiveMapMarkers();
-  } else if (state.map) {
-    dom.mapMarkers.innerHTML = "";
   } else {
     dom.mapMarkers.innerHTML = points
       .map((item) => {
@@ -2172,15 +2243,15 @@ function renderMap() {
           .join(" ");
         return `
           <button
-            class="${classes || "marker quiet"}"
+            class="${escapeHtml(classes || "marker quiet")}"
             type="button"
-            data-marker-id="${item.id}"
-            data-marker-kind="${item.kind}"
+            data-marker-id="${escapeHtml(item.id)}"
+            data-marker-kind="${escapeHtml(item.kind)}"
             style="left:${position.left};top:${position.top};"
-            aria-label="Focus ${item.label}"
+            aria-label="Focus ${escapeHtml(item.label)}"
           >
             <span class="marker-core"></span>
-            <span class="marker-label">${item.label}</span>
+            <span class="marker-label">${escapeHtml(item.label)}</span>
           </button>
         `;
       })
@@ -2286,6 +2357,7 @@ function renderDrawer() {
   }
 
   dom.siteName.textContent = selected.asset_name;
+  renderContactSheetCard(compare?.asset_id === selected.asset_id ? compare : null);
   renderLiquidAnalystCard(analystReport, selected, compare);
   dom.siteImpact.textContent = alert
     ? alert.severity
@@ -2618,6 +2690,13 @@ async function autoSelectLeadForAnalysis({ announce = false, force = false } = {
   renderDrawer();
   focusMapOnAsset(candidate.asset);
   setChannelNote(`Auto-inspecting newest satellite-review lead: ${candidate.lead.title}.`);
+  if (state.autoSelectedLeadId !== candidate.lead.lead_id) {
+    state.autoSelectedLeadId = candidate.lead.lead_id;
+    appendMessage(
+      "assistant",
+      `Auto-selected newest reviewable lead: ${candidate.lead.title}. Loading Sentinel evidence now.`,
+    );
+  }
   await loadSelectedSiteContext(candidate.asset.asset_id, candidate.lead.lead_id, { announce });
   return true;
 }

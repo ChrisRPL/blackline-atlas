@@ -13,7 +13,7 @@ class CandidateTextInput(BaseModel):
 
 class CandidateImageInput(BaseModel):
     type: Literal["input_image"]
-    role: Literal["current", "baseline", "overlay"]
+    role: Literal["current", "baseline", "overlay", "contact_sheet"]
     image_ref: str
 
 

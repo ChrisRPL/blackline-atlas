@@ -149,6 +149,7 @@ def resolve_live_lead_satellite_evidence(
                 asset=asset,
                 lead=lead,
                 ready=ready,
+                frame_client=frame_client,
                 attempts=attempts,
                 requested_timestamp=requested_timestamp,
                 baseline_timestamp=baseline_timestamp,
@@ -159,6 +160,7 @@ def resolve_live_lead_satellite_evidence(
             asset=asset,
             lead=lead,
             ready=best_ready,
+            frame_client=frame_client,
             attempts=attempts,
             requested_timestamp=requested_timestamp,
             baseline_timestamp=baseline_timestamp,
@@ -192,6 +194,7 @@ def _ready_bundle(
     asset: Asset,
     lead: Lead,
     ready: _ReadyEvidence,
+    frame_client: FrameClient,
     attempts: list[SatelliteEvidenceAttempt],
     requested_timestamp: str,
     baseline_timestamp: str,
@@ -203,6 +206,13 @@ def _ready_bundle(
     if _has_cloud_warning(ready.quality_warnings):
         reason = f"{reason} Best available pair selected after cloud-aware search."
 
+    contact_sheet_ref = _contact_sheet_for_exact_coordinate(
+        asset=asset,
+        lead=lead,
+        frame_client=frame_client,
+        requested_timestamp=requested_timestamp,
+        baseline_timestamp=baseline_timestamp,
+    )
     return SatelliteEvidenceBundle(
         asset_id=asset.asset_id,
         lead_id=lead.lead_id,
@@ -223,9 +233,128 @@ def _ready_bundle(
         baseline_timestamp=baseline_timestamp,
         current_frame=ready.current,
         baseline_frame=ready.baseline,
+        contact_sheet_image_ref=contact_sheet_ref,
+        contact_sheet_summary=(
+            "Exact-coordinate Sentinel orientation sheet: 3 km, 5 km, and 8 km rows; "
+            "baseline/current columns. Context only, not primary evidence."
+            if contact_sheet_ref
+            else None
+        ),
         attempts=attempts,
         quality_warnings=ready.quality_warnings,
     )
+
+
+def _contact_sheet_for_exact_coordinate(
+    *,
+    asset: Asset,
+    lead: Lead,
+    frame_client: FrameClient,
+    requested_timestamp: str,
+    baseline_timestamp: str,
+) -> str | None:
+    pairs: list[tuple[float, FrameEnvelope, FrameEnvelope]] = []
+    for size_km in (3.0, 5.0, 8.0):
+        request = FrameRequest(
+            asset_id=asset.asset_id,
+            scenario_id=f"live_{lead.lead_id}_contact_{size_km:g}km",
+            latitude=lead.latitude,
+            longitude=lead.longitude,
+            requested_timestamp=requested_timestamp,
+            baseline_timestamp=baseline_timestamp,
+            size_km=size_km,
+            window_seconds=_LIVE_MEDIUM_WINDOW_SECONDS,
+        )
+        current, _ = _resolve_coordinate_current_frame(
+            frame_client=frame_client,
+            request=request,
+        )
+        if current is not None and _low_visual_information_status(current) is not None:
+            current = None
+        if current is None:
+            continue
+        baseline, _ = _resolve_baseline_frame(frame_client=frame_client, request=request)
+        if baseline is not None and _low_visual_information_status(baseline) is not None:
+            baseline = None
+        if baseline is None:
+            continue
+        pairs.append((size_km, baseline, current))
+    if not pairs:
+        return None
+    return _render_contact_sheet(asset_id=asset.asset_id, lead_id=lead.lead_id, pairs=pairs[:3])
+
+
+def _render_contact_sheet(
+    *,
+    asset_id: str,
+    lead_id: str,
+    pairs: list[tuple[float, FrameEnvelope, FrameEnvelope]],
+) -> str | None:
+    try:
+        from PIL import Image, ImageDraw, ImageFont
+    except ImportError:
+        return None
+
+    cell_width = 288
+    cell_height = 288
+    header_height = 30
+    label_width = 58
+    output_dir = Path("var/contact_sheets") / asset_id
+    output_dir.mkdir(parents=True, exist_ok=True)
+    output_path = output_dir / f"{lead_id}_exact_coordinate_contact.png"
+
+    rows: list[tuple[float, Image.Image, Image.Image]] = []
+    for size_km, baseline, current in pairs:
+        baseline_image = _open_contact_sheet_image(
+            baseline.frame.image_ref,
+            cell_width,
+            cell_height,
+        )
+        current_image = _open_contact_sheet_image(current.frame.image_ref, cell_width, cell_height)
+        if baseline_image is None or current_image is None:
+            continue
+        rows.append((size_km, baseline_image, current_image))
+    if not rows:
+        return None
+
+    sheet = Image.new(
+        "RGB",
+        (label_width + cell_width * 2, header_height + cell_height * len(rows)),
+        (18, 22, 24),
+    )
+    draw = ImageDraw.Draw(sheet)
+    font = ImageFont.load_default()
+    draw.text((label_width + 8, 9), "baseline", fill=(230, 236, 232), font=font)
+    draw.text((label_width + cell_width + 8, 9), "current", fill=(230, 236, 232), font=font)
+    for row_index, (size_km, baseline_image, current_image) in enumerate(rows):
+        top = header_height + row_index * cell_height
+        draw.text((8, top + 10), f"{size_km:g} km", fill=(230, 236, 232), font=font)
+        sheet.paste(baseline_image, (label_width, top))
+        sheet.paste(current_image, (label_width + cell_width, top))
+    try:
+        sheet.save(output_path)
+    except OSError:
+        return None
+    return str(output_path)
+
+
+def _open_contact_sheet_image(
+    image_ref: str | None,
+    width: int,
+    height: int,
+):
+    if not image_ref or image_ref.startswith(("http://", "https://", "data:")):
+        return None
+    path = Path(image_ref)
+    if not path.exists() or not path.is_file():
+        return None
+    try:
+        from PIL import Image, ImageOps
+
+        with Image.open(path) as image:
+            return ImageOps.fit(image.convert("RGB"), (width, height))
+    except (OSError, ValueError):
+        return None
 
 
 def _ready_usability(ready: _ReadyEvidence) -> SatelliteEvidenceUsability:

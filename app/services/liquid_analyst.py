@@ -34,6 +34,7 @@ class LiquidAnalystBackend(Protocol):
         alert: Alert | None,
         model_version: str,
         adapter_ref: str | None = None,
+        contact_sheet_image_ref: str | None = None,
     ) -> LiquidAnalystReport: ...
 
 
@@ -50,8 +51,10 @@ class FixtureLiquidAnalystBackend:
         alert: Alert | None,
         model_version: str,
         adapter_ref: str | None = None,
+        contact_sheet_image_ref: str | None = None,
     ) -> LiquidAnalystReport:
         _ = adapter_ref
+        _ = contact_sheet_image_ref
         tags = list(evidence.visual_evidence_tags if evidence else [])
         action = alert.action if alert else (evidence.triage_action if evidence else "discard")
         confidence = alert.confidence if alert else _evidence_confidence(evidence)
@@ -118,6 +121,7 @@ class HttpLiquidAnalystBackend:
         alert: Alert | None,
         model_version: str,
         adapter_ref: str | None = None,
+        contact_sheet_image_ref: str | None = None,
     ) -> LiquidAnalystReport:
         fallback = _unavailable_report(
             asset=asset,
@@ -135,16 +139,20 @@ class HttpLiquidAnalystBackend:
             evidence=evidence,
             model_version=model_version,
             adapter_ref=adapter_ref,
+            contact_sheet_image_ref=contact_sheet_image_ref,
         )
+        fallback_json = fallback.model_dump_json()
         result = self.gateway.invoke(
             endpoint=self.endpoint,
             provider=self.provider,
             payload=payload,
             api_key=self.api_key,
-            fallback=fallback.model_dump_json(),
+            fallback=fallback_json,
             request_kind="liquid_analyst",
             frame_ids=(current.frame.frame_id, baseline.frame.frame_id),
         )
+        if result.output_text == fallback_json:
+            return fallback
         parsed = parse_liquid_analyst_report(
             result.output_text,
             asset=asset,
@@ -177,6 +185,7 @@ class LiquidAnalystService:
         baseline: FrameEnvelope,
         evidence: Sam3EvidenceReport | None,
         alert: Alert | None,
+        contact_sheet_image_ref: str | None = None,
     ) -> LiquidAnalystReport:
         return self.backend.analyze(
             asset=asset,
@@ -186,6 +195,7 @@ class LiquidAnalystService:
             alert=alert,
             model_version=self.model_version,
             adapter_ref=self.adapter_ref,
+            contact_sheet_image_ref=contact_sheet_image_ref,
         )
 
 
@@ -370,13 +380,15 @@ def _build_payload(
     evidence: Sam3EvidenceReport | None,
     model_version: str,
     adapter_ref: str | None = None,
+    contact_sheet_image_ref: str | None = None,
 ) -> CandidateRequestPayload:
     system = (
         "You are a civilian satellite site-brief analyst. Compare baseline then current. "
         "Use the source report as context for what to inspect, not proof. "
         "If adapter_ref is present, use it only as tuned behavior; obey this schema. "
         "Write a useful visual description even when no visual confirmation is available: "
-        "site context, visible changes, and limits. Keep triage secondary. "
+        "visible scene, likely visual change, limitations, and source-to-visual relationship. "
+        "Keep triage secondary. "
         "Never mention casualties, fatalities, injuries, people killed, or other source-only "
         "human impact as visual evidence; those are source facts, not satellite-visible facts. "
         "No tactical targets, troops, weapons, bases, convoys, or strike support. "
@@ -401,6 +413,14 @@ def _build_payload(
                 type="input_image",
                 role="current",
                 image_ref=current.frame.image_ref,
+            )
+        )
+    if contact_sheet_image_ref:
+        inputs.append(
+            CandidateImageInput(
+                type="input_image",
+                role="contact_sheet",
+                image_ref=contact_sheet_image_ref,
             )
         )
     return CandidateRequestPayload(
@@ -448,6 +468,9 @@ def _analyst_user_prompt(
         [
             "Task: produce a source-led visual site brief, not an alert verdict.",
             "Compare images in this order: baseline first, current second.",
+            "If a contact_sheet image is attached, use it only for orientation across 3 km, "
+            "5 km, and 8 km exact-coordinate context. Keep the best baseline/current pair as "
+            "the evidence image pair.",
             f"Site: {asset.asset_name}",
             f"Region: {asset.region}",
             f"Civilian infrastructure type: {asset.asset_type}",
@@ -463,6 +486,8 @@ def _analyst_user_prompt(
             "The summary must name what is visibly present in the image pair and what cannot be "
             "confirmed. Do not answer only 'no visual confirmation' or 'no change' unless you "
             "also describe the visible scene and limits.",
+            "Answer these points inside the JSON prose: visible scene, likely visual change, "
+            "limitations, and relationship between the source report and the visible imagery.",
             "Return exactly this JSON shape:",
             "{",
             '  "visible_change_summary": "one concise site brief sentence",',

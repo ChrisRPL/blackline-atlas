@@ -1,28 +1,41 @@
 # Blackline Atlas
 
-**Source-led conflict disruption triage with satellite evidence.**
+**Source-led satellite triage for civilian disruption.**
 
-Blackline Atlas turns live public conflict leads into an operator workflow:
-find the place, focus the globe, retrieve current-versus-baseline satellite
-imagery, run context-prompted SAM3 segmentation, and ask a guarded Liquid VLM
-analyst to explain what the imagery can and cannot support.
+Blackline Atlas turns live public conflict/disruption reports into a narrow
+operator workflow: GDELT lead, selected coordinate, Sentinel current/baseline
+evidence, Liquid VLM visual site brief, and deterministic civilian guardrails.
 
 Built for the Liquid AI x DPhi Space hackathon.
 
 ## Judge Path
 
-1. Start the local services listed in [Runtime Services](#runtime-services).
+1. Start the local services in [Runtime Services](#runtime-services).
 2. Open `http://127.0.0.1:8000/ui`.
 3. Click `Refresh live leads`, or ask `What happened recently in Iran?`.
-4. Select a live marker and request current versus baseline evidence.
-5. Review the source lead, imagery pair, SAM3 evidence, Liquid analyst note,
-   decision, and metrics in the right tray.
+4. The UI auto-selects the newest satellite-reviewable source lead.
+5. Review the source lead, Sentinel pair, optional exact-coordinate contact
+   sheet, Liquid visual brief, decision, and metrics.
 
-The important claim: **the source/API lead is the truth input, not the VLM**.
-The planner uses lead context to choose SAM3 prompts. SAM3 segments those
-requested concepts on the selected imagery. The Liquid VLM receives the source
-context, image pair, and SAM3 report, then writes a civilian-scope analysis.
-Alert authority remains source-led and guardrail-scored.
+The important claim: **the source lead gives event context; the VLM only writes
+a guarded visual brief over imagery.** Casualty/source facts are not visual
+facts. Mapbox is orientation context only. SAM/SAM3 is not in the judge runtime
+path because low-resolution Sentinel masks are not defensible enough for the
+demo claim.
+
+## Submission Snapshot
+
+| Field | Answer |
+|---|---|
+| One-line pitch | Source-led satellite triage that turns live conflict reports into Sentinel-grounded Liquid VLM site briefs. |
+| Problem | Civilian disruption reports are noisy, fast-moving, and hard to verify visually; operators need a safe way to connect public source leads with satellite-visible evidence. |
+| Solution | Fetch live GDELT leads, show them on a globe, auto-select a reviewable source point, resolve SimSat/Sentinel current and baseline imagery, run a Liquid VLM visual brief with source context, and keep final triage under deterministic civilian guardrails. |
+| Why space-based compute matters | The workflow depends on low-latency satellite retrieval and local/edge analysis near the imagery source, reducing movement of raw imagery and enabling faster disaster/conflict monitoring. |
+| Fine-tuned model | [`ChrisRPL/blackline-atlas-lfm25-vl-sft-hf-corpus-full-v1b-adapter`](https://huggingface.co/ChrisRPL/blackline-atlas-lfm25-vl-sft-hf-corpus-full-v1b-adapter) |
+| Dataset | [`ChrisRPL/blackline-atlas-training-corpus-v1`](https://huggingface.co/datasets/ChrisRPL/blackline-atlas-training-corpus-v1) |
+| Training job | [`69f66f889d85bec4d76f0be0`](https://huggingface.co/jobs/ChrisRPL/69f66f889d85bec4d76f0be0) |
+| DPhi endpoints | `/data/image/sentinel`, `/data/current/image/sentinel` |
+| Hardest part | Being honest under low-resolution/cloudy Sentinel imagery: rejecting no-data tiles, avoiding source-only claims, removing unreliable SAM masks from the judge path, and withholding invalid VLM output. |
 
 ## Screenshots
 
@@ -38,11 +51,10 @@ Alert authority remains source-led and guardrail-scored.
 | UI | Same-origin WebGL globe, live markers, chat, evidence tray |
 | Live leads | GDELT Cloud first, public GDELT fallback, file-backed cache |
 | Imagery | SimSat/Sentinel selected-point current and 3-year baseline lookup |
-| SAM3 | Required local HTTP bridge for live selected-site masks |
+| Contact sheet | Exact-coordinate `3 km`, `5 km`, `8 km` orientation sheet when images resolve |
 | Liquid planner | Local OpenAI-compatible Liquid LLM planner endpoint |
 | Liquid VLM | Local bridge supports `LiquidAI/LFM2.5-VL-450M` plus PEFT adapter |
-| Latest adapter | `ChrisRPL/blackline-atlas-lfm25-vl-sft-hf-corpus-full-v1b-adapter` |
-| Runtime authority | Source-led SAM3 + Liquid analyst, guarded by deterministic rules |
+| Runtime authority | Source-led evidence, Liquid visual brief, deterministic guardrails |
 
 ## Model Evidence
 
@@ -56,15 +68,12 @@ Primary model:
 Training completed on `30,858` train rows and `3,421` eval rows. Eval loss
 improved from `3.0021` to `0.3273`. On the corpus-native 22-case SimSat gold
 eval, the adapter produced `22 / 22` valid JSON, `19 / 22` valid analyst-schema
-reports, and `9 / 22` action matches. That is useful for guarded analyst
-narration, but not strong enough for autonomous alert decisions.
+reports, and `9 / 22` action matches. That supports guarded analyst narration,
+not autonomous alert authority.
 
-SAM3 status:
-
-- Frozen fixture eval pack: `training/replay_pack/sam3_eval_pack.jsonl`
-- Fixture inference/eval: `22 / 22` pass, `0` false positives
-- Real-image eval dataset: [`ChrisRPL/blackline-atlas-sam3-real-eval-v2`](https://huggingface.co/datasets/ChrisRPL/blackline-atlas-sam3-real-eval-v2)
-- Decision: use real SAM3 as selected-site evidence, not as final scorer
+SAM/SAM3 status: kept as an optional future/high-resolution eval lane. The
+judge path suppresses segmentation on low-resolution Sentinel pairs because
+masks are too unstable to promote as evidence.
 
 ## Architecture
 
@@ -75,9 +84,8 @@ operator chat / marker click
   -> GDELT-backed live lead registry
   -> globe camera intent + selected lead card
   -> SimSat/Sentinel current-baseline retrieval
-  -> source-context-derived SAM3 prompts
-  -> SAM3 segmentation report
-  -> LiquidAI/LFM2.5-VL paired-image analyst summary
+  -> optional exact-coordinate contact sheet for orientation
+  -> LiquidAI/LFM2.5-VL paired-image visual site brief
   -> schema repair for recoverable low-confidence analyst JSON
   -> deterministic civilian-disruption guardrails
   -> alert card + evidence tray + metrics
@@ -107,7 +115,7 @@ Open:
 
 The app is intentionally honest about external services. If a configured local
 service is unreachable, `/health` reports `degraded` and the UI should not claim
-live analysis.
+live visual analysis.
 
 ### SimSat / Sentinel
 
@@ -129,28 +137,13 @@ SIMSAT_CURRENT_HTTP_ENABLED=true
 SIMSAT_BASELINE_HTTP_ENABLED=true
 ```
 
-Selected-point AOI attempts use `3km -> 5km -> 1.5km`, then nearby `3km`, then
-regional context. Mapbox satellite tiles are orientation context only; they are
-not accepted as evidence-grade before/after imagery.
-
-### SAM3 Bridge
-
-```bash
-uvicorn app.sam3_bridge:app --host 127.0.0.1 --port 8787
-```
-
-Required app env:
-
-```bash
-SAM3_ENDPOINT=http://127.0.0.1:8787/sam3
-SAM3_HTTP_ENABLED=true
-SAM3_REQUIRED=true
-```
+Selected-point AOI attempts use exact, nearby, then context windows. Mapbox
+satellite tiles are orientation context only; they are not accepted as evidence
+grade before/after imagery.
 
 ### Liquid Planner
 
-Use a local OpenAI-compatible Liquid LLM endpoint, for example llama.cpp or an
-equivalent local server:
+Use a local OpenAI-compatible Liquid LLM endpoint:
 
 ```bash
 AGENT_MODEL_VERSION=LiquidAI/LFM2.5-1.2B-Instruct-GGUF
@@ -181,9 +174,9 @@ ANALYST_PROVIDER=openai_chat_completions_http
 
 ## Live Lead Refresh
 
-The UI `Refresh live leads` button calls `POST /leads/refresh` and uses
-GDELT Cloud when `GDELT_API_KEY` or `GDELT_CLOUD_API_KEY` is configured. Public
-GDELT Project export files are the fallback.
+The UI `Refresh live leads` button calls `POST /leads/refresh` and uses GDELT
+Cloud when `GDELT_API_KEY` or `GDELT_CLOUD_API_KEY` is configured. Public GDELT
+Project export files are the fallback.
 
 Manual cache refresh:
 
@@ -202,23 +195,46 @@ consume the refreshed cache. `var/` is ignored.
 
 ## Verification
 
-Recent local gate:
+Targeted gate:
 
 ```bash
-python3 -m ruff check app tests training/scripts/serve_liquid_vl_openai.py training/scripts/eval_structured_outputs.py
-python3 -m pytest -q
+python3 -m pytest tests/test_stub_service.py tests/test_agent_api.py tests/test_liquid_analyst.py tests/test_ui_shell.py tests/test_agent_planner.py -q
 ```
 
-Result: `409 passed`; ruff clean.
+Full local gate:
+
+```bash
+python3 -m ruff check app tests ui
+python3 -m compileall -q app
+node --check ui/shell.js
+python3 -m pytest -q
+git diff --check
+```
+
+## Demo Script
+
+90-120 seconds:
+
+1. Open `/ui` and show health, live leads, inspectable sites, and metrics.
+2. Click `Refresh live leads` or ask `What happened around Ukraine?`.
+3. Let Atlas auto-select the newest reviewable lead.
+4. Show the source card: this is the event context, not visual proof.
+5. Show current and baseline Sentinel frames.
+6. If present, show the exact-coordinate contact sheet as orientation only.
+7. Read the Liquid VLM brief: visible scene, likely visual change, limits, and
+   source-to-visual relationship.
+8. Close with the boundary: civilian resilience and humanitarian transparency
+   only; no tactical targeting, strike support, or real-time surveillance
+   claims.
 
 ## Repo Layout
 
 ```text
 app/                 FastAPI routes, schemas, services, agent/evidence logic
-docs/                specs, judge brief, SAM3 notes, dataset research
-training/replay_pack frozen eval rows, SAM3 eval pack, model/data notes
+docs/                specs, judge brief, SAM notes, dataset research
+training/replay_pack frozen eval rows, model/data notes
 training/scripts     corpus builders, eval scripts, HF Jobs helpers
-tests/               API, model, SAM3, UI, and training regressions
+tests/               API, model, UI, and training regressions
 ui/                  operational shell assets and screenshots
 ```
 
@@ -229,7 +245,6 @@ Bulk local artifacts are ignored: `work/`, `var/`, `training/eval_runs/`,
 
 - [Judge brief](docs/JUDGE_BRIEF.md)
 - [Technical specs](docs/SPECS.md)
-- [SAM3 evidence lane](docs/SAM3_EVIDENCE.md)
 - [Dataset research notes](docs/DATASET_RESEARCH.md)
 - [Training blueprint](docs/TRAINING_BLUEPRINT.md)
 - [HF Jobs plan](docs/HF_JOBS.md)

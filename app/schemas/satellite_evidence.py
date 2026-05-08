@@ -54,5 +54,7 @@ class SatelliteEvidenceBundle(BaseModel):
     baseline_timestamp: str | None = None
     current_frame: FrameEnvelope | None = None
     baseline_frame: FrameEnvelope | None = None
+    contact_sheet_image_ref: str | None = None
+    contact_sheet_summary: str | None = None
     attempts: list[SatelliteEvidenceAttempt] = Field(default_factory=list)
     quality_warnings: list[str] = Field(default_factory=list)

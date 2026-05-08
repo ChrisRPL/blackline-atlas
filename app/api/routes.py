@@ -24,6 +24,7 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 FRAME_IMAGE_ROOTS = (
     REPO_ROOT / ".cache" / "frames",
     REPO_ROOT / "var" / "simsat_frames",
+    REPO_ROOT / "var" / "contact_sheets",
     REPO_ROOT / "var" / "mapbox_context",
     REPO_ROOT / "ui" / "assets",
 )

@@ -41,6 +41,7 @@ from app.schemas.metrics import Metrics
 from app.schemas.model_status import ModelStatus
 from app.schemas.replay import ReplaySnapshot, ReplayStartRequest, ReplayState
 from app.schemas.sam3_evidence import Sam3EvidenceReport, Sam3SourceContext
+from app.schemas.satellite_evidence import SatelliteEvidenceBundle
 from app.services.acled_lead_source import DEFAULT_ACLED_COUNTRIES, parse_acled_csv_list
 from app.services.agent_planner import (
     AgentPlannerDecision,
@@ -407,6 +408,10 @@ class StubAtlasService:
         self._live_compare_cache: dict[
             tuple[str, str, str, str],
             AtlasAgentCompare | None,
+        ] = {}
+        self._live_evidence_cache: dict[
+            tuple[str, str, str, str],
+            SatelliteEvidenceBundle,
         ] = {}
         self.scenario_evaluator = ScenarioEvaluator(
             comparator=self.baseline_comparator,
@@ -1315,6 +1320,15 @@ class StubAtlasService:
         if compare is None:
             if lead is not None:
                 runtime_lead = self._lead_with_runtime_link(lead)
+                failed_evidence = self._live_lead_satellite_evidence(lead)
+                failed_detail = ""
+                if failed_evidence is not None and failed_evidence.attempts:
+                    last_attempt = failed_evidence.attempts[-1]
+                    failed_detail = (
+                        f" Last SimSat attempt: {last_attempt.scope}, "
+                        f"{last_attempt.size_km:g} km, current={last_attempt.current_status}, "
+                        f"baseline={last_attempt.baseline_status}."
+                    )
                 return AtlasAgentQueryResponse(
                     status="no_result",
                     tool="site_compare",
@@ -1322,6 +1336,7 @@ class StubAtlasService:
                         f"{lead.title}: No dated Sentinel pair resolved; source lead remains "
                         "live but visual analysis was not run. Mapbox remains orientation-only "
                         "map context, not current/baseline evidence."
+                        f"{failed_detail}"
                     ),
                     resolved=resolved,
                     camera=self._camera_intent(
@@ -1334,6 +1349,7 @@ class StubAtlasService:
                     focus_asset_id=asset.asset_id,
                     focus_lead_id=lead.lead_id,
                     leads=[runtime_lead],
+                    satellite_evidence=failed_evidence,
                     observations=[
                         AtlasAgentToolObservation(
                             tool="site_compare",
@@ -1341,6 +1357,7 @@ class StubAtlasService:
                             summary=(
                                 "No dated SimSat/Sentinel current-baseline pair resolved for "
                                 "the selected source lead."
+                                f"{failed_detail}"
                             ),
                         )
                     ],
@@ -1416,6 +1433,7 @@ class StubAtlasService:
             focus_alert_id=alerts[0].alert_id if alerts else None,
             alerts=alerts,
             compare=compare,
+            satellite_evidence=compare.satellite_evidence,
             analyst_report=None,
             planner=planner,
             trust=trust,
@@ -1872,6 +1890,7 @@ class StubAtlasService:
             requested_timestamp=requested_timestamp,
             baseline_timestamp=baseline_timestamp,
         )
+        self._live_evidence_cache[cache_key] = bundle
         if bundle.current_frame is None or bundle.baseline_frame is None:
             self._live_compare_cache[cache_key] = None
             return None
@@ -1884,6 +1903,20 @@ class StubAtlasService:
         )
         self._live_compare_cache[cache_key] = compare
         return compare
+
+    def _live_lead_satellite_evidence(self, lead: Lead) -> SatelliteEvidenceBundle | None:
+        asset = self._asset_from_lead(lead)
+        requested_timestamp = self._lead_current_timestamp(lead)
+        baseline_timestamp = self._lead_baseline_timestamp(lead)
+        cache_key = (
+            asset.asset_id,
+            requested_timestamp,
+            baseline_timestamp,
+            self._frame_cache_namespace(),
+        )
+        if cache_key not in self._live_evidence_cache:
+            self._live_lead_compare(lead)
+        return self._live_evidence_cache.get(cache_key)
 
     def _lead_current_timestamp(self, lead: Lead) -> str:
         source_date = lead.source_date or datetime.now(tz=UTC).date()
@@ -2133,6 +2166,11 @@ class StubAtlasService:
             baseline=compare.baseline_frame,
             evidence=analyst_context,
             alert=alert,
+            contact_sheet_image_ref=(
+                compare.satellite_evidence.contact_sheet_image_ref
+                if compare.satellite_evidence is not None
+                else None
+            ),
         )
         report = self._source_safe_analyst_report(report)
         report = self._calibrated_analyst_report(
@@ -2245,29 +2283,33 @@ class StubAtlasService:
     ) -> LiquidAnalystReport:
         if (
             compare.satellite_evidence is None
-            or compare.satellite_evidence.usability != "cloud_limited"
+            or compare.satellite_evidence.usability == "direct_clear"
         ):
-            return report
-        if report.civilian_disruption_evidence:
             return report
 
         negative_evidence = list(dict.fromkeys([*report.negative_evidence, "low_visibility"]))
         model_summary = " ".join(report.visible_change_summary.split())
-        summary = (
-            f"Liquid VLM visual read: {model_summary} "
+        caveat = (
             f"Caveat: the {compare.satellite_evidence.size_km:g} km Sentinel pair is "
-            "cloud-limited, so treat this as a low-confidence site brief, not visual "
-            "confirmation of the source report."
+            f"{compare.satellite_evidence.usability.replace('_', '-')}, so treat this as a "
+            "low-confidence site brief, not visual confirmation of the source report."
         )
+        summary = f"Liquid VLM visual read: {model_summary} {caveat}"
+        action = report.recommended_action
+        if action == "downlink_now":
+            action = "defer" if report.civilian_disruption_evidence else "discard"
+        if not report.civilian_disruption_evidence:
+            action = "discard"
         return report.model_copy(
             update={
                 "visible_change_summary": summary,
                 "negative_evidence": negative_evidence,
-                "severity_hint": "none",
-                "recommended_action": "discard",
-                "confidence": min(report.confidence, 0.25),
+                "severity_hint": "none" if action == "discard" else "low",
+                "recommended_action": action,
+                "confidence": min(report.confidence, 0.25 if action == "discard" else 0.45),
                 "short_rationale": (
-                    "No reliable visual confirmation was available and clouds limit the image pair."
+                    "No direct-clear Sentinel pair was available; source facts remain separate "
+                    "from visual evidence."
                 ),
             }
         )
