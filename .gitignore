@@ -222,6 +222,7 @@ output/
 blackline-audit-ui.png
 recordings/
 submission-recordings/
+docs/HACKATHON_X_POST_DRAFT.md
 *.mov
 *.mp4
 *.webm

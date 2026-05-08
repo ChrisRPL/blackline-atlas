@@ -8,6 +8,13 @@ evidence, Liquid VLM visual site brief, and deterministic civilian guardrails.
 
 Built for the Liquid AI x DPhi Space hackathon.
 
+## What It Is
+
+Blackline Atlas is not a general chatbot or targeting system. It is a structured
+alert component for macro-scale civilian disruption triage. The product is
+optimized for one reliable demo path: a public source lead becomes a bounded
+satellite review, then the UI shows what the imagery can and cannot support.
+
 ## Judge Path
 
 1. Start the local services in [Runtime Services](#runtime-services).
@@ -22,6 +29,10 @@ a guarded visual brief over imagery.** Casualty/source facts are not visual
 facts. Mapbox is orientation context only. SAM/SAM3 is not in the judge runtime
 path because low-resolution Sentinel masks are not defensible enough for the
 demo claim.
+
+If SimSat, GDELT, or Liquid is unavailable, the app should say so and degrade
+cleanly. It should not present source-only reports, Mapbox context, or invalid
+model output as evidence.
 
 ## Submission Snapshot
 
@@ -55,6 +66,15 @@ demo claim.
 | Liquid planner | Local OpenAI-compatible Liquid LLM planner endpoint |
 | Liquid VLM | Local bridge supports `LiquidAI/LFM2.5-VL-450M` plus PEFT adapter |
 | Runtime authority | Source-led evidence, Liquid visual brief, deterministic guardrails |
+
+## Design Principles
+
+- Keep the workflow narrow: public lead, Sentinel pair, Liquid brief, guardrail.
+- Treat source reports as context, not visual proof.
+- Reject or caveat blank, cloudy, stale, and context-only imagery.
+- Withhold malformed, tactical, or unsupported model output.
+- Prefer machine-readable outputs at API boundaries.
+- Keep civilian resilience and humanitarian transparency as the product frame.
 
 ## Model Evidence
 
@@ -103,6 +123,10 @@ cp .env.example .env
 python3 -m pip install -e ".[dev]"
 make dev
 ```
+
+For a minimal local UI without live services, `make dev` starts the FastAPI app
+with fixture/fallback behavior. For the hackathon path, configure the runtime
+services below before judging or recording.
 
 Open:
 
@@ -172,6 +196,20 @@ ANALYST_HTTP_ENABLED=true
 ANALYST_PROVIDER=openai_chat_completions_http
 ```
 
+## Failure Behavior
+
+Expected fail-closed states:
+
+- No live lead source: keep existing markers or fixture state; show degraded
+  health.
+- No dated Sentinel pair: keep the source lead selected and show why visual
+  review did not run.
+- Context-only imagery: label it as orientation, not evidence.
+- Cloud-limited imagery: allow a cautious site brief, cap confidence, and avoid
+  visual confirmation claims.
+- Invalid Liquid output: show `visual brief withheld`.
+- Source-only casualty claims: strip or withhold them from the visual brief.
+
 ## Live Lead Refresh
 
 The UI `Refresh live leads` button calls `POST /leads/refresh` and uses GDELT
@@ -211,6 +249,15 @@ python3 -m pytest -q
 git diff --check
 ```
 
+Latest local gate before submission:
+
+- `python3 -m ruff check app tests ui`
+- `python3 -m compileall -q app`
+- `node --check ui/shell.js`
+- targeted pytest: `129 passed`
+- full pytest: `414 passed`
+- browser smoke on `/ui`
+
 ## Demo Script
 
 90-120 seconds:
@@ -241,10 +288,47 @@ ui/                  operational shell assets and screenshots
 Bulk local artifacts are ignored: `work/`, `var/`, `training/eval_runs/`,
 `training/corpus/`, local dataset folders, model weights, and scratch notes.
 
+## Contributing
+
+Good contributions improve demo stability, evidence honesty, or structured
+runtime contracts.
+
+Before opening a PR:
+
+```bash
+python3 -m ruff check app tests ui
+python3 -m compileall -q app
+node --check ui/shell.js
+python3 -m pytest -q
+git diff --check
+```
+
+Contribution rules:
+
+- Keep modules small and typed.
+- Add regression tests for behavior changes when practical.
+- Do not add broad tactical/military functionality.
+- Do not promote Mapbox/context imagery as evidence.
+- Do not reintroduce SAM/SAM3 into the judge runtime path unless imagery
+  resolution and eval metrics support the claim.
+- Keep local artifacts, recordings, caches, and downloaded datasets out of git.
+
+## Hugging Face Resources
+
+- Final adapter:
+  [`ChrisRPL/blackline-atlas-lfm25-vl-sft-hf-corpus-full-v1b-adapter`](https://huggingface.co/ChrisRPL/blackline-atlas-lfm25-vl-sft-hf-corpus-full-v1b-adapter)
+- Final corpus:
+  [`ChrisRPL/blackline-atlas-training-corpus-v1`](https://huggingface.co/datasets/ChrisRPL/blackline-atlas-training-corpus-v1)
+
+Older adapters are retained only for reproducibility and marked deprecated.
+Use the final adapter/corpus links above in submissions, READMEs, and demos.
+
 ## Deeper Docs
 
 - [Judge brief](docs/JUDGE_BRIEF.md)
 - [Technical specs](docs/SPECS.md)
+- [Demo recording scenario](docs/DEMO_RECORDING_SCENARIO.md)
+- [Demo teleprompter](docs/HACKATHON_DEMO_TELEPROMPTER.md)
 - [Dataset research notes](docs/DATASET_RESEARCH.md)
 - [Training blueprint](docs/TRAINING_BLUEPRINT.md)
 - [HF Jobs plan](docs/HF_JOBS.md)
