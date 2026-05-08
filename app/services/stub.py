@@ -8,7 +8,6 @@ from pathlib import Path
 from threading import Lock
 from typing import Literal, cast
 from urllib.error import HTTPError, URLError
-from urllib.parse import urlencode
 from urllib.request import Request, urlopen
 
 from app.core.config import Settings
@@ -28,7 +27,7 @@ from app.schemas.agent import (
 )
 from app.schemas.alert import Alert
 from app.schemas.asset import Asset
-from app.schemas.frame import FrameEnvelope, FrameRecord
+from app.schemas.frame import FrameEnvelope
 from app.schemas.health import (
     HealthConfig,
     HealthDebug,
@@ -42,7 +41,6 @@ from app.schemas.metrics import Metrics
 from app.schemas.model_status import ModelStatus
 from app.schemas.replay import ReplaySnapshot, ReplayStartRequest, ReplayState
 from app.schemas.sam3_evidence import Sam3EvidenceReport, Sam3SourceContext
-from app.schemas.satellite_evidence import SatelliteEvidenceAttempt, SatelliteEvidenceBundle
 from app.services.acled_lead_source import DEFAULT_ACLED_COUNTRIES, parse_acled_csv_list
 from app.services.agent_planner import (
     AgentPlannerDecision,
@@ -105,9 +103,6 @@ from app.services.sentinel_client import (
 from app.services.watchlist_loader import load_watchlist_assets
 
 _SIMSAT_LIVE_FALLBACK_WINDOW_SECONDS = 730 * 24 * 60 * 60
-_MAPBOX_CONTEXT_ZOOM = 18.0
-_MAPBOX_CONTEXT_SIZE = "1024x576@2x"
-_MAPBOX_CONTEXT_WIDTH = 1024
 _HTTP_DEPENDENCY_TIMEOUT_SECONDS = 0.25
 
 
@@ -131,12 +126,6 @@ def _http_dependency_state(
     except (OSError, TimeoutError, URLError):
         pass
     return HealthDependency(status="degraded", detail=degraded_detail)
-
-
-def _mapbox_context_size_km(latitude: float) -> float:
-    meters_per_pixel = 156543.03392 * max(math.cos(math.radians(latitude)), 0.05)
-    meters_per_pixel /= 2**_MAPBOX_CONTEXT_ZOOM
-    return round((meters_per_pixel * _MAPBOX_CONTEXT_WIDTH) / 1000, 2)
 
 
 def _query_is_scope_refusal(lowered: str) -> bool:
@@ -1896,119 +1885,6 @@ class StubAtlasService:
         self._live_compare_cache[cache_key] = compare
         return compare
 
-    def _mapbox_context_compare(
-        self,
-        *,
-        asset: Asset,
-        lead: Lead,
-        requested_timestamp: str,
-        baseline_timestamp: str,
-        attempts: list[SatelliteEvidenceAttempt] | None = None,
-    ) -> AtlasAgentCompare | None:
-        current = self._mapbox_context_frame(
-            asset=asset,
-            lead=lead,
-            captured_at=requested_timestamp,
-            variant="current",
-        )
-        baseline = self._mapbox_context_frame(
-            asset=asset,
-            lead=lead,
-            captured_at=baseline_timestamp,
-            variant="baseline",
-        )
-        if current is None or baseline is None:
-            return None
-        bundle = SatelliteEvidenceBundle(
-            asset_id=asset.asset_id,
-            lead_id=lead.lead_id,
-            status="ready",
-            scope="satellite_context_only",
-            usable_for_evidence=False,
-            usability="context_only",
-            quality_score=0.1,
-            quality_summary=(
-                "Mapbox imagery is static context only. It is not a dated Sentinel "
-                "before/after pair and is not model-scored."
-            ),
-            reason=(
-                "SimSat/Sentinel did not resolve a dated before/after pair, so Atlas loaded "
-                "server-side Mapbox satellite context for operator inspection only."
-            ),
-            target_latitude=lead.latitude,
-            target_longitude=lead.longitude,
-            resolved_latitude=lead.latitude,
-            resolved_longitude=lead.longitude,
-            offset_km=0.0,
-            size_km=_mapbox_context_size_km(lead.latitude),
-            requested_timestamp=requested_timestamp,
-            baseline_timestamp=baseline_timestamp,
-            current_frame=current,
-            baseline_frame=baseline,
-            attempts=attempts or [],
-            quality_warnings=["mapbox_context_not_time_aware", "no_dated_pair_resolved"],
-        )
-        return AtlasAgentCompare(
-            asset_id=asset.asset_id,
-            asset_name=asset.asset_name,
-            current_frame=current,
-            baseline_frame=baseline,
-            satellite_evidence=bundle,
-        )
-
-    def _mapbox_context_frame(
-        self,
-        *,
-        asset: Asset,
-        lead: Lead,
-        captured_at: str,
-        variant: Literal["current", "baseline"],
-    ) -> FrameEnvelope | None:
-        if not self.settings.mapbox_token or not self.settings.mapbox_context_enabled:
-            return None
-
-        output_path = (
-            Path("var")
-            / "mapbox_context"
-            / asset.asset_id
-            / (
-                f"{variant}_z{_MAPBOX_CONTEXT_ZOOM:.1f}_"
-                f"{lead.latitude:.5f}_{lead.longitude:.5f}.png"
-            )
-        )
-        if not output_path.exists() or output_path.stat().st_size == 0:
-            output_path.parent.mkdir(parents=True, exist_ok=True)
-            query = urlencode({"access_token": self.settings.mapbox_token})
-            url = (
-                "https://api.mapbox.com/styles/v1/mapbox/satellite-v9/static/"
-                f"{lead.longitude:.6f},{lead.latitude:.6f},{_MAPBOX_CONTEXT_ZOOM:.1f},0/"
-                f"{_MAPBOX_CONTEXT_SIZE}?{query}"
-            )
-            try:
-                with urlopen(url, timeout=4.0) as response:
-                    status = getattr(response, "status", response.getcode())
-                    if status != 200:
-                        return None
-                    body = response.read()
-            except (OSError, TimeoutError, URLError, ValueError):
-                return None
-            if not body:
-                return None
-            output_path.write_bytes(body)
-
-        return FrameEnvelope(
-            frame=FrameRecord(
-                frame_id=f"mapbox_{variant}_{asset.asset_id}",
-                asset_id=asset.asset_id,
-                captured_at=captured_at,
-                image_ref=str(output_path),
-                cloud_cover=None,
-                source=f"mapbox_static_satellite_context_z{_MAPBOX_CONTEXT_ZOOM:.1f}",
-            ),
-            accepted_for_alerting=False,
-            filter_reason="satellite_context_only",
-        )
-
     def _lead_current_timestamp(self, lead: Lead) -> str:
         source_date = lead.source_date or datetime.now(tz=UTC).date()
         current_date = max(source_date, datetime.now(tz=UTC).date())
@@ -2241,15 +2117,12 @@ class StubAtlasService:
             and self.liquid_analyst.backend.backend_id == "fixture"
         ):
             return None
+        if not self._compare_has_readable_visual_inputs(compare):
+            return None
         alert = alerts[0] if alerts else None
         source_lead = self._lead_for_asset_id(asset_id)
         source_context = source_context_for_lead(source_lead) if source_lead else None
-        evidence = self._sam3_report_for_compare(
-            asset=asset,
-            compare=compare,
-            alert=alert,
-            source_context=source_context,
-        )
+        analyst_context = self._source_context_for_analyst(compare, source_context)
         cache_key = self._analyst_cache_key(asset=asset, compare=compare)
         cached = self._analyst_report_cache.get(cache_key)
         if cached is not None:
@@ -2258,18 +2131,75 @@ class StubAtlasService:
             asset=asset,
             current=compare.current_frame,
             baseline=compare.baseline_frame,
-            evidence=evidence,
+            evidence=analyst_context,
             alert=alert,
         )
         report = self._source_safe_analyst_report(report)
         report = self._calibrated_analyst_report(
             report=report,
             compare=compare,
-            evidence=evidence,
             source_context=source_context,
         )
+        if not self._analyst_report_has_visual_content(report):
+            return None
         self._analyst_report_cache[cache_key] = report
         return report
+
+    def _analyst_report_has_visual_content(self, report: LiquidAnalystReport) -> bool:
+        text = f"{report.visible_change_summary} {report.short_rationale}".lower()
+        invalid_phrases = (
+            "did not return a valid civilian report",
+            "analyst output was unavailable",
+            "failed safety/schema validation",
+        )
+        return report.status == "ready" and not any(phrase in text for phrase in invalid_phrases)
+
+    def _source_context_for_analyst(
+        self,
+        compare: AtlasAgentCompare,
+        source_context: Sam3SourceContext | None,
+    ) -> Sam3EvidenceReport | None:
+        if source_context is None:
+            return None
+        analyst_source_context = source_context
+        if compare.satellite_evidence is not None:
+            evidence = compare.satellite_evidence
+            analyst_source_context = source_context.model_copy(
+                update={
+                    "rationale": " ".join(
+                        [
+                            source_context.rationale,
+                            (
+                                "Satellite pair selected for visual review: "
+                                f"{evidence.usability}, {evidence.scope}, "
+                                f"{evidence.size_km:g} km AOI, "
+                                f"{evidence.offset_km:g} km from source coordinate. "
+                                f"{evidence.quality_summary}"
+                            ),
+                        ]
+                    )
+                }
+            )
+        return Sam3EvidenceReport(
+            asset_id=compare.asset_id,
+            current_frame_id=compare.current_frame.frame.frame_id,
+            baseline_frame_id=compare.baseline_frame.frame.frame_id,
+            current_image_ref=compare.current_frame.frame.image_ref,
+            baseline_image_ref=compare.baseline_frame.frame.image_ref,
+            overlay_ref=None,
+            model_version=self.settings.sam3_model_version,
+            backend=self.sam3_evidence.backend.backend_id,
+            decision="unavailable",
+            source_context=analyst_source_context,
+            prompts=analyst_source_context.target_prompts,
+            masks=[],
+            visual_evidence_tags=[],
+            triage_action="discard",
+            summary=(
+                "Source context only. Segmentation is disabled in the judge lane until the "
+                "satellite pair has enough resolution for reliable masks."
+            ),
+        )
 
     def _source_safe_analyst_report(
         self,
@@ -2311,7 +2241,6 @@ class StubAtlasService:
         *,
         report: LiquidAnalystReport,
         compare: AtlasAgentCompare,
-        evidence: Sam3EvidenceReport,
         source_context: Sam3SourceContext | None,
     ) -> LiquidAnalystReport:
         if (
@@ -2319,7 +2248,7 @@ class StubAtlasService:
             or compare.satellite_evidence.usability != "cloud_limited"
         ):
             return report
-        if report.civilian_disruption_evidence or evidence.visual_evidence_tags:
+        if report.civilian_disruption_evidence:
             return report
 
         negative_evidence = list(dict.fromkeys([*report.negative_evidence, "low_visibility"]))
@@ -2338,7 +2267,7 @@ class StubAtlasService:
                 "recommended_action": "discard",
                 "confidence": min(report.confidence, 0.25),
                 "short_rationale": (
-                    "SAM3 returned no visual evidence tags and clouds limit the image pair."
+                    "No reliable visual confirmation was available and clouds limit the image pair."
                 ),
             }
         )
@@ -2397,6 +2326,22 @@ class StubAtlasService:
         if compare.satellite_evidence is None:
             return True
         return compare.satellite_evidence.usability in {"direct_clear", "cloud_limited"}
+
+    def _compare_has_readable_visual_inputs(self, compare: AtlasAgentCompare) -> bool:
+        return (
+            self._image_ref_readable_by_model(compare.current_frame.frame.image_ref)
+            and self._image_ref_readable_by_model(compare.baseline_frame.frame.image_ref)
+        )
+
+    def _image_ref_readable_by_model(self, image_ref: str | None) -> bool:
+        if not image_ref or image_ref.startswith("pending://"):
+            return False
+        if image_ref.startswith(("http://", "https://", "data:")):
+            return True
+        path = Path(image_ref)
+        if not path.is_absolute():
+            path = Path.cwd() / path
+        return path.is_file() and path.stat().st_size > 0
 
     def _live_model_evidence_backend_ready(self) -> bool:
         return self.sam3_evidence.backend.backend_id != "fixture"

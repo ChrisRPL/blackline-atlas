@@ -61,7 +61,7 @@ class AgentPlannerPromptBuilder:
                 "disruption, conflict, report, marker, or news.\n"
                 "If exactly one listed lead matches a user question about a specific city, "
                 "town, or point situation and that lead has linked_asset_id, use site_compare "
-                "with site_id equal to linked_asset_id so the app loads satellite/SAM3/VLM "
+                "with site_id equal to linked_asset_id so the app loads satellite/VLM "
                 "evidence. This overrides search_live_leads. Do not do this for broad country "
                 "or multi-lead questions.\n"
                 "Otherwise, if the user asks about recent/current conflict, disruption, news, "

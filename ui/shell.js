@@ -232,8 +232,8 @@ function sam3EvidenceNote(report) {
   if (!report) {
     return "";
   }
-  if (!report.masks?.length) {
-    return ` Segment read: ${humanizeSlug(report.decision)}.`;
+  if (report.decision !== "segmentation_ready" || !report.masks?.length) {
+    return "";
   }
   const maxChangeScore = Math.max(
     ...report.masks.map((mask) => mask.temporal_change_score ?? mask.score ?? 0),
@@ -527,8 +527,25 @@ function selectedAnalystReport() {
 }
 
 function compareUsableForVisualAnalysis(compare) {
+  if (!compare) {
+    return false;
+  }
+  if (!compare.satellite_evidence) {
+    return true;
+  }
   const usability = satelliteUsability(compare?.satellite_evidence);
   return usability === "direct_clear" || usability === "cloud_limited";
+}
+
+function isContextOnlyFrameCompare(compare) {
+  return Boolean(
+    compare
+      && (
+        isContextOnlyCompare(compare)
+        || compare.current_frame?.filter_reason === "satellite_context_only"
+        || compare.baseline_frame?.filter_reason === "satellite_context_only"
+      ),
+  );
 }
 
 function selectedSiteAlerts() {
@@ -1855,29 +1872,20 @@ async function loadSelectedVisualAnalysis(assetId, options = {}) {
     return;
   }
 
-  setStageReport("Sentinel pair loaded", "SAM3 segmentation and Liquid VLM site brief running.");
+  setStageReport("Sentinel pair loaded", "Liquid VLM site brief running.");
   renderDrawer();
 
   try {
-    const evidence = await queryAssetEvidence(assetId);
-    if (state.selectedAssetId === assetId && evidence?.asset_id === assetId) {
-      state.selectedEvidence = evidence;
-      renderDrawer();
-    }
-  } catch (error) {
-    if (state.selectedAssetId === assetId) {
-      setChannelNote("SAM3 evidence endpoint unavailable for this site.");
-    }
-  }
-
-  try {
     const report = await queryAssetAnalyst(assetId);
-    if (state.selectedAssetId === assetId && report?.asset_id === assetId) {
+    if (state.selectedAssetId === assetId && report?.asset_id === assetId && report.status === "ready") {
       state.selectedAnalyst = report;
       setStageReport("Visual analysis complete", report.visible_change_summary);
       if (announce) {
         appendMessage("assistant", `Visual analysis complete: ${report.visible_change_summary}`);
       }
+      renderDrawer();
+    } else if (state.selectedAssetId === assetId) {
+      setChannelNote("Liquid VLM visual brief withheld because model-readable images or a valid model report are unavailable.");
       renderDrawer();
     }
   } catch (error) {
@@ -1908,7 +1916,7 @@ async function loadSelectedSiteContext(assetId, leadId = state.selectedLeadId, o
         appendMessage("assistant", response.summary);
       }
       if (response.compare?.asset_id === assetId && compareUsableForVisualAnalysis(response.compare)) {
-        setChannelNote("Sentinel pair loaded. SAM3 and Liquid VLM are running in the background.");
+        setChannelNote("Sentinel pair loaded. Liquid VLM is running in the background.");
         void loadSelectedVisualAnalysis(assetId, { announce });
       } else if (response.status === "no_result") {
         setChannelNote("Source lead only. No dated Sentinel pair resolved for visual analysis.");
@@ -1945,7 +1953,7 @@ async function handleCommand(rawText) {
   runMissionSequence(["parse", "fetch"], ["parse"]);
   setStageReport(
     "Atlas parsing request",
-    "Routing command into live-source search, camera focus, SAM3 segmentation, and Liquid VLM briefing.",
+    "Routing command into live-source search, camera focus, Sentinel evidence, and Liquid VLM briefing.",
   );
   setChannelNote("Parsing request. Satellite and model analysis can take a moment on first run.");
 
@@ -2100,12 +2108,21 @@ function renderLiquidAnalystCard(report, selected, compare) {
     return;
   }
 
+  if (report && report.status !== "ready") {
+    dom.liquidAnalystTitle.textContent = "Liquid VLM unavailable";
+    dom.liquidAnalystSummary.textContent = report.visible_change_summary;
+    dom.liquidAnalystModel.textContent = report.model_version;
+    dom.liquidAnalystAction.textContent = "not model-scored";
+    dom.liquidAnalystConfidence.textContent = "endpoint unavailable";
+    return;
+  }
+
   if (!report) {
     dom.liquidAnalystTitle.textContent = analystEndpointReady()
       ? "Visual site brief queued"
       : "Liquid VLM not attached";
     dom.liquidAnalystSummary.textContent = analystEndpointReady()
-      ? "Current and baseline frames are loaded. Waiting for SAM3 segmentation and Liquid VLM visual description."
+      ? "Current and baseline frames are loaded. Waiting for the Liquid VLM visual description."
       : "Current and baseline frames are loaded, but the real paired-image Liquid VLM endpoint is not configured. Atlas shows the imagery and rule gates without pretending a model reviewed it.";
     dom.liquidAnalystModel.textContent = "LiquidAI/LFM2.5-VL";
     dom.liquidAnalystAction.textContent = analystEndpointReady()
@@ -2298,6 +2315,21 @@ function renderDrawer() {
   dom.siteCoords.textContent = `${selected.latitude.toFixed(2)}, ${selected.longitude.toFixed(2)}`;
 
   if (compare?.asset_id === selected.asset_id) {
+    if (isContextOnlyFrameCompare(compare)) {
+      clearEvidenceFrames();
+      const qualitySummary = compare.satellite_evidence?.quality_summary
+        || "No dated Sentinel current/baseline pair resolved for this source point.";
+      dom.currentTitle.textContent = "Source report only";
+      dom.currentNote.textContent =
+        `${qualitySummary} Visual analysis was not run because the available imagery is context-only.`;
+      dom.currentStatus.textContent = "no visual analysis";
+      dom.currentCaptured.textContent = "no dated pair";
+      dom.baselineTitle.textContent = "No baseline evidence";
+      dom.baselineNote.textContent =
+        "Map imagery can orient the operator, but it is not evidence and is not shown in the analysis lane.";
+      dom.baselineCaptured.textContent = "unavailable";
+      dom.baselineSource.textContent = "Sentinel pair required";
+    } else {
     const sam3Note = sam3EvidenceNote(sam3Evidence);
     const analystNote =
       analystReport && analystReport.status === "ready"
@@ -2353,6 +2385,7 @@ function renderDrawer() {
       ? satelliteUsabilityLabel(compare.satellite_evidence)
       : evidenceState === "live_demo" ? "live reference source" : "archive source";
     dom.baselineSource.textContent = "";
+    }
   } else {
     clearEvidenceFrames();
     const noResult = context?.status === "no_result";
@@ -2509,6 +2542,7 @@ async function refreshLiveLeads({ announce = true } = {}) {
     if (announce) {
       appendMessage("assistant", `Live lead refresh complete: ${resultText}.`);
     }
+    void autoSelectLeadForAnalysis({ announce: false, force: true });
   } catch (error) {
     runMissionSequence(["fetch", "summarize"], ["summarize"]);
     setChannelNote("Live lead refresh failed. Existing markers remain available.");
@@ -2540,6 +2574,52 @@ function pickInitialSelection() {
     state.selectedAssetId = latest.asset_id;
     return;
   }
+}
+
+function bestLeadForAutoAnalysis() {
+  const reviewable = state.leads
+    .map((lead) => ({ lead, asset: reviewAssetForLead(lead) }))
+    .filter((item) => item.asset);
+  if (!reviewable.length) {
+    return null;
+  }
+  return reviewable.sort((left, right) => leadAutoRank(right.lead) - leadAutoRank(left.lead))[0];
+}
+
+function leadAutoRank(lead) {
+  const sourceTime = Date.parse(lead.source_date || lead.last_refreshed_at || "") || 0;
+  const inspectableBonus = reviewAssetForLead(lead) ? 10_000_000_000_000 : 0;
+  return inspectableBonus + sourceTime;
+}
+
+async function autoSelectLeadForAnalysis({ announce = false, force = false } = {}) {
+  if (state.selectedSiteLoading) {
+    return false;
+  }
+  const candidate = bestLeadForAutoAnalysis();
+  if (!candidate) {
+    return false;
+  }
+  if (
+    !force
+    && state.selectedAssetId === candidate.asset.asset_id
+    && selectedCompare()?.asset_id === candidate.asset.asset_id
+  ) {
+    return false;
+  }
+
+  state.selectedLeadId = candidate.lead.lead_id;
+  state.selectedAssetId = candidate.asset.asset_id;
+  state.selectedSiteContext = null;
+  state.selectedEvidence = null;
+  state.selectedAnalyst = null;
+  state.selectedSiteLoading = true;
+  renderMap();
+  renderDrawer();
+  focusMapOnAsset(candidate.asset);
+  setChannelNote(`Auto-inspecting newest satellite-review lead: ${candidate.lead.title}.`);
+  await loadSelectedSiteContext(candidate.asset.asset_id, candidate.lead.lead_id, { announce });
+  return true;
 }
 
 function bindEvents() {
@@ -2654,10 +2734,8 @@ async function boot() {
 
   if (leadFeedNeedsRefresh()) {
     void refreshLiveLeads({ announce: false });
-  }
-
-  if (state.selectedAssetId) {
-    void loadSelectedSiteContext(state.selectedAssetId);
+  } else {
+    void autoSelectLeadForAnalysis({ announce: false });
   }
 
   if (healthResult.status !== "fulfilled") {

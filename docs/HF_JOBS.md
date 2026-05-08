@@ -125,5 +125,5 @@ Runtime decision:
 
 - promote as guarded paired-image analyst narration
 - do not promote as autonomous alert authority
-- keep source-led context, real SimSat/Sentinel imagery, SAM3 evidence support,
+- keep source-led context, real SimSat/Sentinel imagery, Sentinel quality gates,
   parser repair, and deterministic final action guardrails active

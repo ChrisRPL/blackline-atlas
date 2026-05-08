@@ -76,7 +76,7 @@ Important rule:
 - add chat-driven globe control
 - add prompt builder
 - call agent planner
-- call required selected-site SAM3 evidence lane for live image masks
+- call Liquid VLM selected-site analysis after real Sentinel frames resolve
 - call optional Liquid analyst lane after evidence is loaded
 - parse strict JSON
 - retry or discard malformed outputs

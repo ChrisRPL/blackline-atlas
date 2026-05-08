@@ -221,37 +221,40 @@ Rule:
   - a chat flow requests review
   - a background batch explicitly targets a shortlist
 - linked live leads may be converted into runtime assets for SimSat current-versus-baseline review
+- on app open, the UI auto-selects the newest reviewable live lead and starts
+  selected-site satellite review without waiting for a chat command
 - current repo command:
   - `python3 -m app.services.lead_registry_refresh --dry-run`
   - dry-run probes source reachability and prints counts
   - full write mode is deliberate, not automatic on app boot
 
-## SAM3 evidence lane
+## Optional segmentation evidence lane
 
-SAM3 is the preferred segmentation evidence tool. The fine-tuned Liquid VLM
-adapter is a guarded paired-image analyst, not the final alert authority.
+Segmentation is optional support, not part of the judge-critical inference path.
+The fine-tuned Liquid VLM adapter is the guarded paired-image analyst, not the
+final alert authority.
 The runtime seam is:
 
 - source/API lead registry provides the event context, location, and source
   summary
 - Liquid text planner chooses the UI/tool action and derives situation-specific
-  SAM3 prompts from the lead context
+  visual focus prompts from the lead context
 - selected lead or watchlist asset
 - current/baseline satellite pair
 - prompt set such as `bridge span`, `container yard`, `rubble pile`, `debris field`, or `burn scar`
-- SAM3/SAM3.1 concept segmentation masks
-- optional Liquid analyst summary over the same pair, source context, and SAM3
-  evidence tags
+- optional SAM-compatible concept segmentation masks when the image pair has
+  enough resolution for reliable masks
+- Liquid analyst summary over the same pair and source context
 - malformed or looping Liquid analyst JSON is repaired only when the action and
   confidence are recoverable; low-confidence `discard` outputs suppress positive
   damage claims and keep the source report as context, not imagery proof
 - evidence tags, bbox, score, and area ratio
 - deterministic rule layer emits `discard | defer | downlink_now`
 
-Fixture masks are allowed only for tests and offline replay/reference evals. Live
-selected-point evidence requires the local HTTP SAM3 bridge on the same machine
-as the app. This keeps SimSat/Sentinel frame paths readable and avoids remote
-image transfer during the judge demo.
+Fixture masks are allowed only for tests and offline replay/reference evals. The
+judge path suppresses segmentation on low-resolution Sentinel pairs because it
+adds latency without defensible visual value. A future high-resolution lane can
+reattach the local SAM bridge once masks are measurable and useful.
 
 ## Acceptance criteria
 

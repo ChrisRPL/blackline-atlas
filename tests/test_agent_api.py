@@ -191,18 +191,13 @@ def test_agent_query_site_compare_does_not_fallback_for_missing_selected_lead() 
     assert "no longer in the live registry" in payload["summary"]
 
 
-def test_asset_analyst_report_endpoint_returns_paired_image_report() -> None:
+def test_asset_analyst_report_endpoint_withholds_report_for_missing_image_files() -> None:
     client = TestClient(create_app())
 
     response = client.get("/analyst/assets/demo_port_01")
 
     assert response.status_code == 200
-    payload = response.json()
-    assert payload["asset_id"] == "demo_port_01"
-    assert payload["backend"] == "fixture"
-    assert payload["current_frame_id"].startswith("cur_")
-    assert payload["baseline_frame_id"].startswith("base_")
-    assert payload["recommended_action"] in {"discard", "defer", "downlink_now"}
+    assert response.json() is None
 
 
 def test_agent_query_site_compare_returns_reference_event_evidence() -> None:

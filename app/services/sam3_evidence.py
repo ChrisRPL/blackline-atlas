@@ -321,9 +321,15 @@ def source_context_for_lead(lead: Lead) -> Sam3SourceContext:
         if target_prompts
         else "Source context does not describe a clear satellite-visible damage target."
     )
+    summary_parts = [lead.summary] if lead.summary else []
+    if lead.source_date is not None:
+        summary_parts.append(f"Source date: {lead.source_date.isoformat()}.")
+    if lead.source_url:
+        summary_parts.append(f"Primary source URL: {lead.source_url}.")
+
     return Sam3SourceContext(
         title=lead.title,
-        summary=lead.summary,
+        summary=" ".join(summary_parts) if summary_parts else None,
         region=lead.region,
         satellite_relevance=relevance,
         target_prompts=target_prompts,

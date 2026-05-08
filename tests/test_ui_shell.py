@@ -59,6 +59,8 @@ def test_ui_shell_serves_same_origin_dashboard() -> None:
     assert "renderPlannerChip" in static_response.text
     assert "renderModelGate" in static_response.text
     assert "Segment read:" in static_response.text
+    assert "Segment read: unavailable" not in static_response.text
+    assert "SAM3 segmentation and Liquid" not in static_response.text
     assert "live leads loading" in static_response.text
     assert "liveLeadCount" in static_response.text
     assert "inspectableLeadCount" in static_response.text

@@ -1308,7 +1308,7 @@ def test_cloud_limited_live_pair_still_runs_source_led_sam3_and_liquid_analyst(
             if item["type"] == "input_text" and item["role"] == "user"
         )
         assert "Source event: Missile strike" in user_text
-        assert "Dynamic SAM3 prompts:" in user_text
+        assert "Visual focus prompts:" in user_text
         return _FakeHTTPResponse(
             body=json.dumps(
                 {

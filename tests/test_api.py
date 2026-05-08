@@ -206,10 +206,10 @@ def test_model_status_endpoint_exposes_adapter_gate() -> None:
     )
     assert payload["training_dataset"] == "ChrisRPL/blackline-atlas-training-corpus-v1"
     assert payload["adapter_signal_role"] == "optional_non_authoritative"
-    assert payload["runtime_authority"] == "source_led_sam3_liquid_guarded"
+    assert payload["runtime_authority"] == "source_led_sentinel_liquid_guarded"
     assert payload["can_affect_alerts"] is False
     assert payload["decision"] == "evidence_adapter_guarded_runtime"
-    assert payload["recommended_runtime"] == "source_led_sam3_liquid_guarded"
+    assert payload["recommended_runtime"] == "source_led_sentinel_liquid_guarded"
     assert payload["frozen_gold_cases"] == 22
     assert payload["reported_eval_cases"] == 22
     assert payload["reported_eval_scope"] == "hf_corpus_simsat_gold_eval_full_22"
@@ -225,7 +225,7 @@ def test_model_status_endpoint_exposes_adapter_gate() -> None:
         "full-v1b action match is 9/22 on corpus-native SimSat gold eval",
         "full-v1b downlink recall is 3/12 on positive SimSat gold cases",
         "full-v1b produced 3 false-positive downlink_now predictions on negative cases",
-        "runtime must keep parser repair, source-led context, and SAM3 guardrails active",
+        "runtime must keep parser repair, source-led context, and Sentinel quality gates active",
     ]
     assert [item["status"] for item in payload["evaluated_adapters"]] == [
         "superseded_rejected",

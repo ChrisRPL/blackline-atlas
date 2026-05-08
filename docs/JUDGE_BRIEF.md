@@ -2,7 +2,7 @@
 
 ## What To Open
 
-Run the app and open `/ui`. The intended review path is one operator workflow: live disruption leads, chat-driven globe focus, selected-point current-versus-baseline imagery, SAM3 evidence, Liquid visual site brief, and guarded metrics.
+Run the app and open `/ui`. The intended review path is one operator workflow: live disruption leads, chat-driven globe focus, selected-point current-versus-baseline imagery, Liquid visual site brief, and guarded metrics.
 
 ## Judging Criteria Fit
 
@@ -14,14 +14,14 @@ Liquid Track rubric from the provided judging document:
   triage, where live source leads plus before/after imagery plus Liquid VLM
   analyst summaries create a practical operator workflow.
 - Technical implementation, 35%: the app must run without debugging; preflight
-  is SimSat, SAM3 bridge, optional local Liquid adapter bridge, GDELT key, then
+  is SimSat, optional local Liquid adapter bridge, GDELT key, then
   `/ui`.
 - Fine-tuning reward: LFM2.5-VL was fine-tuned on domain-specific satellite
   data, public weights are published, training/eval code is in `training/`, and
   the measured improvement is documented in `/model/status` and `docs/HF_JOBS.md`.
 - Demo and communication, 20%: show one end-to-end question-to-evidence flow and
-  explain why source leads provide event context while Liquid/SAM3 provide the
-  visual site brief, not an autonomous targeting or alerting oracle.
+  explain why source leads provide event context while Liquid provides the visual
+  site brief, not an autonomous targeting or alerting oracle.
 
 ## Live Mode Preflight
 
@@ -50,11 +50,11 @@ Recommended prompts:
 - Set `LEAD_REGISTRY_PATH=var/live_leads.json` to make `/leads` and the agent planner consume the refreshed markers.
 - `/agent/query` returns the operator summary plus camera/selection/evidence instructions used by the UI.
 - `/replay/snapshot` remains available as a fallback payload for regression and reliability checks.
-- `/evidence/current` and `/evidence/assets/{asset_id}` expose the SAM3-compatible segmentation evidence seam.
-- Real SAM3 is treated as selected-site supporting evidence, not as an autonomous alert gate.
-- The right-side inspection tray must show both SAM3 segment notes and Liquid VLM
-  visual-site-brief output when the model lane returns a report, including
-  cloud/quality caveats instead of blank “no useful data” states.
+- `/evidence/current` and `/evidence/assets/{asset_id}` remain available as an experimental segmentation seam.
+- SAM-compatible segmentation is not part of the judge path until imagery resolution supports reliable masks.
+- The right-side inspection tray must show current/baseline frames first, then
+  Liquid VLM visual-site-brief output when the model lane returns a report,
+  including cloud/quality caveats instead of blank “no useful data” states.
 - The parser accepts messy model JSON but fails closed when outputs are malformed, low-confidence, or negative/artifact-only.
 
 ## Model Status
@@ -68,8 +68,8 @@ Recommended prompts:
   `9/22` action match
 
 Decision: the adapter is promoted only as a guarded paired-image analyst lane.
-It does not autonomously emit alerts. Alerts remain source-led, SAM3-supported,
-parser-guarded, and deterministic at the final action boundary.
+It does not autonomously emit alerts. Alerts remain source-led, parser-guarded,
+and deterministic at the final action boundary.
 
 ## Architecture Pivot
 
@@ -86,18 +86,17 @@ runtime-critical alerting, so the runtime architecture uses tool-based evidence:
 - SimSat PNGs that are mostly black/white no-data pixels are rejected before
   SAM3 or Liquid VLM analysis; the resolver keeps searching or falls back to
   labeled context imagery instead of presenting blank tiles as evidence.
-- Required real SAM3-compatible concept segmentation for visible evidence masks.
-  Fixture segmentation is reserved for tests/evals and is not treated as live
-  model evidence.
-- Lead context drives SAM3 prompt selection, and the Liquid VLM analyst receives
-  the same source context plus SAM3 report. Mapbox-only context is blocked from
-  model evidence; real cloud-limited SimSat pairs still receive a visibility
-  caveat report.
+- Segmentation is optional support only. The judge path does not run SAM on
+  low-resolution Sentinel pairs because masks are too unstable to justify the
+  added latency.
+- Lead context drives visual focus prompts for the Liquid VLM analyst. Mapbox-only
+  context is blocked from model evidence; real cloud-limited SimSat pairs still
+  receive a visibility caveat report.
 - Deterministic rule layer for `discard | defer | downlink_now`.
 
-Real SAM3 v2 smoke result: current-only and temporal checks both kept the hard
-negative clean, but missed the Beirut positive. The runtime therefore keeps SAM3
-behind deterministic guardrails instead of promoting it to the decision scorer.
+Real SAM smoke tests kept hard negatives clean but missed positive disruption
+cases at this imagery scale. The runtime therefore keeps segmentation out of the
+normal inference path instead of promoting it to a value claim.
 
 ## Why Fallback Exists
 

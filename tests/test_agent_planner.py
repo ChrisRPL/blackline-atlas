@@ -50,7 +50,7 @@ def test_agent_prompt_builder_targets_tool_plan_only() -> None:
     assert "use site_compare" in prompt.system
     assert "tool must be search_live_leads" in prompt.system
     assert "This overrides search_live_leads" in prompt.system
-    assert "loads satellite/SAM3/VLM evidence" in prompt.system
+    assert "loads satellite/VLM evidence" in prompt.system
     assert "use refresh_live_leads" in prompt.system
     assert "If a selected_lead exists" in prompt.system
     assert "Inspect the selected marker" in prompt.system

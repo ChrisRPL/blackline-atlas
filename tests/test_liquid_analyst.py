@@ -339,7 +339,7 @@ def test_liquid_analyst_payload_uses_source_context_as_visual_brief() -> None:
     assert "Use the source report as context for what to inspect, not proof" in system_text
     assert "Source event: Strike damages shops" in user_text
     assert (
-        "Dynamic SAM3 prompts: ['apartment block', 'commercial building', 'rubble pile']"
+        "Visual focus prompts: ['apartment block', 'commercial building', 'rubble pile']"
         in user_text
     )
     assert "source-led visual site brief" in user_text

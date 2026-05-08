@@ -420,10 +420,14 @@ def _analyst_user_prompt(
     evidence: Sam3EvidenceReport | None,
 ) -> str:
     allowed_tags = ", ".join(get_args(VisualEvidenceTag))
+    has_segmentation = bool(evidence and evidence.masks)
     evidence_hint = (
-        f"SAM3 hint: {evidence.summary}; tags={evidence.visual_evidence_tags}"
-        if evidence
-        else "SAM3 hint: none. Use only the two images and visibility metadata."
+        f"Segmentation hint: {evidence.summary}; tags={evidence.visual_evidence_tags}"
+        if has_segmentation
+        else (
+            "Segmentation hint: none. Use only the two images, source context, "
+            "and visibility metadata."
+        )
     )
     source_context = evidence.source_context if evidence else None
     source_hint = (
@@ -432,7 +436,7 @@ def _analyst_user_prompt(
                 f"Source event: {source_context.title}",
                 f"Source summary: {source_context.summary or 'not provided'}",
                 f"Satellite relevance: {source_context.satellite_relevance}",
-                f"Dynamic SAM3 prompts: {source_context.target_prompts}",
+                f"Visual focus prompts: {source_context.target_prompts}",
                 f"Ignore from imagery: {source_context.ignore_terms}",
                 f"Source-to-visual rationale: {source_context.rationale}",
             ]

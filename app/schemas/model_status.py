@@ -12,6 +12,7 @@ AdapterSignalRole = Literal["optional_non_authoritative"]
 RuntimeAuthority = Literal[
     "deterministic_replay",
     "source_led_sam3_liquid_guarded",
+    "source_led_sentinel_liquid_guarded",
 ]
 AdapterPublicationStatus = Literal[
     "published_rejected",

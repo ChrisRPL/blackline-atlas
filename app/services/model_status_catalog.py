@@ -33,18 +33,18 @@ def build_model_status() -> ModelStatus:
         candidate_adapter=FULL_V1B_ADAPTER,
         training_dataset=FULL_V1B_DATASET,
         adapter_signal_role="optional_non_authoritative",
-        runtime_authority="source_led_sam3_liquid_guarded",
+        runtime_authority="source_led_sentinel_liquid_guarded",
         can_affect_alerts=False,
         frozen_gold_cases=22,
         reported_eval_cases=22,
         reported_eval_scope="hf_corpus_simsat_gold_eval_full_22",
         decision="evidence_adapter_guarded_runtime",
-        recommended_runtime="source_led_sam3_liquid_guarded",
+        recommended_runtime="source_led_sentinel_liquid_guarded",
         summary=(
             "full-v1b trained on the 30,858-row HF corpus and completed a corpus-native "
             "SimSat gold eval with 22/22 valid JSON and 19/22 schema-valid reports. "
             "Action match remains 9/22, so the adapter is wired for guarded Liquid analyst "
-            "summaries behind source-led and SAM3 evidence, not autonomous alert decisions."
+            "summaries behind source-led Sentinel evidence, not autonomous alert decisions."
         ),
         base_eval=base_smoke,
         adapter_eval=full_v1b_eval,
@@ -52,7 +52,10 @@ def build_model_status() -> ModelStatus:
             "full-v1b action match is 9/22 on corpus-native SimSat gold eval",
             "full-v1b downlink recall is 3/12 on positive SimSat gold cases",
             "full-v1b produced 3 false-positive downlink_now predictions on negative cases",
-            "runtime must keep parser repair, source-led context, and SAM3 guardrails active",
+            (
+                "runtime must keep parser repair, source-led context, and Sentinel "
+                "quality gates active"
+            ),
         ],
         evaluated_adapters=[
             EvaluatedAdapter(

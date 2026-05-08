@@ -9,7 +9,7 @@ def test_model_status_catalog_promotes_full_v1b_as_guarded_analyst_adapter() -> 
     assert status.candidate_adapter.endswith("hf-corpus-full-v1b-adapter")
     assert status.training_dataset.endswith("blackline-atlas-training-corpus-v1")
     assert status.adapter_signal_role == "optional_non_authoritative"
-    assert status.runtime_authority == "source_led_sam3_liquid_guarded"
+    assert status.runtime_authority == "source_led_sentinel_liquid_guarded"
     assert status.can_affect_alerts is False
     assert status.adapter_eval.schema_valid == 19
     assert status.adapter_eval.action_match == 9
