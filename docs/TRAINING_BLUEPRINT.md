@@ -12,9 +12,9 @@ Only move to fine-tuning after the schema, policy, and replay loop are stable.
 Use the official SimSat path first.
 
 - freeze historical current/baseline pairs from `/data/image/sentinel`
-- keep `/data/current/image/sentinel` for live smoke and later demo validation
+- keep `/data/current/image/sentinel` for live smoke and later runtime validation
 - keep Mapbox out of the first training lane; use it only for post-alert inspection context
-- hold demo and hero AOIs out of train until non-demo captures exist
+- hold hero/reference AOIs out of train until non-reference captures exist
 - prefer food, water, and aid lifelines near population centers
 - treat mobility as a narrower fourth lane, not the default
 - keep ports as one lane, not the whole product
@@ -142,7 +142,7 @@ Keep separate eval tracks:
 
 ## Current seed path
 
-- smoke/demo pack: `training/replay_pack/hero_eval.jsonl`
+- smoke/reference pack: `training/replay_pack/hero_eval.jsonl`
 - first non-demo pack: `training/replay_pack/non_demo_eval.jsonl`
 - prompted baseline runner: `training/scripts/run_lfm25_vl_prompted_eval.py`
 - Ukraine auxiliary-train materializer: `training/scripts/materialize_ukraine_damage_aux_slice.py`
@@ -190,7 +190,7 @@ Current state:
 - promote train rows in a separate tranche board:
   - [training/replay_pack/train_tranche_01.md](/Users/krzysztof/blackline-atlas/training/replay_pack/train_tranche_01.md)
 - no random split
-- no hero/demo rows
+- no hero/reference rows
 - no external benchmark rows in the first train tranche
 - external slices may still widen training in a separate auxiliary lane:
   - materialize them with `training/scripts/materialize_aux_train_slice.py`

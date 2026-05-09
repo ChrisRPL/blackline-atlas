@@ -35,7 +35,7 @@
 
 ## Non-functional requirements
 
-- fast enough for demo
+- fast enough for interactive local use
 - easy to recover from API slowness
 - fully typed internal data models
 - robust to malformed model outputs
@@ -214,7 +214,7 @@ Rule:
   `GDELT_CLOUD_API_KEY` exists
 - `auto` falls back to public GDELT Project exports when Cloud is unavailable
 - ACLED remains disabled until `/api/acled/read` access is confirmed; UCDP
-  Candidate is useful for slower validation, not hackathon live UX
+  Candidate is useful for slower validation, not the interactive local UX
 - do not run the VLM on every point by default
 - evidence review runs only when:
   - a point is selected
@@ -230,7 +230,7 @@ Rule:
 
 ## Optional segmentation evidence lane
 
-Segmentation is optional support, not part of the judge-critical inference path.
+Segmentation is optional support, not part of the default inference path.
 The fine-tuned Liquid VLM adapter is the guarded paired-image analyst, not the
 final alert authority.
 The runtime seam is:
@@ -252,13 +252,13 @@ The runtime seam is:
 - deterministic rule layer emits `discard | defer | downlink_now`
 
 Fixture masks are allowed only for tests and offline replay/reference evals. The
-judge path suppresses segmentation on low-resolution Sentinel pairs because it
-adds latency without defensible visual value. A future high-resolution lane can
-reattach the local SAM bridge once masks are measurable and useful.
+default runtime suppresses segmentation on low-resolution Sentinel pairs because
+it adds latency without defensible visual value. A future high-resolution lane
+can reattach the local SAM bridge once masks are measurable and useful.
 
 ## Acceptance criteria
 
-- demo works with one command
+- local run works with one command
 - at least one stable hero scenario
 - malformed model output does not break the UI
 - counters update live

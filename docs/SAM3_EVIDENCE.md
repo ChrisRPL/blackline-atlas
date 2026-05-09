@@ -247,7 +247,7 @@ uv run training/scripts/run_sam3_inference.py \
 
 Operational notes:
 
-- run the demo bridge locally; use HF Jobs only for larger offline sweeps
+- run the local bridge locally; use HF Jobs only for larger offline sweeps
 - request access to the gated Meta SAM checkpoint before launch
 - HF Jobs `uv` environments may not have `python -m pip`; use
   `uv pip install --python "$PYTHON"` for runtime installs inside job scripts
@@ -282,7 +282,7 @@ Minimum useful SAM3 fine-tune dataset shape:
 - source event/location metadata
 - hard-negative prompts with empty masks
 
-For the hackathon demo, the best path is:
+For the live local runtime, the best path is:
 
 1. keep SAM3 zero-shot or fixture-backed in runtime
 2. tune deterministic thresholds and prompt sets

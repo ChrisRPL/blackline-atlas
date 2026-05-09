@@ -177,12 +177,12 @@ Uploaded corpus chunks:
 - `vlm_evidence_sft_simsat_gold_v1`: 55 manually curated SimSat/Sentinel
   before/after pairs, 110 images, with source-led action/bbox/rationale labels
 
-Protected until final submission is locked:
+Protected until the release baseline is locked:
 
 - `ChrisRPL/blackline-atlas-training-corpus-v1`
 - `ChrisRPL/blackline-atlas-training-bundles`
 - latest SAM3 real eval dataset
-- latest public judge-facing benchmark/eval dataset
+- latest public benchmark/eval dataset
 
 Deletion candidates after dependency check:
 
@@ -190,7 +190,7 @@ Deletion candidates after dependency check:
   versions
 - private SAM3 eval v1 if v2 fully replaces it
 - incomplete or metadata-only repos that are not referenced by docs, model
-  cards, training jobs, or demo scripts
+  cards, training jobs, or runtime scripts
 
 Before deleting a HF repo:
 
