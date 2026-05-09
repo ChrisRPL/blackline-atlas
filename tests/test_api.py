@@ -517,6 +517,24 @@ def test_frame_image_serves_mapbox_context_frame() -> None:
     assert response.content.startswith(b"\x89PNG")
 
 
+def test_frame_image_serves_training_evidence_frame() -> None:
+    image_path = Path(
+        "training/eval_runs/lfm25_vl_sft_hf_corpus_full_v1_targeted/"
+        "trainer_bundle/images/route_test/current.png"
+    )
+    image_path.parent.mkdir(parents=True, exist_ok=True)
+    image_path.write_bytes(
+        b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01"
+        b"\x00\x00\x00\x01\x08\x02\x00\x00\x00\x90wS\xde"
+    )
+
+    response = client.get("/frame-image", params={"ref": str(image_path)})
+
+    assert response.status_code == 200
+    assert response.headers["content-type"] == "image/png"
+    assert response.content.startswith(b"\x89PNG")
+
+
 def test_frame_image_rejects_path_outside_frame_cache() -> None:
     response = client.get("/frame-image", params={"ref": "app/api/routes.py"})
 

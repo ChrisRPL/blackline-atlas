@@ -71,7 +71,7 @@ def test_fetch_gdelt_cloud_conflict_leads_maps_v2_events_to_leads() -> None:
     query = parse_qs(urlparse(seen[0]).query)
     assert query["event_family"] == ["conflict"]
     assert query["country"] == ["Lebanon"]
-    assert query["sort"] == ["significance"]
+    assert query["sort"] == ["recent"]
     assert query["confidence_profile"] == ["loose"]
     assert result.fetched_event_count == 2
     assert len(result.leads) == 1
@@ -135,3 +135,50 @@ def test_fetch_gdelt_cloud_conflict_leads_paginates_until_limit() -> None:
     assert seen_cursors == [None, "2"]
     assert result.fetched_event_count == 3
     assert len(result.leads) == 3
+
+
+def test_fetch_gdelt_cloud_conflict_leads_returns_newest_events_first() -> None:
+    def event(index: int, event_date: str, significance: float) -> dict[str, object]:
+        return {
+            "id": f"conflict_recent_{index}",
+            "title": f"Conflict event {index}",
+            "event_date": event_date,
+            "category": "Explosions/Remote violence",
+            "geo": {
+                "country": "Ukraine",
+                "region": "Europe",
+                "admin1": "Odesa",
+                "location": f"Point {index}",
+                "latitude": 46.0 + index / 100,
+                "longitude": 30.0 + index / 100,
+            },
+            "metrics": {"article_count": 1, "confidence": 0.7, "significance": significance},
+        }
+
+    def opener(request: Request, timeout: float) -> _FakeHTTPResponse:
+        return _FakeHTTPResponse(
+            body=json.dumps(
+                {
+                    "success": True,
+                    "data": [
+                        event(1, "2026-04-20", 0.95),
+                        event(2, "2026-05-03", 0.55),
+                        event(3, "2026-05-01", 0.75),
+                    ],
+                }
+            ).encode()
+        )
+
+    result = fetch_gdelt_cloud_conflict_leads(
+        api_key="gdelt_sk_test",
+        api_url="https://gdeltcloud.example/api/v2/events",
+        days=30,
+        limit=3,
+        opener=opener,
+    )
+
+    assert [lead.source_date.isoformat() for lead in result.leads] == [
+        "2026-05-03",
+        "2026-05-01",
+        "2026-04-20",
+    ]

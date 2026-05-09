@@ -60,7 +60,7 @@ def fetch_gdelt_cloud_conflict_leads(
 
     events: list[_GdeltCloudEvent] = []
     country_list = countries or ("",)
-    sort_modes = ("significance", "recent")
+    sort_modes = ("recent", "significance")
     per_request_limit = max(10, min(limit, 100))
     for country in country_list:
         for sort in sort_modes:
@@ -220,8 +220,9 @@ def _dedupe_events(events: list[_GdeltCloudEvent]) -> list[_GdeltCloudEvent]:
     return sorted(best_by_key.values(), key=_event_rank, reverse=True)
 
 
-def _event_rank(event: _GdeltCloudEvent) -> tuple[float, float, int, int, str]:
+def _event_rank(event: _GdeltCloudEvent) -> tuple[date, float, float, int, int, str]:
     return (
+        event.event_date,
         event.significance or 0.0,
         event.confidence or 0.0,
         event.fatalities,

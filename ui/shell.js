@@ -1942,7 +1942,7 @@ async function loadSelectedVisualAnalysis(assetId, options = {}) {
     const report = await queryAssetAnalyst(assetId);
     if (state.selectedAssetId === assetId && report?.asset_id === assetId && report.status === "ready") {
       state.selectedAnalyst = report;
-      setStageReport("Visual analysis complete", report.visible_change_summary);
+      setStageReport("Visual analysis complete", "Liquid VLM site brief is available in the evidence panel.");
       if (announce) {
         appendMessage("assistant", `Visual analysis complete: ${report.visible_change_summary}`);
       }
@@ -2582,7 +2582,7 @@ async function postJson(url, payload) {
   return response.json();
 }
 
-async function refreshLiveLeads({ announce = true } = {}) {
+async function refreshLiveLeads({ announce = true, autoInspect = false } = {}) {
   if (state.leadRefreshLoading) {
     return;
   }
@@ -2644,7 +2644,9 @@ async function refreshLiveLeads({ announce = true } = {}) {
     if (announce) {
       appendMessage("assistant", `Live lead refresh complete: ${resultText}.`);
     }
-    void autoSelectLeadForAnalysis({ announce: false, force: true });
+    if (autoInspect) {
+      void autoSelectLeadForAnalysis({ announce: false, force: true });
+    }
   } catch (error) {
     runMissionSequence(["fetch", "summarize"], ["summarize"]);
     setChannelNote("Live lead refresh failed. Existing markers remain available.");
@@ -2659,6 +2661,12 @@ async function refreshLiveLeads({ announce = true } = {}) {
 
 function pickInitialSelection() {
   if (state.selectedLeadId || state.selectedAssetId) {
+    return;
+  }
+
+  const stableReference = state.assets.find((asset) => asset.evidence_state === "reference_event");
+  if (stableReference) {
+    state.selectedAssetId = stableReference.asset_id;
     return;
   }
 
@@ -2886,8 +2894,6 @@ async function boot() {
 
   if (leadFeedNeedsRefresh()) {
     void refreshLiveLeads({ announce: false });
-  } else {
-    void autoSelectLeadForAnalysis({ announce: false });
   }
 
   if (healthResult.status !== "fulfilled") {

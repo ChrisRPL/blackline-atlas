@@ -2635,7 +2635,7 @@ def test_stub_service_can_opt_in_http_agent_planner(tmp_path: Path, monkeypatch)
 
     def fake_urlopen(request, timeout: float):
         assert request.full_url == "https://example.test/agent"
-        assert timeout == 3.0
+        assert timeout == 15.0
         body = json.loads(request.data.decode("utf-8"))
         assert body["model_version"] == "lfm2.5-1.2b-instruct"
         return _FakeHTTPResponse(
@@ -2683,7 +2683,7 @@ def test_stub_service_can_opt_in_openai_chat_agent_planner(tmp_path: Path, monke
 
     def fake_urlopen(request, timeout: float):
         assert request.full_url == "https://liquid.example/v1/chat/completions"
-        assert timeout == 3.0
+        assert timeout == 15.0
         body = json.loads(request.data.decode("utf-8"))
         assert body["model"] == "LiquidAI/LFM2.5-1.2B-Instruct"
         assert body["messages"][0]["role"] == "system"

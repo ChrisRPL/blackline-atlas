@@ -48,7 +48,7 @@ class Settings:
     agent_http_enabled: bool = False
     agent_api_key: str | None = None
     agent_provider: str = "atlas_json_http"
-    agent_timeout_seconds: float = 3.0
+    agent_timeout_seconds: float = 15.0
     sam3_model_version: str = "facebook/sam3"
     sam3_endpoint: str | None = None
     sam3_http_enabled: bool = True
@@ -105,7 +105,7 @@ def get_settings() -> Settings:
         agent_http_enabled=env_flag("AGENT_HTTP_ENABLED"),
         agent_api_key=os.getenv("AGENT_API_KEY") or None,
         agent_provider=os.getenv("AGENT_PROVIDER", "atlas_json_http"),
-        agent_timeout_seconds=float(os.getenv("AGENT_TIMEOUT_SECONDS", "3.0")),
+        agent_timeout_seconds=float(os.getenv("AGENT_TIMEOUT_SECONDS", "15.0")),
         sam3_model_version=os.getenv("SAM3_MODEL_VERSION", "facebook/sam3"),
         sam3_endpoint=os.getenv("SAM3_ENDPOINT") or None,
         sam3_http_enabled=env_flag("SAM3_HTTP_ENABLED", default=True),

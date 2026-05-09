@@ -26,6 +26,12 @@ FRAME_IMAGE_ROOTS = (
     REPO_ROOT / "var" / "simsat_frames",
     REPO_ROOT / "var" / "contact_sheets",
     REPO_ROOT / "var" / "mapbox_context",
+    REPO_ROOT
+    / "training"
+    / "eval_runs"
+    / "lfm25_vl_sft_hf_corpus_full_v1_targeted"
+    / "trainer_bundle"
+    / "images",
     REPO_ROOT / "ui" / "assets",
 )
 

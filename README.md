@@ -127,6 +127,7 @@ AGENT_MODEL_VERSION=hf.co/LiquidAI/LFM2.5-1.2B-Instruct-GGUF:latest
 AGENT_ENDPOINT=http://127.0.0.1:11434/v1/chat/completions
 AGENT_HTTP_ENABLED=true
 AGENT_PROVIDER=openai_chat_completions_http
+AGENT_TIMEOUT_SECONDS=15
 ```
 
 ### 3. Start The Liquid VLM Analyst
