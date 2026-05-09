@@ -250,7 +250,7 @@ body::after {
   left: 1rem;
   top: 5.15rem;
   bottom: 1rem;
-  width: clamp(22rem, 25vw, 26rem);
+  width: clamp(27rem, 30vw, 34rem);
   min-height: 0;
   max-height: none;
   padding: 0.78rem;
@@ -375,22 +375,25 @@ body::after {
 }
 
 .transcript {
-  display: grid;
-  gap: 0.4rem;
-  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.46rem;
+  flex: 1 1 14rem;
   min-height: 0;
   max-height: none;
   overflow-y: auto;
-  padding-right: 0.1rem;
+  padding: 0.02rem 0.26rem 0.02rem 0;
+  scrollbar-gutter: stable;
 }
 
 .message {
-  padding: 0.54rem 0.62rem;
+  flex: 0 0 auto;
+  padding: 0.58rem 0.68rem 0.62rem;
   border: 1px solid rgba(237, 242, 236, 0.1);
   background: rgba(8, 16, 19, 0.42);
   animation: message-in 260ms var(--fast) both;
   position: relative;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .message.assistant {
@@ -423,15 +426,19 @@ body::after {
 
 .message-role {
   color: var(--muted);
-  font-size: 0.66rem;
+  font-size: 0.62rem;
   letter-spacing: 0.12em;
+  line-height: 1.2;
   text-transform: uppercase;
 }
 
 .message-body {
   margin-top: 0.24rem;
-  line-height: 1.42;
-  font-size: 0.94rem;
+  color: rgba(237, 242, 236, 0.94);
+  line-height: 1.5;
+  font-size: 0.88rem;
+  overflow-wrap: anywhere;
+  white-space: normal;
 }
 
 .message.thinking {
@@ -637,8 +644,8 @@ body::after {
 
 .ops-ribbon {
   position: absolute;
-  left: clamp(24rem, 27vw, 28rem);
-  right: clamp(24rem, 30vw, 32rem);
+  left: calc(1rem + clamp(27rem, 30vw, 34rem) + 0.9rem);
+  right: calc(1rem + clamp(23rem, 28vw, 31rem) + 0.9rem);
   top: 1.35rem;
   z-index: 3;
   display: grid;
@@ -1526,7 +1533,7 @@ body::after {
 
 @media (max-width: 1200px) {
   .channel-panel {
-    width: clamp(21rem, 30vw, 24rem);
+    width: clamp(24rem, 32vw, 29rem);
   }
 
   .drawer-panel {
@@ -1534,8 +1541,8 @@ body::after {
   }
 
   .ops-ribbon {
-    left: clamp(22rem, 31vw, 25rem);
-    right: clamp(22rem, 33vw, 29rem);
+    left: calc(0.8rem + clamp(24rem, 32vw, 29rem) + 0.8rem);
+    right: calc(0.8rem + clamp(22rem, 32vw, 28rem) + 0.8rem);
   }
 }
 
@@ -1548,7 +1555,7 @@ body::after {
     left: 0.8rem;
     top: 5rem;
     bottom: 0.8rem;
-    width: clamp(18.5rem, 33vw, 22rem);
+    width: clamp(21rem, 36vw, 25rem);
   }
 
   .drawer-panel {

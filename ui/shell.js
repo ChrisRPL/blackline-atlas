@@ -939,7 +939,7 @@ function appendMessage(role, text, options = {}) {
   }
   article.append(roleNode, bodyNode);
   dom.chatLog.append(article);
-  while (dom.chatLog.children.length > 7) {
+  while (dom.chatLog.children.length > 12) {
     dom.chatLog.firstElementChild?.remove();
   }
   dom.chatLog.scrollTop = dom.chatLog.scrollHeight;
