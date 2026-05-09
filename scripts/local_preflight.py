@@ -82,7 +82,7 @@ def _sam_off_path_check(health: dict[str, Any]) -> Check:
     sam_required = bool(config.get("sam3_required")) if isinstance(config, dict) else True
     ok = not sam_enabled and not sam_required
     detail = f"SAM3_HTTP_ENABLED={sam_enabled} SAM3_REQUIRED={sam_required}"
-    return Check("SAM outside judge path", ok, detail)
+    return Check("SAM outside runtime authority", ok, detail)
 
 
 def _print_checks(checks: list[Check]) -> None:

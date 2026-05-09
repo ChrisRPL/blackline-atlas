@@ -4,7 +4,7 @@ Purpose:
 
 - make the real data bottleneck explicit
 - stop confusing `current conflict geography` with `promotable VLM rows`
-- document the fastest honest collection path for hackathon time
+- document the fastest honest collection path for constrained training cycles
 
 ## Blunt answer
 

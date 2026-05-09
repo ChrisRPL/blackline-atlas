@@ -10,7 +10,7 @@
 2. Training scale
    - Internal Train 01 is still small at `33` rows.
    - Public auxiliary pool now increases trainer-side scale to `2,450` rows.
-   - This is enough for the current hackathon adapter run, but not enough for a production claim.
+   - This is enough for the current adapter run, but not enough for a production claim.
 
 3. Label shape
    - Internal rows still have no `defer` examples.

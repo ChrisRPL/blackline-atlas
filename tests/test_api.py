@@ -918,7 +918,7 @@ def test_health_endpoint_allows_explicit_offline_sam3_fixture_mode(
     assert sam3_response.status_code == 200
     assert sam3_response.json()["sam3_backend"]["status"] == "not_configured"
     assert sam3_response.json()["sam3_backend"]["mode"] == "not_configured"
-    assert "outside the judge runtime path" in sam3_response.json()["sam3_backend"]["detail"]
+    assert "outside the runtime authority path" in sam3_response.json()["sam3_backend"]["detail"]
     assert sam3_response.json()["config"]["sam3_http_enabled"] is False
     assert sam3_response.json()["config"]["sam3_required"] is False
     get_settings.cache_clear()

@@ -52,7 +52,7 @@ Read:
 
 Implication:
 
-1. keep external benchmark slices as auxiliary research and hackathon proof
+1. keep external benchmark slices as auxiliary research and transfer evidence
 2. do not treat them as substitutes for internal Blackline gold rows
 3. next core move stays `Novus Logistics Center`
 4. next benchmark move should be one comparator model on the same three slices, preferably on HF Jobs

@@ -164,7 +164,7 @@ They are useful for:
 
 - frozen baseline research
 - cross-model comparison
-- hackathon materials
+- public methodology notes
 - first real Liquid cohort proof
 
 Current read:

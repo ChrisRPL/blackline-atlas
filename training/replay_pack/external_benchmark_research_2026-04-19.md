@@ -42,7 +42,7 @@ Three layers:
    - proves we did not overfit only to our tiny pack
 3. broad RS-VLM sanity benchmark
    - optional
-   - useful for hackathon storytelling
+   - useful for public methodology notes
    - not the main shipping metric
 
 ## Best external datasets
@@ -179,7 +179,7 @@ Source:
 
 ## Broad RS-VLM benchmark sets
 
-These are useful for hackathon storytelling and cross-model sanity, not for product sign-off.
+These are useful for public methodology notes and cross-model sanity, not for product sign-off.
 
 ### VRSBench
 
@@ -229,7 +229,7 @@ Use by role:
 
 1. `LiquidAI/LFM2.5-VL-450M`
    - our main model
-   - official hackathon path
+   - primary small VLM path
 2. `HuggingFaceTB/SmolVLM2-500M-Video-Instruct`
    - best small-size apples-to-apples comparator
 3. `Qwen/Qwen2.5-VL-3B-Instruct`

@@ -1687,7 +1687,7 @@ class StubAtlasService:
                 status="not_configured",
                 detail=(
                     f"{self.settings.sam3_model_version} "
-                    "(offline; SAM is outside the judge runtime path)"
+                    "(offline; SAM is outside the runtime authority path)"
                 ),
                 mode="not_configured",
             )
@@ -2284,7 +2284,7 @@ class StubAtlasService:
             visual_evidence_tags=[],
             triage_action="discard",
             summary=(
-                "Source context only. Segmentation is disabled in the judge lane until the "
+                "Source context only. Segmentation is disabled in the default runtime until the "
                 "satellite pair has enough resolution for reliable masks."
             ),
         )

@@ -50,7 +50,7 @@ This is closer to structured JSON than v9, but still invalid for
 
 ## Conclusion
 
-Do not spend more hackathon time only increasing epochs on the current setup.
+Do not spend more training time only increasing epochs on the current setup.
 The issue is likely target-format/task wiring: the adapter is not reliably learning
 the exact assistant object despite lower trainer loss.
 

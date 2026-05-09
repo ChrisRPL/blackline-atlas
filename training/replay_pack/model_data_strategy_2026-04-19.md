@@ -284,7 +284,7 @@ External-ready slices now:
 
 Rule:
 
-- external slices help eval, transfer research, and hackathon storytelling
+- external slices help eval, transfer research, and public methodology notes
 - they do not increase the internal Blackline gold-row count
 - they should not be mixed into the core gold metrics without explicit remapping
 - the tiny internal public seed is benchmark-only, not the full internal non-demo benchmark
@@ -298,7 +298,7 @@ First real cohort result:
 
 Net:
 
-- benchmark lane is now useful for research and hackathon proof
+- benchmark lane is now useful for research and transfer evidence
 - core Blackline priority does not change
 - next core move is fresh gold-row acquisition, not more benchmark churn
 

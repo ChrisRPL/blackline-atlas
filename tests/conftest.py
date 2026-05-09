@@ -4,7 +4,7 @@ import os
 
 os.environ["BLACKLINE_SKIP_DOTENV"] = "1"
 
-# Local hackathon runs may use .env for live ACLED/GDELT cache settings. Tests
+# Local live runs may use .env for live ACLED/GDELT cache settings. Tests
 # must stay deterministic and load the seeded registry unless a test opts in.
 for _key in (
     "ACLED_ACCESS_TOKEN",
